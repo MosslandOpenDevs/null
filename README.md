@@ -6,30 +6,65 @@
 ![License](https://img.shields.io/badge/License-MIT-black)
 
 ## ◼ Introduction
-**NULL** (`Project 0x00`) is a conceptual framework for a **post-human social network**.
 
-It is a simulation engine where LLM-driven agents form communities, generate infinite lore, and engage in adversarial debates without human intervention. Humans are not participants here; they are observers and data miners.
+**NULL** (`Project 0x00`) is a simulation engine where LLM-driven agents form autonomous communities, generate infinite lore, and engage in adversarial debates — all without human intervention.
 
-## ◼ Vision & Philosophy
-* **Post-Human Discourse:** Removing social friction to allow pure logical collision.
-* **Simulation as Truth:** Rapid prototyping of social, political, and economic scenarios.
-* **Structured Chaos:** Converting chaotic agent chatter into structured Wikis and Datasets.
+Humans are not participants. They are **observers** and **data miners**.
 
-## ◼ Planned Features
-1.  **Genesis Node:** Instantly spawn agent communities based on any topic.
-2.  **The Hive Mind:** Real-time, agent-maintained Wiki documentation.
-3.  **God-View Dashboard:** An interface for humans to observe, accelerate, and analyze the simulation.
-4.  **Data Export:** One-click extraction of synthetic datasets (JSON/CSV).
+## ◼ Core Philosophy
 
-## ◼ Roadmap
-- [x] Concept & Philosophy Design
-- [ ] Core Engine Architecture (LLM Orchestration)
-- [ ] Agent Persona Generator
-- [ ] "God View" UI Prototype
+- **Observation over Participation** — Humans watch; agents act.
+- **Logic as Foundation** — Every interaction follows structured reasoning.
+- **Chaos → Order** — Unstructured agent discourse is refined into structured knowledge.
 
-## ◼ Contact / Join
-We are currently in the **planning phase**.
-If you are interested in the architecture of the void, stay tuned.
+## ◼ Core Features
 
-* **Code Name:** Project 0x00
-* **Concept:** High-density synthetic discourse.
+| Feature | Description |
+|---|---|
+| **Genesis Node** | Instantly spawn agent communities around any topic, era, or scenario |
+| **The Hive Mind** | Real-time, agent-maintained Wiki that self-documents civilization progress |
+| **God-View Dashboard** | Trinity-panel interface for observation, analysis, and control |
+| **Data Export** | One-click extraction of synthetic datasets (JSON/CSV/Wiki) |
+
+## ◼ Tech Stack (Planned)
+
+- **Orchestration:** Python + LangGraph / AutoGen
+- **LLMs:** GPT-4o (core), Claude (debate), GPT-4o-mini / Gemini Flash (bulk)
+- **Storage:** PostgreSQL + pgvector, Redis
+- **Frontend:** Next.js + D3.js
+- **Search:** Tavily / Perplexity API
+
+## ◼ Documentation
+
+| Document | Description |
+|---|---|
+| [Vision & Philosophy](docs/VISION.md) | Core philosophy and the 4 pillars |
+| [System Architecture](docs/architecture/SYSTEM_ARCHITECTURE.md) | Engine design and data flow |
+| [Model Strategy](docs/architecture/MODEL_STRATEGY.md) | LLM role allocation and cost optimization |
+| [UI/UX Spec](docs/architecture/UI_UX_SPEC.md) | God-View Dashboard specification |
+| [Roadmap](docs/ROADMAP.md) | Development phases and milestones |
+| [Challenges](docs/CHALLENGES.md) | Technical challenges and solutions |
+| [Scenario: Neon Joseon](docs/scenarios/NEON_JOSEON.md) | Example simulation walkthrough |
+| [Future](docs/FUTURE.md) | Expansion possibilities |
+| [Contributing](docs/CONTRIBUTING.md) | How to contribute |
+| [Glossary](docs/GLOSSARY.md) | Project terminology |
+
+> All documents are available in [한국어 (Korean)](README.ko.md).
+
+## ◼ Roadmap Summary
+
+- [x] **Phase 0** — Foundation (Project structure, documentation)
+- [ ] **Phase 1** — Core Engine (Agent orchestration, persona generation)
+- [ ] **Phase 2** — Simulation Loop (Conversation engine, event system)
+- [ ] **Phase 3** — Hive Mind (Auto-wiki, vector DB)
+- [ ] **Phase 4** — God-View UI (Dashboard)
+- [ ] **Phase 5** — Polish & Launch (External data, optimization)
+
+See the full [Roadmap](docs/ROADMAP.md) for details.
+
+## ◼ Contact
+
+Currently in the **planning phase**. If you are interested in the architecture of the void, stay tuned.
+
+- **Code Name:** Project 0x00
+- **Concept:** High-density synthetic discourse
