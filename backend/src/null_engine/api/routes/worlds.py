@@ -54,14 +54,19 @@ async def _background_genesis(world_id: uuid.UUID, seed_prompt: str, extra_confi
         async with async_session() as db:
             from null_engine.core.genesis import populate_world
             await populate_world(db, world_id, seed_prompt, extra_config)
-        # Mark world as ready in a fresh session
+        # Auto-start simulation after genesis completes
+        from null_engine.core.runner import SimulationRunner
+        runner = SimulationRunner(world_id)
+        _runners[world_id] = runner
+        runner.start()
+
         async with async_session() as db:
             result = await db.execute(select(World).where(World.id == world_id))
             world = result.scalar_one_or_none()
             if world:
-                world.status = "ready"
+                world.status = "running"
                 await db.commit()
-            logger.info("genesis.background_complete", world_id=str(world_id))
+            logger.info("genesis.background_complete", world_id=str(world_id), status="running")
     except Exception:
         logger.exception("genesis.background_failed", world_id=str(world_id))
         # Mark as error

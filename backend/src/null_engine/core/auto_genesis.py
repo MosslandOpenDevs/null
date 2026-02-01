@@ -4,9 +4,11 @@ import asyncio
 import random
 
 import structlog
+from sqlalchemy import select, func
 
 from null_engine.core.genesis import create_world
 from null_engine.db import async_session
+from null_engine.models.tables import World
 
 logger = structlog.get_logger()
 
@@ -38,17 +40,45 @@ AUTO_SEEDS = [
     "The Emotion Market — Feelings are commodified. Joy is expensive, anger is cheap. A black market for forbidden emotions thrives underground.",
 ]
 
-# Interval between auto-generation attempts (seconds)
-AUTO_GENESIS_INTERVAL = 90
+# Only auto-generate if fewer than this many ready/running worlds exist
+MAX_AUTO_WORLDS = 3
+# Wait between generation attempts
+AUTO_GENESIS_INTERVAL = 300
 
 
 async def auto_genesis_loop():
-    """Continuously generate worlds in the background."""
+    """Generate worlds in the background, but only when needed."""
     logger.info("auto_genesis.started")
     used_indices: set[int] = set()
 
     while True:
         try:
+            # Check how many worlds are ready/running — skip if enough exist
+            async with async_session() as db:
+                result = await db.execute(
+                    select(func.count()).select_from(World).where(
+                        World.status.in_(["ready", "running"])
+                    )
+                )
+                active_count = result.scalar() or 0
+
+            if active_count >= MAX_AUTO_WORLDS:
+                logger.info("auto_genesis.skipped", active=active_count, max=MAX_AUTO_WORLDS)
+                await asyncio.sleep(AUTO_GENESIS_INTERVAL)
+                continue
+
+            # Also skip if there's already a world being generated
+            async with async_session() as db:
+                result = await db.execute(
+                    select(func.count()).select_from(World).where(World.status == "generating")
+                )
+                generating_count = result.scalar() or 0
+
+            if generating_count > 0:
+                logger.info("auto_genesis.waiting", generating=generating_count)
+                await asyncio.sleep(60)
+                continue
+
             # Pick a random unused seed
             available = [i for i in range(len(AUTO_SEEDS)) if i not in used_indices]
             if not available:
@@ -63,17 +93,21 @@ async def auto_genesis_loop():
 
             async with async_session() as db:
                 world = await create_world(db, seed)
-                logger.info("auto_genesis.created", world_id=str(world.id))
+                world_id = world.id
+                logger.info("auto_genesis.created", world_id=str(world_id))
 
                 # Auto-start the simulation
                 from null_engine.core.runner import SimulationRunner
                 from null_engine.api.routes.worlds import _runners
 
-                runner = SimulationRunner(world.id)
-                _runners[world.id] = runner
+                runner = SimulationRunner(world_id)
+                _runners[world_id] = runner
                 runner.start()
 
-                world.status = "running"
+                from sqlalchemy import update
+                await db.execute(
+                    update(World).where(World.id == world_id).values(status="running")
+                )
                 await db.commit()
 
         except Exception:
