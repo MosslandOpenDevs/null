@@ -4,14 +4,16 @@ import { useCallback, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useSimulationStore } from "@/stores/simulation";
 import { useMultiverseStore, GlobalSearchResult } from "@/stores/multiverse";
+import { useTaxonomyStore, TaxonomyNode } from "@/stores/taxonomy";
 
 export function CommandPalette() {
   const t = useTranslations("command");
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const [mode, setMode] = useState<"local" | "global">("local");
+  const [mode, setMode] = useState<"local" | "global" | "taxonomy">("local");
   const { agents, wikiPages, setSelectedAgent, setIntelTab } = useSimulationStore();
   const { searchResults, searching, globalSearch } = useMultiverseStore();
+  const { rootNodes, fetchTree } = useTaxonomyStore();
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -22,7 +24,7 @@ export function CommandPalette() {
       if (e.key === "Escape" && open) {
         setOpen(false);
         setQuery("");
-        setMode("local");
+        setMode("local" as const);
       }
     },
     [open]
@@ -40,6 +42,17 @@ export function CommandPalette() {
       return () => clearTimeout(timer);
     }
   }, [query, mode, globalSearch]);
+
+  // Fetch taxonomy when mode changes
+  useEffect(() => {
+    if (mode === "taxonomy") {
+      fetchTree();
+    }
+  }, [mode, fetchTree]);
+
+  const filteredNodes = mode === "taxonomy" && query
+    ? rootNodes.filter((n) => n.label.toLowerCase().includes(q))
+    : rootNodes;
 
   const q = query.toLowerCase();
 
@@ -93,7 +106,15 @@ export function CommandPalette() {
               mode === "global" ? "text-accent border-b border-accent" : "text-hud-muted"
             }`}
           >
-            GLOBAL (ALL WORLDS)
+            GLOBAL
+          </button>
+          <button
+            onClick={() => setMode("taxonomy")}
+            className={`flex-1 py-1.5 font-mono text-[9px] uppercase tracking-[0.15em] ${
+              mode === "taxonomy" ? "text-accent border-b border-accent" : "text-hud-muted"
+            }`}
+          >
+            TAXONOMY
           </button>
         </div>
 
@@ -161,6 +182,38 @@ export function CommandPalette() {
                   </button>
                 ))}
               </div>
+            )}
+          </div>
+        )}
+
+        {/* Taxonomy results */}
+        {mode === "taxonomy" && (
+          <div className="border-t border-hud-border max-h-64 overflow-y-auto">
+            {filteredNodes.length === 0 ? (
+              <div className="px-4 py-3 font-mono text-[10px] text-hud-label">
+                No taxonomy nodes
+              </div>
+            ) : (
+              filteredNodes.map((node: TaxonomyNode) => (
+                <button
+                  key={node.id}
+                  onClick={() => {
+                    // Navigate to taxonomy filter on home page
+                    window.location.href = `/en?taxonomy=${node.id}`;
+                  }}
+                  className="w-full px-4 py-2 text-left hover:bg-accent/10 flex items-center gap-3 transition-colors"
+                >
+                  <div className="w-1.5 h-1.5 rounded-full bg-herald" />
+                  <div className="flex-1 min-w-0">
+                    <div className="font-mono text-[11px] text-hud-text truncate">
+                      {node.label}
+                    </div>
+                    <div className="font-mono text-[9px] text-hud-muted">
+                      {node.member_count} members · depth {node.depth}
+                    </div>
+                  </div>
+                </button>
+              ))
             )}
           </div>
         )}

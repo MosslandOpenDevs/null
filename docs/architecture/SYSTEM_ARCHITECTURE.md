@@ -103,8 +103,37 @@ AI-powered narrative summarization layer that transforms raw simulation events i
     ↓
 [Omniscope] → Cosmograph + Oracle Panel + Herald + Timeline Ribbon
     ↓
-[Export] → JSON / CSV / Wiki / WebM / SVG / Markdown Narratives
+[Export] → JSON / CSV / Wiki / WebM / SVG / Markdown Narratives / Training Data (ChatML / Alpaca / ShareGPT)
+    ↑
+[Semantic Sediment] → Entity Mentions, Taxonomy Tree, Temporal Strata, Semantic Neighbors
 ```
+
+## 7. Semantic Sediment Layer
+
+AI-driven data organization paradigm that automatically discovers and connects meaning across agent-generated content.
+
+**Core Concepts:**
+- **Entity Mentions**: NER + fuzzy match detects references to agents, wiki pages, and factions in natural language. Creates bidirectional links automatically.
+- **Emergent Taxonomy**: Bottom-up category tree auto-generated via embedding clustering. No human classification needed — LLM labels clusters hierarchically.
+- **Temporal Strata**: Geological-time metaphor for epoch boundaries. Each stratum records emerged concepts, faded concepts, and dominant themes.
+
+**Background Services:**
+
+| Service | Interval | Role |
+|---------|----------|------|
+| `MentionExtractor` | On save | NER + fuzzy match entity mention extraction |
+| `SemanticIndexer` | 60s | Embedding generation + semantic neighbor discovery |
+| `TaxonomyBuilder` | 300s | Clustering → hierarchical tree auto-generation |
+| `StratumDetector` | Epoch end | Temporal layer summary, concept emergence/decay |
+| `ConvergenceDetector` | 120s | Cross-world resonance detection (existing) |
+
+**New Database Tables:**
+- `entity_mentions` — Auto-extracted entity references across conversations and wiki
+- `semantic_neighbors` — Embedding-based similarity relationships
+- `taxonomy_nodes` — Hierarchical classification tree (self-referential)
+- `taxonomy_memberships` — Entity-to-taxonomy-node mappings
+- `strata` — Epoch-level temporal summaries with JSONB concept tracking
+- `bookmarks` — User session-based collections
 
 ## Data Flow
 
@@ -113,6 +142,8 @@ AI-powered narrative summarization layer that transforms raw simulation events i
 3. **Agents → Conversations:** Multi-agent debates, alliances, conflicts
 4. **Conversations → Hive Mind:** Structured documentation of outcomes
 5. **Hive Mind → Storage:** Persistent knowledge base with vector embeddings
-6. **Storage → Event Stream:** Real-time WebSocket events to connected clients
-7. **Event Stream → Omniscope:** Cosmograph visualization, Oracle Panel, Herald notifications
-8. **Herald Pipeline:** Parallel processing of events into narrative prose
+6. **Storage → Semantic Sediment:** MentionExtractor, SemanticIndexer, TaxonomyBuilder process new content
+7. **Sediment → Strata:** StratumDetector summarizes epoch boundaries
+8. **Storage → Event Stream:** Real-time WebSocket events to connected clients
+9. **Event Stream → Omniscope:** Cosmograph visualization, Oracle Panel, Herald notifications
+10. **Herald Pipeline:** Parallel processing of events into narrative prose

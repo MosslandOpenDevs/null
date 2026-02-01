@@ -115,12 +115,23 @@ async def run_conversation(
     await _update_relationships(db, world_id, participants)
 
     # Persist conversation to DB
-    await _save_conversation(db, turn, tick, summary)
+    conv_id = await _save_conversation(db, turn, tick, summary)
+
+    # Extract entity mentions
+    if conv_id:
+        try:
+            from null_engine.services.mention_extractor import extract_mentions_from_conversation
+            await extract_mentions_from_conversation(
+                db, world_id, conv_id,
+                [{"content": m.content} for m in turn.messages],
+            )
+        except Exception:
+            logger.exception("conversation.mention_extraction_failed")
 
     return turn
 
 
-async def _save_conversation(db: AsyncSession, turn: ConversationTurn, tick: int, summary: str):
+async def _save_conversation(db: AsyncSession, turn: ConversationTurn, tick: int, summary: str) -> uuid.UUID | None:
     try:
         conv = Conversation(
             world_id=turn.world_id,
@@ -139,8 +150,10 @@ async def _save_conversation(db: AsyncSession, turn: ConversationTurn, tick: int
         )
         db.add(conv)
         await db.flush()
+        return conv.id
     except Exception:
         logger.exception("conversation.save_failed")
+        return None
 
 
 async def _select_participants(db: AsyncSession, world_id: uuid.UUID, count: int = 0) -> list[Agent]:

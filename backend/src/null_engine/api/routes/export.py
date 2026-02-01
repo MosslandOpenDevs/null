@@ -90,6 +90,89 @@ async def export_conversations(
     return JSONResponse(data)
 
 
+@router.get("/worlds/{world_id}/export/training")
+async def export_training_data(
+    world_id: uuid.UUID,
+    format: str = Query("chatml", regex="^(chatml|alpaca|sharegpt)$"),
+    include: str = Query("conversations,wiki,kg"),
+    db: AsyncSession = Depends(get_db),
+):
+    """Export world data in LLM training formats."""
+    include_set = set(include.split(","))
+    samples: list[dict] = []
+
+    if "conversations" in include_set:
+        result = await db.execute(
+            select(Conversation)
+            .where(Conversation.world_id == world_id)
+            .order_by(Conversation.created_at)
+        )
+        for c in result.scalars().all():
+            if not c.messages:
+                continue
+            if format == "chatml":
+                msgs = [{"role": "system", "content": f"Topic: {c.topic}"}]
+                for m in c.messages:
+                    msgs.append({"role": "user", "content": f"[{m.get('agent_id', 'unknown')}]: {m.get('content', '')}"})
+                if c.summary:
+                    msgs.append({"role": "assistant", "content": c.summary})
+                samples.append({"messages": msgs})
+            elif format == "alpaca":
+                instruction = f"Continue the conversation about '{c.topic}'"
+                input_text = "\n".join(f"{m.get('agent_id', '')}: {m.get('content', '')}" for m in c.messages[:2])
+                output_text = "\n".join(f"{m.get('agent_id', '')}: {m.get('content', '')}" for m in c.messages[2:])
+                samples.append({"instruction": instruction, "input": input_text, "output": output_text or c.summary})
+            elif format == "sharegpt":
+                convs_out = []
+                for m in c.messages:
+                    convs_out.append({"from": "human", "value": m.get("content", "")})
+                if c.summary:
+                    convs_out.append({"from": "gpt", "value": c.summary})
+                samples.append({"conversations": convs_out})
+
+    if "wiki" in include_set:
+        result = await db.execute(
+            select(WikiPage).where(WikiPage.world_id == world_id)
+        )
+        for p in result.scalars().all():
+            if format == "chatml":
+                samples.append({"messages": [
+                    {"role": "system", "content": "You are a world-building wiki author."},
+                    {"role": "user", "content": f"Write a wiki article about: {p.title}"},
+                    {"role": "assistant", "content": p.content},
+                ]})
+            elif format == "alpaca":
+                samples.append({"instruction": f"Write a wiki article about: {p.title}", "input": "", "output": p.content})
+            elif format == "sharegpt":
+                samples.append({"conversations": [
+                    {"from": "human", "value": f"Write about {p.title}"},
+                    {"from": "gpt", "value": p.content},
+                ]})
+
+    if "kg" in include_set:
+        result = await db.execute(
+            select(KnowledgeEdge).where(KnowledgeEdge.world_id == world_id)
+        )
+        edges = result.scalars().all()
+        if edges:
+            triples = [f"{e.subject} {e.predicate} {e.object}" for e in edges]
+            if format == "chatml":
+                samples.append({"messages": [
+                    {"role": "system", "content": "Extract knowledge triples."},
+                    {"role": "assistant", "content": "\n".join(triples)},
+                ]})
+            elif format == "alpaca":
+                samples.append({"instruction": "List knowledge graph triples.", "input": "", "output": "\n".join(triples)})
+            elif format == "sharegpt":
+                samples.append({"conversations": [
+                    {"from": "human", "value": "What are the key relationships?"},
+                    {"from": "gpt", "value": "\n".join(triples)},
+                ]})
+
+    lines = [json.dumps(s, ensure_ascii=False) for s in samples]
+    return PlainTextResponse("\n".join(lines), media_type="application/jsonl")
+
+
 @router.get("/worlds/{world_id}/export/knowledge-graph")
 async def export_knowledge_graph(
     world_id: uuid.UUID,

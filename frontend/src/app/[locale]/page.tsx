@@ -4,6 +4,10 @@ import { useTranslations } from "next-intl";
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useSimulationStore } from "@/stores/simulation";
 import { CommandPalette } from "@/components/CommandPalette";
+import { TaxonomyTreeMap } from "@/components/TaxonomyTreeMap";
+import { BookmarkDrawer } from "@/components/BookmarkDrawer";
+import { useBookmarkStore } from "@/stores/bookmarks";
+import { useTaxonomyStore } from "@/stores/taxonomy";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3301";
 
@@ -40,6 +44,10 @@ export default function HomePage() {
   const [isTyping, setIsTyping] = useState(true);
   const fetchedCount = useRef(0);
   const { createWorld, autoWorlds, fetchAutoWorlds, worldTags, tagFilter, setTagFilter } = useSimulationStore();
+  const { setDrawerOpen } = useBookmarkStore();
+  const { fetchNode } = useTaxonomyStore();
+  const [taxonomyWorldFilter, setTaxonomyWorldFilter] = useState<string | null>(null);
+  const [taxonomyWorlds, setTaxonomyWorlds] = useState<Array<{ id: string; seed_prompt: string; status: string }>>([]);
 
   // Collect all unique tags from worlds
   const allTags = useMemo(() => {
@@ -154,6 +162,54 @@ export default function HomePage() {
         </button>
       </div>
 
+      {/* Taxonomy TreeMap */}
+      <div className="w-full max-w-2xl mt-8">
+        <TaxonomyTreeMap
+          onSelectNode={async (nodeId) => {
+            setTaxonomyWorldFilter(nodeId);
+            try {
+              const resp = await fetch(`${API_URL}/api/taxonomy/tree/${nodeId}/worlds`);
+              if (resp.ok) {
+                setTaxonomyWorlds(await resp.json());
+              }
+            } catch {
+              setTaxonomyWorlds([]);
+            }
+          }}
+        />
+      </div>
+
+      {/* Taxonomy-filtered worlds */}
+      {taxonomyWorldFilter && taxonomyWorlds.length > 0 && (
+        <div className="w-full max-w-2xl mt-4">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-sm uppercase tracking-widest text-gray-600">
+              Worlds in category
+            </h2>
+            <button
+              onClick={() => {
+                setTaxonomyWorldFilter(null);
+                setTaxonomyWorlds([]);
+              }}
+              className="text-[9px] font-mono text-hud-muted hover:text-accent uppercase"
+            >
+              CLEAR
+            </button>
+          </div>
+          <div className="space-y-1">
+            {taxonomyWorlds.map((w) => (
+              <a
+                key={w.id}
+                href={`/en/world/${w.id}`}
+                className="block px-4 py-2 rounded-lg border border-accent/30 bg-accent/5 hover:bg-accent/10 transition-all"
+              >
+                <p className="text-sm text-gray-300 truncate">{w.seed_prompt}</p>
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Tag filter */}
       {allTags.length > 0 && (
         <div className="w-full max-w-2xl mt-8">
@@ -237,6 +293,15 @@ export default function HomePage() {
       )}
 
       <CommandPalette />
+      <BookmarkDrawer />
+
+      {/* Bookmark toggle button */}
+      <button
+        onClick={() => setDrawerOpen(true)}
+        className="fixed right-4 bottom-4 z-40 px-3 py-2 bg-void-light border border-hud-border hover:border-accent font-mono text-[9px] text-hud-muted hover:text-accent uppercase tracking-wider transition-colors"
+      >
+        BOOKMARKS
+      </button>
     </main>
   );
 }

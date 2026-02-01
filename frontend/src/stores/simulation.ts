@@ -72,7 +72,7 @@ interface SimulationState {
   events: WSEvent[];
   selectedAgent: string | null;
   selectedFaction: string | null;
-  intelTab: "agent" | "wiki" | "graph" | "log" | "resonance";
+  intelTab: "agent" | "wiki" | "graph" | "log" | "resonance" | "strata";
   heraldMessages: Array<{ id: string; text: string; timestamp: number }>;
   autoWorlds: WorldData[];
   worldTags: Record<string, Array<{ tag: string; weight: number }>>;

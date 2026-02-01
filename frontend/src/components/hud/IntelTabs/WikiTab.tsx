@@ -1,7 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSimulationStore } from "@/stores/simulation";
+import { EntityCard } from "@/components/EntityCard";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3301";
+
+interface MentionData {
+  id: string;
+  mention_text: string;
+  target_type: string;
+  target_id: string;
+  confidence: number;
+}
 
 const STATUS_COLOR: Record<string, string> = {
   draft: "text-hud-muted",
@@ -31,10 +42,109 @@ function CopyButton({ text, label }: { text: string; label?: string }) {
   );
 }
 
+function HighlightedContent({
+  content,
+  mentions,
+  worldId,
+}: {
+  content: string;
+  mentions: MentionData[];
+  worldId: string;
+}) {
+  const [activeEntity, setActiveEntity] = useState<{
+    type: string;
+    id: string;
+    name: string;
+    pos: { x: number; y: number };
+  } | null>(null);
+
+  if (mentions.length === 0) {
+    return (
+      <div className="font-mono text-[10px] text-hud-muted leading-relaxed whitespace-pre-wrap">
+        {content}
+      </div>
+    );
+  }
+
+  // Build highlighted text
+  const parts: { text: string; mention?: MentionData }[] = [];
+  let remaining = content;
+
+  // Sort mentions by position in text (find first occurrence)
+  const sortedMentions = [...mentions].sort((a, b) => {
+    const posA = content.toLowerCase().indexOf(a.mention_text.toLowerCase());
+    const posB = content.toLowerCase().indexOf(b.mention_text.toLowerCase());
+    return posA - posB;
+  });
+
+  for (const mention of sortedMentions) {
+    const idx = remaining.toLowerCase().indexOf(mention.mention_text.toLowerCase());
+    if (idx === -1) continue;
+    if (idx > 0) {
+      parts.push({ text: remaining.slice(0, idx) });
+    }
+    parts.push({ text: remaining.slice(idx, idx + mention.mention_text.length), mention });
+    remaining = remaining.slice(idx + mention.mention_text.length);
+  }
+  if (remaining) {
+    parts.push({ text: remaining });
+  }
+
+  return (
+    <div className="relative">
+      <div className="font-mono text-[10px] text-hud-muted leading-relaxed whitespace-pre-wrap">
+        {parts.map((part, i) =>
+          part.mention ? (
+            <span
+              key={i}
+              onClick={(e) =>
+                setActiveEntity({
+                  type: part.mention!.target_type,
+                  id: part.mention!.target_id,
+                  name: part.text,
+                  pos: { x: e.clientX, y: e.clientY },
+                })
+              }
+              className="text-accent underline decoration-accent/30 cursor-pointer hover:bg-accent/10 transition-colors"
+            >
+              {part.text}
+            </span>
+          ) : (
+            <span key={i}>{part.text}</span>
+          )
+        )}
+      </div>
+      {activeEntity && (
+        <EntityCard
+          worldId={worldId}
+          entityType={activeEntity.type}
+          entityId={activeEntity.id}
+          entityName={activeEntity.name}
+          position={activeEntity.pos}
+          onClose={() => setActiveEntity(null)}
+        />
+      )}
+    </div>
+  );
+}
+
 export function WikiTab() {
-  const { wikiPages } = useSimulationStore();
+  const { wikiPages, world } = useSimulationStore();
   const [selectedPage, setSelectedPage] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [mentions, setMentions] = useState<MentionData[]>([]);
+
+  // Fetch mentions for selected page
+  useEffect(() => {
+    if (!selectedPage || !world) {
+      setMentions([]);
+      return;
+    }
+    fetch(`${API_URL}/api/worlds/${world.id}/entities/wiki_page/${selectedPage}/mentions`)
+      .then((r) => r.json())
+      .then(setMentions)
+      .catch(() => setMentions([]));
+  }, [selectedPage, world]);
 
   const filtered = search
     ? wikiPages.filter((p) =>
@@ -68,9 +178,11 @@ export function WikiTab() {
             <span className="font-mono text-[9px] text-hud-label">v{page.version}</span>
           </div>
         </div>
-        <div className="font-mono text-[10px] text-hud-muted leading-relaxed whitespace-pre-wrap">
-          {page.content}
-        </div>
+        <HighlightedContent
+          content={page.content}
+          mentions={mentions}
+          worldId={world?.id || ""}
+        />
       </div>
     );
   }

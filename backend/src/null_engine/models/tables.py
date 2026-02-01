@@ -165,3 +165,82 @@ class ResonanceLink(Base):
     entity_type = Column(String(50), default="wiki_page")
     strength = Column(Float, default=0.0)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class EntityMention(Base):
+    __tablename__ = "entity_mentions"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=new_uuid)
+    world_id = Column(UUID(as_uuid=True), ForeignKey("worlds.id", ondelete="CASCADE"), nullable=False)
+    source_type = Column(String(50), nullable=False)  # "conversation" | "wiki" | "event"
+    source_id = Column(UUID(as_uuid=True), nullable=False)
+    mention_text = Column(String(500), nullable=False)
+    target_type = Column(String(50), nullable=False)  # "agent" | "wiki_page" | "faction" | "location"
+    target_id = Column(UUID(as_uuid=True), nullable=False)
+    confidence = Column(Float, default=1.0)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class SemanticNeighbor(Base):
+    __tablename__ = "semantic_neighbors"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=new_uuid)
+    entity_a_type = Column(String(50), nullable=False)
+    entity_a_id = Column(UUID(as_uuid=True), nullable=False)
+    entity_b_type = Column(String(50), nullable=False)
+    entity_b_id = Column(UUID(as_uuid=True), nullable=False)
+    similarity = Column(Float, default=0.0)
+    is_cross_world = Column(String(5), default="false")  # "true" | "false"
+
+
+class TaxonomyNode(Base):
+    __tablename__ = "taxonomy_nodes"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=new_uuid)
+    parent_id = Column(UUID(as_uuid=True), ForeignKey("taxonomy_nodes.id", ondelete="SET NULL"), nullable=True)
+    label = Column(String(200), nullable=False)
+    description = Column(Text, default="")
+    depth = Column(Integer, default=0)
+    path = Column(String(1000), default="")
+    centroid = Column(Vector(1536), nullable=True)
+    member_count = Column(Integer, default=0)
+
+    children = relationship("TaxonomyNode", back_populates="parent_node", foreign_keys="[TaxonomyNode.parent_id]")
+    parent_node = relationship("TaxonomyNode", remote_side="[TaxonomyNode.id]", foreign_keys="[TaxonomyNode.parent_id]")
+
+
+class TaxonomyMembership(Base):
+    __tablename__ = "taxonomy_memberships"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=new_uuid)
+    node_id = Column(UUID(as_uuid=True), ForeignKey("taxonomy_nodes.id", ondelete="CASCADE"), nullable=False)
+    world_id = Column(UUID(as_uuid=True), ForeignKey("worlds.id", ondelete="CASCADE"), nullable=False)
+    entity_type = Column(String(50), nullable=False)
+    entity_id = Column(UUID(as_uuid=True), nullable=False)
+    similarity = Column(Float, default=0.0)
+
+
+class Stratum(Base):
+    __tablename__ = "strata"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=new_uuid)
+    world_id = Column(UUID(as_uuid=True), ForeignKey("worlds.id", ondelete="CASCADE"), nullable=False)
+    epoch = Column(Integer, nullable=False)
+    summary = Column(Text, default="")
+    emerged_concepts = Column(JSONB, default=list)
+    faded_concepts = Column(JSONB, default=list)
+    dominant_themes = Column(JSONB, default=list)
+    embedding = Column(Vector(1536), nullable=True)
+
+
+class Bookmark(Base):
+    __tablename__ = "bookmarks"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=new_uuid)
+    user_session = Column(String(200), nullable=False)
+    label = Column(String(500), default="")
+    entity_type = Column(String(50), nullable=False)
+    entity_id = Column(UUID(as_uuid=True), nullable=False)
+    world_id = Column(UUID(as_uuid=True), ForeignKey("worlds.id", ondelete="CASCADE"), nullable=False)
+    note = Column(Text, default="")
+    created_at = Column(DateTime, default=datetime.utcnow)

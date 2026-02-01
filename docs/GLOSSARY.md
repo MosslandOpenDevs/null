@@ -28,3 +28,11 @@
 | **Timeline Ribbon** | Horizontal strip at the bottom of the Omniscope displaying simulation history with epoch color-coding and time-scrubbing controls. |
 | **Whisper Mode** | A Divine Intervention mechanic: right-click an agent to inject text as an "inner voice" into their next reasoning cycle. |
 | **World Config** | The structured output of the Genesis Node defining all simulation parameters. |
+| **Bookmark** | User-created collection item for saving and exporting entities of interest. |
+| **Emergent Taxonomy** | Bottom-up category tree auto-generated from embedding clusters. LLM labels nodes hierarchically without human classification. |
+| **Entity Mention** | An automatically detected reference to an agent, wiki page, or faction within natural language text. Creates bidirectional links. |
+| **Semantic Neighbor** | An entity with high embedding similarity to another entity, discovered via pgvector cosine distance. |
+| **Semantic Sediment** | The data organization paradigm where agent-generated content is automatically layered, linked, and classified. |
+| **Stratum** | A temporal layer corresponding to a single epoch. Records emerged concepts, faded concepts, and dominant themes. Plural: strata. |
+| **Taxonomy Node** | A node in the emergent taxonomy tree. May be a leaf (single cluster) or parent (merged clusters). |
+| **Training Export** | Export of world data in LLM fine-tuning formats: ChatML, Alpaca, or ShareGPT. |

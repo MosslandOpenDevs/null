@@ -71,6 +71,22 @@
 - [ ] Build story arc auto-detection and export (Markdown / JSON / SVG)
 - [ ] Add Aquarium Mode (chromeless fullscreen, mobile PWA)
 
+## Phase 4e: Semantic Sediment
+*Automatic data organization and entity intelligence.*
+
+- [x] Entity Mentions — NER + fuzzy match auto-detection in conversations and wiki
+- [x] Semantic Indexer — Background embedding generation + neighbor discovery (60s)
+- [x] Taxonomy Builder — Bottom-up clustering into hierarchical tree (300s)
+- [x] Stratum Detector — Epoch-level temporal summaries with concept tracking
+- [x] Entity Graph API — Mentions, neighbors, full entity graph per world
+- [x] Taxonomy API — Tree browsing, node details, world filtering
+- [x] Strata API — Temporal layer listing and details
+- [x] Bookmarks — User session-based collections with bulk export
+- [x] Training Data Export — ChatML, Alpaca, ShareGPT format support
+- [x] Frontend: TaxonomyTreeMap, EntityCard, StrataTimeline, BreadcrumbBar
+- [x] Frontend: BookmarkDrawer, SemanticSidebar, StrataTab in IntelPanel
+- [x] Frontend: Wiki mention highlighting, entity graph overlay, taxonomy CommandPalette
+
 ## Phase 5: Polish & Launch
 *External data integration and optimization.*
 

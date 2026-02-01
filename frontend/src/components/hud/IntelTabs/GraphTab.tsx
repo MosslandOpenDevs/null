@@ -1,13 +1,16 @@
 "use client";
 
-import { useMemo, useRef, useEffect, useCallback } from "react";
+import { useMemo, useRef, useEffect, useState } from "react";
 import { useSimulationStore } from "@/stores/simulation";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3301";
 
 interface GraphNode {
   id: string;
   label: string;
   x: number;
   y: number;
+  type?: string;
 }
 
 interface GraphLink {
@@ -15,25 +18,63 @@ interface GraphLink {
   target: string;
   predicate: string;
   confidence: number;
+  type?: string;
+}
+
+interface EntityGraphData {
+  nodes: Array<{ id: string; type: string; label: string }>;
+  edges: Array<{ source_id: string; target_id: string; type: string; weight: number }>;
 }
 
 export function GraphTab() {
-  const { knowledgeEdges, setIntelTab } = useSimulationStore();
+  const { knowledgeEdges, world } = useSimulationStore();
   const svgRef = useRef<SVGSVGElement>(null);
+  const [entityGraph, setEntityGraph] = useState<EntityGraphData | null>(null);
+
+  useEffect(() => {
+    if (!world) return;
+    fetch(`${API_URL}/api/worlds/${world.id}/entity-graph`)
+      .then((r) => r.json())
+      .then(setEntityGraph)
+      .catch(() => {});
+  }, [world]);
 
   const { nodes, links } = useMemo(() => {
     const nodeSet = new Set<string>();
+    const nodeLabels = new Map<string, { label: string; type: string }>();
     const links: GraphLink[] = [];
 
     for (const edge of knowledgeEdges) {
       nodeSet.add(edge.subject);
       nodeSet.add(edge.object);
+      nodeLabels.set(edge.subject, { label: edge.subject, type: "concept" });
+      nodeLabels.set(edge.object, { label: edge.object, type: "concept" });
       links.push({
         source: edge.subject,
         target: edge.object,
         predicate: edge.predicate,
         confidence: edge.confidence,
+        type: "knowledge",
       });
+    }
+
+    // Add entity graph edges (mention-based)
+    if (entityGraph) {
+      for (const node of entityGraph.nodes) {
+        if (!nodeSet.has(node.id)) {
+          nodeSet.add(node.id);
+          nodeLabels.set(node.id, { label: node.label, type: node.type });
+        }
+      }
+      for (const edge of entityGraph.edges) {
+        links.push({
+          source: edge.source_id,
+          target: edge.target_id,
+          predicate: edge.type,
+          confidence: edge.weight,
+          type: "mention",
+        });
+      }
     }
 
     // Simple circle layout
@@ -41,16 +82,18 @@ export function GraphTab() {
     const nodes: GraphNode[] = nodeArray.map((id, i) => {
       const angle = (2 * Math.PI * i) / Math.max(nodeArray.length, 1);
       const radius = Math.min(130, 40 + nodeArray.length * 8);
+      const info = nodeLabels.get(id);
       return {
         id,
-        label: id,
+        label: info?.label || id,
         x: 175 + Math.cos(angle) * radius,
         y: 175 + Math.sin(angle) * radius,
+        type: info?.type || "concept",
       };
     });
 
     return { nodes, links };
-  }, [knowledgeEdges]);
+  }, [knowledgeEdges, entityGraph]);
 
   const nodeMap = useMemo(() => new Map(nodes.map((n) => [n.id, n])), [nodes]);
 
@@ -84,9 +127,10 @@ export function GraphTab() {
                 y1={s.y}
                 x2={t.x}
                 y2={t.y}
-                stroke="#2a2a4e"
+                stroke={link.type === "mention" ? "#6366f1" : "#2a2a4e"}
                 strokeWidth={Math.max(0.5, link.confidence * 2)}
-                strokeOpacity={0.6}
+                strokeOpacity={link.type === "mention" ? 0.4 : 0.6}
+                strokeDasharray={link.type === "mention" ? "2,2" : undefined}
               />
               <text
                 x={(s.x + t.x) / 2}
@@ -103,15 +147,17 @@ export function GraphTab() {
         })}
 
         {/* Nodes */}
-        {nodes.map((node) => (
+        {nodes.map((node) => {
+          const color = node.type === "agent" ? "#22c55e" : node.type === "wiki_page" ? "#eab308" : "#6366f1";
+          return (
           <g key={node.id} className="cursor-pointer">
             <circle
               cx={node.x}
               cy={node.y}
               r={4}
-              fill="#6366f1"
+              fill={color}
               fillOpacity={0.6}
-              stroke="#6366f1"
+              stroke={color}
               strokeWidth={0.5}
             />
             <text
@@ -125,7 +171,8 @@ export function GraphTab() {
               {node.label.length > 15 ? node.label.slice(0, 15) + "…" : node.label}
             </text>
           </g>
-        ))}
+          );
+        })}
       </svg>
 
       {/* Edge count */}

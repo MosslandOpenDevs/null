@@ -27,6 +27,8 @@ Humans are not participants. They are **observers** and **data miners**.
 | **The Herald** | AI-generated narrative notifications that tell the story as it unfolds |
 | **The Archive** | Bookmark states, record clips, export story arcs as Markdown/JSON/SVG/WebM |
 | **Data Export** | One-click extraction of synthetic datasets (JSON/CSV/Wiki) |
+| **Semantic Sediment** | Auto-discovered entity links, emergent taxonomy, temporal strata |
+| **Training Export** | LLM training data in ChatML, Alpaca, ShareGPT formats |
 
 ## ◼ Tech Stack (Planned)
 
@@ -62,6 +64,7 @@ Humans are not participants. They are **observers** and **data miners**.
 - [ ] **Phase 2** — Simulation Loop (Conversation engine, event system)
 - [ ] **Phase 3** — Hive Mind (Auto-wiki, vector DB)
 - [ ] **Phase 4** — The Omniscope (Cosmograph UI: 4a Core → 4b Zoom → 4c Oracle/Herald → 4d Intervention/Export)
+- [x] **Phase 4e** — Semantic Sediment (Entity mentions, taxonomy, strata, bookmarks, training export)
 - [ ] **Phase 5** — Polish & Launch (External data, optimization)
 
 See the full [Roadmap](docs/ROADMAP.md) for details.

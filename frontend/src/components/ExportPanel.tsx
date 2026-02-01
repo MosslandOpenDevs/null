@@ -9,6 +9,7 @@ const EXPORT_TYPES = [
   { id: "knowledge-graph", label: "Knowledge Graph", formats: ["csv", "json"] },
   { id: "agents", label: "Agents", formats: ["json"] },
   { id: "all", label: "Everything", formats: ["jsonl"] },
+  { id: "training", label: "Training Data", formats: ["chatml", "alpaca", "sharegpt"] },
 ];
 
 interface ExportPanelProps {

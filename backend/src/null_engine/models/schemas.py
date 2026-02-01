@@ -216,5 +216,119 @@ class WSEnvelope(BaseModel):
     payload: dict[str, Any] = Field(default_factory=dict)
 
 
+# --- Entity Mention ---
+class EntityMentionOut(BaseModel):
+    id: uuid.UUID
+    world_id: uuid.UUID
+    source_type: str
+    source_id: uuid.UUID
+    mention_text: str
+    target_type: str
+    target_id: uuid.UUID
+    confidence: float
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+# --- Semantic Neighbor ---
+class SemanticNeighborOut(BaseModel):
+    id: uuid.UUID
+    entity_a_type: str
+    entity_a_id: uuid.UUID
+    entity_b_type: str
+    entity_b_id: uuid.UUID
+    similarity: float
+    is_cross_world: str
+
+    model_config = {"from_attributes": True}
+
+
+# --- Taxonomy ---
+class TaxonomyNodeOut(BaseModel):
+    id: uuid.UUID
+    parent_id: uuid.UUID | None
+    label: str
+    description: str
+    depth: int
+    path: str
+    member_count: int
+
+    model_config = {"from_attributes": True}
+
+
+class TaxonomyMembershipOut(BaseModel):
+    id: uuid.UUID
+    node_id: uuid.UUID
+    world_id: uuid.UUID
+    entity_type: str
+    entity_id: uuid.UUID
+    similarity: float
+
+    model_config = {"from_attributes": True}
+
+
+class TaxonomyNodeDetail(BaseModel):
+    node: TaxonomyNodeOut
+    children: list[TaxonomyNodeOut] = Field(default_factory=list)
+    members: list[TaxonomyMembershipOut] = Field(default_factory=list)
+
+
+# --- Stratum ---
+class StratumOut(BaseModel):
+    id: uuid.UUID
+    world_id: uuid.UUID
+    epoch: int
+    summary: str
+    emerged_concepts: list[Any]
+    faded_concepts: list[Any]
+    dominant_themes: list[Any]
+    created_at: datetime | None = None
+
+    model_config = {"from_attributes": True}
+
+
+# --- Bookmark ---
+class BookmarkCreate(BaseModel):
+    user_session: str
+    label: str = ""
+    entity_type: str
+    entity_id: uuid.UUID
+    world_id: uuid.UUID
+    note: str = ""
+
+
+class BookmarkOut(BaseModel):
+    id: uuid.UUID
+    user_session: str
+    label: str
+    entity_type: str
+    entity_id: uuid.UUID
+    world_id: uuid.UUID
+    note: str
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+# --- Entity Graph ---
+class EntityGraphNode(BaseModel):
+    id: uuid.UUID
+    type: str
+    label: str
+
+
+class EntityGraphEdge(BaseModel):
+    source_id: uuid.UUID
+    target_id: uuid.UUID
+    type: str  # "mention" | "knowledge"
+    weight: float
+
+
+class EntityGraphOut(BaseModel):
+    nodes: list[EntityGraphNode] = Field(default_factory=list)
+    edges: list[EntityGraphEdge] = Field(default_factory=list)
+
+
 # Resolve forward references
 WorldConfig.model_rebuild()

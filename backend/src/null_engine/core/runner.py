@@ -95,6 +95,13 @@ class SimulationRunner:
             # Herald announcement
             await herald.announce(self.world_id, world.current_epoch)
 
+            # Generate stratum for the completed epoch
+            try:
+                from null_engine.services.stratum_detector import detect_stratum
+                await detect_stratum(db, self.world_id, epoch)
+            except Exception:
+                logger.exception("runner.stratum_failed", epoch=epoch)
+
             # Wiki generation every epoch
             if self._conversation_summaries:
                 topics = set()

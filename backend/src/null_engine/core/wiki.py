@@ -85,6 +85,13 @@ class WikiEngine:
         # Extract knowledge edges
         await self._extract_knowledge(db, world_id, page.id, content)
 
+        # Extract entity mentions
+        try:
+            from null_engine.services.mention_extractor import extract_mentions_from_wiki
+            await extract_mentions_from_wiki(db, world_id, page.id, content)
+        except Exception:
+            logger.exception("wiki.mention_extraction_failed")
+
         await db.commit()
 
         await broadcast(world_id, WSEnvelope(

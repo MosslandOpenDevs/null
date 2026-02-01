@@ -71,6 +71,22 @@
 - [ ] 스토리 아크 자동 감지 및 내보내기 구축 (Markdown / JSON / SVG)
 - [ ] 아쿠아리움 모드 추가 (크롬리스 풀스크린, 모바일 PWA)
 
+## Phase 4e: 시맨틱 세디먼트 (Semantic Sediment)
+*자동 데이터 조직과 엔티티 인텔리전스.*
+
+- [x] 엔티티 멘션 — 대화/위키에서 NER + 퍼지 매칭 자동 감지
+- [x] 시맨틱 인덱서 — 백그라운드 임베딩 생성 + 이웃 발견 (60초)
+- [x] 택소노미 빌더 — 바텀업 클러스터링으로 계층 트리 생성 (300초)
+- [x] 스트라텀 디텍터 — 에포크별 시간 요약 + 개념 추적
+- [x] 엔티티 그래프 API — 멘션, 이웃, 월드별 전체 엔티티 그래프
+- [x] 택소노미 API — 트리 브라우징, 노드 상세, 월드 필터링
+- [x] 스트라타 API — 시간 지층 목록 및 상세
+- [x] 북마크 — 사용자 세션 기반 컬렉션 + 일괄 export
+- [x] 학습 데이터 내보내기 — ChatML, Alpaca, ShareGPT 형식 지원
+- [x] 프론트엔드: TaxonomyTreeMap, EntityCard, StrataTimeline, BreadcrumbBar
+- [x] 프론트엔드: BookmarkDrawer, SemanticSidebar, IntelPanel StrataTab
+- [x] 프론트엔드: 위키 멘션 하이라이트, 엔티티 그래프 오버레이, 택소노미 CommandPalette
+
 ## Phase 5: 마무리 & 런칭
 *외부 데이터 연동과 최적화.*
 
