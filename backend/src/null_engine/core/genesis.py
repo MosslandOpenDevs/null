@@ -2,6 +2,7 @@ import uuid
 from typing import Any
 
 import structlog
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from null_engine.config import settings
@@ -50,30 +51,81 @@ For each character, respond with a JSON array:
 
 
 async def create_world(db: AsyncSession, seed_prompt: str, extra_config: dict[str, Any] | None = None) -> World:
-    logger.info("genesis: creating world", seed=seed_prompt[:80])
+    """Synchronous full creation (used by auto_genesis and tests)."""
+    world = World(seed_prompt=seed_prompt, config=extra_config or {}, status="generating")
+    db.add(world)
+    await db.flush()
 
-    # Generate world config via LLM
+    await populate_world(db, world.id, seed_prompt, extra_config or {})
+
+    world.status = "created"
+    await db.commit()
+    await db.refresh(world)
+    logger.info("genesis: world created", world_id=str(world.id))
+    return world
+
+
+async def _update_progress(db: AsyncSession, world_id: uuid.UUID, step: str, step_num: int, total_steps: int, detail: str = ""):
+    """Update genesis progress in the world's config JSONB."""
+    result = await db.execute(select(World).where(World.id == world_id))
+    world = result.scalar_one_or_none()
+    if not world:
+        return
+    config = dict(world.config or {})
+    config["_genesis_progress"] = {
+        "step": step,
+        "step_num": step_num,
+        "total_steps": total_steps,
+        "detail": detail,
+        "percent": round(step_num / total_steps * 100),
+    }
+    world.config = config
+    await db.flush()
+    await db.commit()
+
+
+async def populate_world(db: AsyncSession, world_id: uuid.UUID, seed_prompt: str, extra_config: dict[str, Any]) -> None:
+    """Generate factions, agents, relationships, and tags for an existing world row."""
+    import asyncio as _asyncio
+
+    num_factions = settings.default_factions
+    # Total steps: 1 (world config) + 1 (factions) + num_factions (agents) + 1 (relationships) + 1 (tags) = num_factions + 4
+    total_steps = num_factions + 4
+
+    logger.info("genesis: populating world", world_id=str(world_id), seed=seed_prompt[:80])
+
+    # Step 1: Generate world config via LLM
+    await _update_progress(db, world_id, "world_config", 1, total_steps, "Designing world architecture...")
+
     world_config = await llm_router.generate_json(
         role="genesis_architect",
         prompt=WORLD_GEN_PROMPT.format(
             seed_prompt=seed_prompt,
-            num_factions=settings.default_factions,
+            num_factions=num_factions,
         ),
     )
 
     if extra_config:
         world_config.update(extra_config)
 
-    world = World(seed_prompt=seed_prompt, config=world_config, status="created")
-    db.add(world)
+    # Update world config
+    result = await db.execute(
+        select(World).where(World.id == world_id)
+    )
+    world = result.scalar_one_or_none()
+    if not world:
+        return
+    world.config = world_config
     await db.flush()
 
-    # Create factions
+    # Step 2: Create factions
+    await _update_progress(db, world_id, "factions", 2, total_steps, "Establishing factions...")
+
     faction_specs = world_config.get("factions", [])
     factions: list[Faction] = []
     for spec in faction_specs:
         faction = Faction(
-            world_id=world.id,
+            world_id=world_id,
             name=spec["name"],
             description=spec.get("description", ""),
             color=spec.get("color", "#FFFFFF"),
@@ -81,20 +133,26 @@ async def create_world(db: AsyncSession, seed_prompt: str, extra_config: dict[st
         db.add(faction)
         factions.append(faction)
     await db.flush()
+    await db.commit()
 
-    # Generate agents per faction
+    # Steps 3..N: Generate agents per faction — sequential with progress updates
+    world_desc = world_config.get("description", seed_prompt)
     all_agents: list[Agent] = []
-    for faction, spec in zip(factions, faction_specs):
+
+    for idx, (faction, spec) in enumerate(zip(factions, faction_specs)):
+        step_num = 3 + idx
+        await _update_progress(
+            db, world_id, "agents", step_num, total_steps,
+            f"Summoning agents for {faction.name}..."
+        )
+
         count = spec.get("agent_count", settings.default_agents_per_faction)
         personas = await _generate_personas(
-            faction.name,
-            faction.description,
-            world_config.get("description", seed_prompt),
-            count,
+            faction.name, faction.description, world_desc, count,
         )
         for persona in personas:
             agent = Agent(
-                world_id=world.id,
+                world_id=world_id,
                 faction_id=faction.id,
                 name=persona.get("name", f"Agent-{uuid.uuid4().hex[:6]}"),
                 persona=persona,
@@ -103,18 +161,27 @@ async def create_world(db: AsyncSession, seed_prompt: str, extra_config: dict[st
             )
             db.add(agent)
             all_agents.append(agent)
+        await db.flush()
+        await db.commit()
+
+    # Step N+1: Relationships
+    await _update_progress(
+        db, world_id, "relationships", total_steps - 1, total_steps,
+        "Weaving relationships..."
+    )
+    await _generate_relationships(db, world_id, all_agents)
     await db.flush()
-
-    # Generate initial relationships
-    await _generate_relationships(db, world.id, all_agents)
-
-    # Auto-generate world tags
-    await _generate_world_tags(db, world.id, world_config)
-
     await db.commit()
-    await db.refresh(world)
-    logger.info("genesis: world created", world_id=str(world.id), agents=len(all_agents))
-    return world
+
+    # Step N+2: Tags
+    await _update_progress(
+        db, world_id, "tags", total_steps, total_steps,
+        "Classifying world tags..."
+    )
+    await _generate_world_tags(db, world_id, world_config)
+
+    await db.flush()
+    logger.info("genesis: world populated", world_id=str(world_id), agents=len(all_agents))
 
 
 async def _generate_personas(faction_name: str, faction_desc: str, world_desc: str, count: int) -> list[dict]:

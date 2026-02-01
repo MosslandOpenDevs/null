@@ -113,7 +113,37 @@ Non-intrusive notification cards in the upper-left corner (auto-dismiss after 8 
 - Wiki content (agent-generated) remains in the simulation's native language; UI chrome switches independently
 - URL structure: `/en/...` (default), `/ko/...` for Korean
 
-## 11. Tech Stack
+## 11. Genesis Progress Screen
+
+When a world is being created, users see a dedicated progress screen instead of a static loading spinner.
+
+**Components:**
+- Animated rotating diamond with pulsing center (visual anchor)
+- **Progress bar**: Fills based on real-time backend progress (`_genesis_progress` in world config JSONB)
+- **Percentage indicator**: Numeric percent shown next to the bar
+- **Step detail text**: Current operation description (e.g., "Summoning agents for Iron Syndicate...")
+- **Step counter**: "STEP 3 / 8" format showing current/total steps
+- **Seed prompt preview**: First 80 characters of the seed prompt
+
+**Backend Integration:**
+- POST `/api/worlds` returns immediately with `status: "generating"`
+- Frontend redirects to world page and polls `GET /api/worlds/{id}` every 2 seconds
+- Each genesis step (world config → factions → per-faction agents → relationships → tags) updates `world.config._genesis_progress`
+- On completion, status transitions to `"ready"` and polling stops
+- On failure, status transitions to `"error"` with a back-to-home link
+
+**Progress Data Structure:**
+```json
+{
+  "step": "agents",
+  "step_num": 3,
+  "total_steps": 8,
+  "detail": "Summoning agents for Iron Syndicate...",
+  "percent": 38
+}
+```
+
+## 12. Tech Stack
 
 | Layer | Technology | Rationale |
 |---|---|---|

@@ -122,6 +122,7 @@ export const useSimulationStore = create<SimulationState>((set, get) => ({
     });
     const world = await resp.json();
     set({ world });
+    // Redirect immediately — world page will handle the "generating" state
     if (typeof window !== "undefined") {
       window.location.href = `/en/world/${world.id}`;
     }

@@ -86,6 +86,8 @@
 - [x] Frontend: TaxonomyTreeMap, EntityCard, StrataTimeline, BreadcrumbBar
 - [x] Frontend: BookmarkDrawer, SemanticSidebar, StrataTab in IntelPanel
 - [x] Frontend: Wiki mention highlighting, entity graph overlay, taxonomy CommandPalette
+- [x] Genesis Progress UI — Real-time progress bar with step tracking during world creation
+- [x] Background Genesis — Non-blocking world creation with async population
 
 ## Phase 5: Polish & Launch
 *External data integration and optimization.*

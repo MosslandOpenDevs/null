@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useParams } from "next/navigation";
 import { useSimulationStore } from "@/stores/simulation";
 import { useWSClient } from "@/lib/wsClient";
@@ -15,11 +15,21 @@ import { BookmarkDrawer } from "@/components/BookmarkDrawer";
 import { Scanline } from "@/components/hud/Scanline";
 import { useBookmarkStore } from "@/stores/bookmarks";
 
+const GENERATING_MESSAGES = [
+  "Forging the fabric of reality...",
+  "Summoning factions from the void...",
+  "Weaving agent personas...",
+  "Establishing power dynamics...",
+  "Constructing knowledge networks...",
+  "Seeding initial conflicts...",
+];
+
 export default function WorldPage() {
   const { id } = useParams<{ id: string }>();
   const { connect, disconnect } = useWSClient();
   const { fetchWorld, world } = useSimulationStore();
   const { setDrawerOpen } = useBookmarkStore();
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     if (id) {
@@ -29,12 +39,89 @@ export default function WorldPage() {
     }
   }, [id, connect, disconnect, fetchWorld]);
 
+  // Poll while world is generating
+  useEffect(() => {
+    if (world?.status === "generating" && id) {
+      pollRef.current = setInterval(() => {
+        fetchWorld(id);
+      }, 2000);
+      return () => {
+        if (pollRef.current) clearInterval(pollRef.current);
+      };
+    }
+    // Stop polling once no longer generating
+    if (pollRef.current && world?.status !== "generating") {
+      clearInterval(pollRef.current);
+      pollRef.current = null;
+    }
+  }, [world?.status, id, fetchWorld]);
+
   if (!world) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-void">
         <div className="font-mono text-[11px] text-hud-muted animate-pulse-glow">
           INITIALIZING<span className="animate-blink">_</span>
         </div>
+      </div>
+    );
+  }
+
+  if (world.status === "generating") {
+    const progress = (world.config as Record<string, unknown>)?._genesis_progress as
+      | { step: string; step_num: number; total_steps: number; detail: string; percent: number }
+      | undefined;
+    const percent = progress?.percent ?? 0;
+    const detail = progress?.detail || GENERATING_MESSAGES[Math.floor(Date.now() / 3000) % GENERATING_MESSAGES.length];
+    const stepLabel = progress ? `${progress.step_num} / ${progress.total_steps}` : "";
+
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-void gap-6">
+        <div className="relative">
+          <div className="w-16 h-16 border border-accent/30 rotate-45 animate-spin" style={{ animationDuration: "3s" }} />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="w-3 h-3 bg-accent rounded-full animate-pulse" />
+          </div>
+        </div>
+        <div className="text-center space-y-3 w-full max-w-sm">
+          <div className="font-mono text-[11px] text-accent animate-pulse">
+            GENESIS IN PROGRESS
+          </div>
+          {/* Progress bar */}
+          <div className="w-full h-1.5 bg-gray-800 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-accent transition-all duration-700 ease-out"
+              style={{ width: `${percent}%` }}
+            />
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="font-mono text-[10px] text-hud-muted">{detail}</span>
+            <span className="font-mono text-[10px] text-accent">{percent}%</span>
+          </div>
+          {stepLabel && (
+            <div className="font-mono text-[9px] text-hud-label">
+              STEP {stepLabel}
+            </div>
+          )}
+          <div className="font-mono text-[9px] text-hud-label mt-2">
+            {world.seed_prompt.slice(0, 80)}{world.seed_prompt.length > 80 ? "..." : ""}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (world.status === "error") {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-void gap-4">
+        <div className="font-mono text-[11px] text-danger">
+          GENESIS FAILED
+        </div>
+        <div className="font-mono text-[9px] text-hud-muted">
+          World creation encountered an error.
+        </div>
+        <a href="/en" className="font-mono text-[10px] text-accent hover:text-accent/80">
+          ← BACK TO HOME
+        </a>
       </div>
     );
   }

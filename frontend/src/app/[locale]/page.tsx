@@ -158,7 +158,7 @@ export default function HomePage() {
           disabled={creating || !seedPrompt.trim()}
           className="w-full py-3 bg-accent hover:bg-accent/80 disabled:opacity-50 rounded-lg font-semibold transition-colors"
         >
-          {creating ? "Creating..." : t("world.create")}
+          {creating ? "Launching genesis..." : t("world.create")}
         </button>
       </div>
 
@@ -265,7 +265,9 @@ export default function HomePage() {
                     </p>
                     <div className="flex items-center gap-2 flex-shrink-0">
                       <span className={`inline-block w-1.5 h-1.5 rounded-full ${
-                        w.status === "running" ? "bg-green-500 animate-pulse" : "bg-gray-600"
+                        w.status === "running" ? "bg-green-500 animate-pulse" :
+                        w.status === "generating" ? "bg-accent animate-spin rounded-none rotate-45" :
+                        "bg-gray-600"
                       }`} />
                       <span className="text-[10px] text-gray-500 uppercase">
                         {w.status}

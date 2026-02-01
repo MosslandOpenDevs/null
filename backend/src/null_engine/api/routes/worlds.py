@@ -1,3 +1,4 @@
+import asyncio
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -6,13 +7,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from null_engine.core.genesis import create_world
 from null_engine.core.runner import SimulationRunner
-from null_engine.db import get_db
+from null_engine.db import get_db, async_session
 from null_engine.models.tables import World, WorldTag
 from null_engine.models.schemas import WorldCreate, WorldOut, WorldTagOut, WorldWithTagsOut
 
 router = APIRouter(tags=["worlds"])
 
 _runners: dict[uuid.UUID, SimulationRunner] = {}
+_genesis_tasks: dict[uuid.UUID, asyncio.Task] = {}
 
 
 @router.get("/worlds", response_model=list[WorldWithTagsOut])
@@ -44,9 +46,52 @@ async def list_worlds(
     return out
 
 
+async def _background_genesis(world_id: uuid.UUID, seed_prompt: str, extra_config: dict):
+    """Run full genesis in background after the world row is created."""
+    import structlog
+    logger = structlog.get_logger()
+    try:
+        async with async_session() as db:
+            from null_engine.core.genesis import populate_world
+            await populate_world(db, world_id, seed_prompt, extra_config)
+            # Mark world as ready
+            result = await db.execute(select(World).where(World.id == world_id))
+            world = result.scalar_one_or_none()
+            if world:
+                world.status = "ready"
+                await db.commit()
+            logger.info("genesis.background_complete", world_id=str(world_id))
+    except Exception:
+        logger.exception("genesis.background_failed", world_id=str(world_id))
+        # Mark as error
+        try:
+            async with async_session() as db:
+                result = await db.execute(select(World).where(World.id == world_id))
+                world = result.scalar_one_or_none()
+                if world:
+                    world.status = "error"
+                    await db.commit()
+        except Exception:
+            pass
+    finally:
+        _genesis_tasks.pop(world_id, None)
+
+
 @router.post("/worlds", response_model=WorldOut, status_code=201)
 async def create_world_endpoint(body: WorldCreate, db: AsyncSession = Depends(get_db)):
-    world = await create_world(db, body.seed_prompt, body.config)
+    # Create world row immediately, then populate in background
+    world = World(seed_prompt=body.seed_prompt, config=body.config or {}, status="generating")
+    db.add(world)
+    await db.flush()
+    await db.commit()
+    await db.refresh(world)
+
+    # Launch background genesis
+    task = asyncio.create_task(
+        _background_genesis(world.id, body.seed_prompt, body.config or {})
+    )
+    _genesis_tasks[world.id] = task
+
     return world
 
 

@@ -86,6 +86,8 @@
 - [x] 프론트엔드: TaxonomyTreeMap, EntityCard, StrataTimeline, BreadcrumbBar
 - [x] 프론트엔드: BookmarkDrawer, SemanticSidebar, IntelPanel StrataTab
 - [x] 프론트엔드: 위키 멘션 하이라이트, 엔티티 그래프 오버레이, 택소노미 CommandPalette
+- [x] 제네시스 진행 UI — 월드 생성 중 실시간 프로그레스 바 + 단계 추적
+- [x] 백그라운드 제네시스 — 비동기 월드 생성으로 논블로킹 응답
 
 ## Phase 5: 마무리 & 런칭
 *외부 데이터 연동과 최적화.*
