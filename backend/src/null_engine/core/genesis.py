@@ -56,13 +56,21 @@ async def create_world(db: AsyncSession, seed_prompt: str, extra_config: dict[st
     world = World(seed_prompt=seed_prompt, config=extra_config or {}, status="generating")
     db.add(world)
     await db.flush()
-
-    await populate_world(db, world.id, seed_prompt, extra_config or {})
-
-    world.status = "created"
     await db.commit()
-    await db.refresh(world)
-    logger.info("genesis: world created", world_id=str(world.id))
+    world_id = world.id
+
+    await populate_world(db, world_id, seed_prompt, extra_config or {})
+
+    # Re-fetch world since populate_world may have expunged it
+    from sqlalchemy import update
+    await db.execute(
+        update(World).where(World.id == world_id).values(status="ready")
+    )
+    await db.commit()
+
+    result = await db.execute(select(World).where(World.id == world_id))
+    world = result.scalar_one()
+    logger.info("genesis: world created", world_id=str(world_id))
     return world
 
 
