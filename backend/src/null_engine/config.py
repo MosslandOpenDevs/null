@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     llm_provider: str = "ollama"  # "ollama" | "openai" | "anthropic"
 
     # Simulation defaults
-    default_agents_per_faction: int = 5
+    default_agents_per_faction: int = 3
     default_factions: int = 4
     ticks_per_epoch: int = 10
     max_budget_usd: float = 50.0

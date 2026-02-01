@@ -1,3 +1,4 @@
+import json
 import uuid
 from typing import Any
 
@@ -21,7 +22,7 @@ Respond with JSON:
   "tech_level": "technology description",
   "description": "2-3 sentence world description",
   "factions": [
-    {{"name": "...", "description": "...", "color": "#hex", "agent_count": 25}},
+    {{"name": "...", "description": "...", "color": "#hex", "agent_count": 5}},
     ...
   ],
   "constraints": ["rule1", "rule2", ...]
@@ -66,22 +67,28 @@ async def create_world(db: AsyncSession, seed_prompt: str, extra_config: dict[st
 
 
 async def _update_progress(db: AsyncSession, world_id: uuid.UUID, step: str, step_num: int, total_steps: int, detail: str = ""):
-    """Update genesis progress in the world's config JSONB."""
-    result = await db.execute(select(World).where(World.id == world_id))
-    world = result.scalar_one_or_none()
-    if not world:
-        return
-    config = dict(world.config or {})
-    config["_genesis_progress"] = {
-        "step": step,
-        "step_num": step_num,
-        "total_steps": total_steps,
-        "detail": detail,
-        "percent": round(step_num / total_steps * 100),
+    """Update genesis progress in the world's config JSONB using a separate session to avoid expiring objects in the caller."""
+    from sqlalchemy import update
+    from sqlalchemy.dialects.postgresql import JSONB as JSONB_TYPE
+    from null_engine.db import async_session as _async_session
+
+    progress = {
+        "_genesis_progress": {
+            "step": step,
+            "step_num": step_num,
+            "total_steps": total_steps,
+            "detail": detail,
+            "percent": round(step_num / total_steps * 100),
+        }
     }
-    world.config = config
-    await db.flush()
-    await db.commit()
+    from sqlalchemy import func, cast
+    async with _async_session() as progress_db:
+        await progress_db.execute(
+            update(World)
+            .where(World.id == world_id)
+            .values(config=func.coalesce(World.config, cast({}, JSONB_TYPE)).concat(cast(progress, JSONB_TYPE)))
+        )
+        await progress_db.commit()
 
 
 async def populate_world(db: AsyncSession, world_id: uuid.UUID, seed_prompt: str, extra_config: dict[str, Any]) -> None:
@@ -109,14 +116,14 @@ async def populate_world(db: AsyncSession, world_id: uuid.UUID, seed_prompt: str
         world_config.update(extra_config)
 
     # Update world config
-    result = await db.execute(
-        select(World).where(World.id == world_id)
-    )
+    result = await db.execute(select(World).where(World.id == world_id))
     world = result.scalar_one_or_none()
     if not world:
         return
     world.config = world_config
-    await db.flush()
+    await db.commit()
+    # Expunge so ORM doesn't re-write config on future commits
+    db.expunge(world)
 
     # Step 2: Create factions
     await _update_progress(db, world_id, "factions", 2, total_steps, "Establishing factions...")
@@ -181,6 +188,7 @@ async def populate_world(db: AsyncSession, world_id: uuid.UUID, seed_prompt: str
     await _generate_world_tags(db, world_id, world_config)
 
     await db.flush()
+    await db.commit()
     logger.info("genesis: world populated", world_id=str(world_id), agents=len(all_agents))
 
 

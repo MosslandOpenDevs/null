@@ -54,7 +54,8 @@ async def _background_genesis(world_id: uuid.UUID, seed_prompt: str, extra_confi
         async with async_session() as db:
             from null_engine.core.genesis import populate_world
             await populate_world(db, world_id, seed_prompt, extra_config)
-            # Mark world as ready
+        # Mark world as ready in a fresh session
+        async with async_session() as db:
             result = await db.execute(select(World).where(World.id == world_id))
             world = result.scalar_one_or_none()
             if world:

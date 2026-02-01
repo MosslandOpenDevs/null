@@ -22,8 +22,8 @@ ROLE_MODEL_MAP: dict[str, tuple[str, str]] = {
 
 # Ollama role → model mapping (local dev)
 OLLAMA_ROLE_MODEL_MAP: dict[str, str] = {
-    "genesis_architect": "qwen2.5:32b",
-    "main_debater": "qwen2.5:32b",
+    "genesis_architect": "qwen2.5:14b",
+    "main_debater": "qwen2.5:14b",
     "reaction_agent": "qwen2.5:14b",
     "chaos_joker": "qwen2.5:14b",
     "searcher": "qwen2.5:14b",
@@ -55,7 +55,7 @@ class LLMRouter:
     @property
     def http(self) -> httpx.AsyncClient:
         if not self._http:
-            self._http = httpx.AsyncClient(timeout=120.0)
+            self._http = httpx.AsyncClient(timeout=600.0)
         return self._http
 
     def _get_model(self, role: str) -> tuple[str, str]:
