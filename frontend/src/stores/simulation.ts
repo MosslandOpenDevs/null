@@ -91,7 +91,7 @@ interface SimulationState {
   addEvent: (event: WSEvent) => void;
   setSelectedAgent: (id: string | null) => void;
   setSelectedFaction: (id: string | null) => void;
-  setIntelTab: (tab: "agent" | "wiki" | "graph" | "log" | "resonance") => void;
+  setIntelTab: (tab: "agent" | "wiki" | "graph" | "log" | "resonance" | "strata") => void;
   addHeraldMessage: (text: string) => void;
   dismissHerald: (id: string) => void;
   setTagFilter: (tag: string | null) => void;
