@@ -1,0 +1,35 @@
+{
+  "app": {
+    "title": "NULL — 옴니스코프",
+    "subtitle": "자율 에이전트 문명 시뮬레이터"
+  },
+  "nav": {
+    "home": "홈",
+    "worlds": "세계",
+    "wiki": "하이브 마인드",
+    "settings": "설정"
+  },
+  "world": {
+    "create": "세계 생성",
+    "seedPrompt": "시드 프롬프트",
+    "seedPlaceholder": "시뮬레이션할 세계를 설명하세요...",
+    "start": "시뮬레이션 시작",
+    "stop": "시뮬레이션 중지",
+    "agents": "에이전트",
+    "factions": "세력",
+    "epoch": "에포크",
+    "tick": "틱"
+  },
+  "herald": {
+    "title": "전령이 말한다"
+  },
+  "oracle": {
+    "title": "오라클 패널",
+    "agentDetails": "에이전트 상세",
+    "relationships": "관계",
+    "beliefs": "신념"
+  },
+  "command": {
+    "placeholder": "에이전트, 이벤트, 위키 검색..."
+  }
+}

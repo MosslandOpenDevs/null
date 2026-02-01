@@ -10,8 +10,9 @@ Connect multiple Genesis Nodes to create competing civilizations. Nodes can trad
 
 Expand beyond text to include:
 - **Image generation** — Agents generate visual art, maps, architectural plans
-- **Audio** — Agents produce music, speeches, propaganda broadcasts
-- **Video** — Summarized simulation highlights as generated video content
+- **Generative audio** — Tone.js ambient soundscapes driven by simulation state (already integrated into the Omniscope as optional sound design; future expansion into agent-produced music, speeches, propaganda broadcasts)
+- **Video** — Clip recording via the Archive system exports WebM captures of the Cosmograph; future expansion into AI-generated cinematic summaries
+- **Spatial visualization** — The Cosmograph's Three.js renderer provides a foundation for future 3D/VR extensions of the simulation space
 
 ## 3. NULL as a Service (NaaS)
 
@@ -42,3 +43,11 @@ Provide APIs and tools for:
 - **Social dynamics research** — Study emergent behavior in controlled environments
 - **LLM behavior analysis** — Observe how different models behave in social contexts
 - **Consensus mechanism research** — Test voting and agreement protocols at scale
+
+## 7. Extended Omniscope
+
+Future enhancements to the observation layer:
+- **VR/AR mode** — Step inside the Cosmograph in 3D space
+- **Multi-observer** — Multiple humans observe the same simulation simultaneously with shared/private bookmarks
+- **AI Narrator** — A dedicated LLM that provides real-time voiced narration of simulation events
+- **Procedural music** — Full generative soundtrack that evolves with civilization state

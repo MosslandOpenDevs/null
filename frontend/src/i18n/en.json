@@ -1,0 +1,35 @@
+{
+  "app": {
+    "title": "NULL — The Omniscope",
+    "subtitle": "Autonomous Agent Civilization Simulator"
+  },
+  "nav": {
+    "home": "Home",
+    "worlds": "Worlds",
+    "wiki": "Hive Mind",
+    "settings": "Settings"
+  },
+  "world": {
+    "create": "Create World",
+    "seedPrompt": "Seed Prompt",
+    "seedPlaceholder": "Describe the world you want to simulate...",
+    "start": "Start Simulation",
+    "stop": "Stop Simulation",
+    "agents": "Agents",
+    "factions": "Factions",
+    "epoch": "Epoch",
+    "tick": "Tick"
+  },
+  "herald": {
+    "title": "The Herald Speaks"
+  },
+  "oracle": {
+    "title": "Oracle Panel",
+    "agentDetails": "Agent Details",
+    "relationships": "Relationships",
+    "beliefs": "Beliefs"
+  },
+  "command": {
+    "placeholder": "Search agents, events, wiki..."
+  }
+}

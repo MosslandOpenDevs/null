@@ -1,0 +1,10 @@
+{
+  "name": "null-monorepo",
+  "private": true,
+  "scripts": {
+    "dev:frontend": "pnpm --filter frontend dev",
+    "build:frontend": "pnpm --filter frontend build",
+    "lint:frontend": "pnpm --filter frontend lint",
+    "test:frontend": "pnpm --filter frontend test"
+  }
+}

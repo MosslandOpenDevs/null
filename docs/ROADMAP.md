@@ -39,16 +39,37 @@
 - [ ] Implement contradiction detection
 - [ ] Add wiki versioning and history
 
-## Phase 4: God-View UI
-*Dashboard implementation.*
+## Phase 4: The Omniscope
+*Cosmograph-based spatial UI implementation.*
 
-- [ ] Set up Next.js frontend
-- [ ] Implement Trinity View layout
-- [ ] Build Chaos Stream (left panel) with WebSocket feed
-- [ ] Build Order/Wiki browser (center panel)
-- [ ] Build Analytics & Control panel (right panel)
-- [ ] Implement D3.js knowledge graph visualization
-- [ ] Add export functionality (JSON/CSV/Wiki)
+### Phase 4a: Cosmograph Core
+- [ ] Set up Next.js frontend with Three.js integration
+- [ ] Implement WebGL Cosmograph renderer (nodes, filaments, faction nebulae)
+- [ ] Build d3-force physics layout feeding into Three.js
+- [ ] Implement custom shaders for bioluminescent node effects
+- [ ] Create breathing/pulsing animation system
+- [ ] WebSocket event stream integration with Zustand store
+
+### Phase 4b: Semantic Zoom & Navigation
+- [ ] Implement 5-level semantic zoom (Cosmos → Faction → Cluster → Conversation → Agent)
+- [ ] Build crossfade transitions between zoom levels
+- [ ] Implement Timeline Ribbon with epoch color-coding and time scrubbing
+- [ ] Add timelapse playback mode (compressed simulation replay)
+
+### Phase 4c: Oracle Panel & Herald
+- [ ] Build slide-in Oracle Panel (frosted glass, context-triggered)
+- [ ] Implement agent profile, relationship history, faction wiki views
+- [ ] Build Herald notification system (narrative beats, paradigm shifts, tension alerts)
+- [ ] Implement "Catch me up" AI summary feature
+- [ ] Add universal search / command palette (`/` key)
+
+### Phase 4d: Divine Intervention & Export
+- [ ] Implement Event Drop system (drag tokens onto Cosmograph)
+- [ ] Build Whisper Mode (right-click agent → inject inner voice)
+- [ ] Create Seed Bomb mechanic (topic drop → ripple visualization)
+- [ ] Implement Archive system (bookmarks with `B`, clip recording with `R`)
+- [ ] Build story arc auto-detection and export (Markdown / JSON / SVG)
+- [ ] Add Aquarium Mode (chromeless fullscreen, mobile PWA)
 
 ## Phase 5: Polish & Launch
 *External data integration and optimization.*
@@ -56,6 +77,7 @@
 - [ ] Integrate Tavily / Perplexity for external data injection
 - [ ] Implement cost monitoring and budget controls
 - [ ] Performance optimization (caching, batching, queue management)
+- [ ] Optional Tone.js generative audio integration
 - [ ] Security audit
 - [ ] Documentation finalization
 - [ ] Beta testing with sample scenarios

@@ -2,7 +2,7 @@
 
 ## Overview
 
-NULL operates through four core engines working in sequence: **Genesis → Simulation → Documentation → Storage**.
+NULL operates through four core engines working in sequence: **Genesis → Simulation → Documentation → Storage**, with a real-time presentation layer (the Omniscope) streaming simulation state to observers.
 
 ## Core Engines
 
@@ -47,6 +47,41 @@ Controls the temporal flow of the simulation.
 - Schedule generational events (leadership changes, cultural movements)
 - Manage time-based decay and evolution of agent beliefs
 
+## 5. WebSocket Event Streaming
+
+Real-time bridge between the simulation backend and the Omniscope frontend.
+
+**Event Types:**
+- `agent.state` — Agent status changes (active, debating, idle, conspiring)
+- `agent.message` — New conversation messages between agents
+- `relation.update` — Alliance formed, broken, or shifted
+- `epoch.transition` — Epoch boundary crossed, new era begins
+- `event.triggered` — Random or injected event fired
+- `wiki.edit` — Wiki page created or modified
+- `consensus.reached` — Canon/Legends status changed
+
+**Protocol:**
+- WebSocket for bidirectional communication (Divine Intervention commands upstream)
+- EventSource (SSE) fallback for read-only observers
+- Message format: JSON with `{ type, timestamp, epoch, payload }` envelope
+- Client-side Zustand store consumes events and updates Cosmograph state
+
+## 6. Herald Pipeline
+
+AI-powered narrative summarization layer that transforms raw simulation events into human-readable notifications.
+
+**Pipeline:**
+1. **Event Aggregator**: Collects significant events over a sliding window (configurable, default ~30 seconds)
+2. **Significance Filter**: Scores events by narrative impact (faction shifts, betrayals, consensus changes rank highest)
+3. **Prose Generator**: LLM call (lightweight model) converts scored events into narrative prose
+4. **Delivery**: Pushes Herald cards to the Omniscope notification system and stores in Herald history
+
+**"Catch Me Up" Flow:**
+1. Client requests summary since last-seen timestamp
+2. Backend retrieves all Herald entries in range
+3. LLM generates a condensed 3-5 sentence briefing
+4. Delivered as a special Herald card with extended display time
+
 ## Architecture Flow
 
 ```
@@ -56,7 +91,7 @@ Controls the temporal flow of the simulation.
     ↓
 [Simulation Loop]
     ├── Agent Conversations (debate, negotiate, conspire)
-    ├── Event System (random events, external injections)
+    ├── Event System (random events, external injections, divine intervention)
     ├── Time Dilation (epoch progression)
     └── Consensus Engine (fact establishment)
     ↓
@@ -64,7 +99,11 @@ Controls the temporal flow of the simulation.
     ↓
 [Storage Layer] → PostgreSQL + pgvector + Redis Cache
     ↓
-[Export] → JSON / CSV / Wiki / API
+[Event Stream] → WebSocket / SSE
+    ↓
+[Omniscope] → Cosmograph + Oracle Panel + Herald + Timeline Ribbon
+    ↓
+[Export] → JSON / CSV / Wiki / WebM / SVG / Markdown Narratives
 ```
 
 ## Data Flow
@@ -74,4 +113,6 @@ Controls the temporal flow of the simulation.
 3. **Agents → Conversations:** Multi-agent debates, alliances, conflicts
 4. **Conversations → Hive Mind:** Structured documentation of outcomes
 5. **Hive Mind → Storage:** Persistent knowledge base with vector embeddings
-6. **Storage → Dashboard:** God-View visualization and export
+6. **Storage → Event Stream:** Real-time WebSocket events to connected clients
+7. **Event Stream → Omniscope:** Cosmograph visualization, Oracle Panel, Herald notifications
+8. **Herald Pipeline:** Parallel processing of events into narrative prose

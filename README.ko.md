@@ -23,7 +23,9 @@
 |---|---|
 | **제네시스 노드** | 모든 주제, 시대, 시나리오를 중심으로 에이전트 커뮤니티를 즉시 생성 |
 | **하이브 마인드** | 에이전트가 자체적으로 유지하는 실시간 위키 — 문명 진행을 자체 문서화 |
-| **갓뷰 대시보드** | 관찰, 분석, 제어를 위한 트리니티 패널 인터페이스 |
+| **옴니스코프 (The Omniscope)** | 코스모그래프 기반 공간 관측소 — 우주에서 개별 에이전트의 생각까지 줌 |
+| **헤럴드 (The Herald)** | 이야기가 전개되는 대로 알려주는 AI 생성 내러티브 알림 |
+| **아카이브 (The Archive)** | 상태 북마크, 클립 녹화, 스토리 아크를 Markdown/JSON/SVG/WebM으로 내보내기 |
 | **데이터 내보내기** | 합성 데이터셋 원클릭 추출 (JSON/CSV/Wiki) |
 
 ## ◼ 기술 스택 (예정)
@@ -31,7 +33,9 @@
 - **오케스트레이션:** Python + LangGraph / AutoGen
 - **LLM:** GPT-4o (핵심), Claude (토론), GPT-4o-mini / Gemini Flash (대량)
 - **저장소:** PostgreSQL + pgvector, Redis
-- **프론트엔드:** Next.js + D3.js
+- **프론트엔드:** Next.js + Three.js (코스모그래프) + Zustand
+- **오디오:** Tone.js (제너레이티브 앰비언트)
+- **실시간:** WebSocket + EventSource
 - **검색:** Tavily / Perplexity API
 
 ## ◼ 문서
@@ -39,9 +43,9 @@
 | 문서 | 설명 |
 |---|---|
 | [비전 & 철학](docs/VISION.ko.md) | 핵심 철학과 4대 기둥 |
-| [시스템 아키텍처](docs/architecture/SYSTEM_ARCHITECTURE.ko.md) | 엔진 설계와 데이터 흐름 |
+| [시스템 아키텍처](docs/architecture/SYSTEM_ARCHITECTURE.ko.md) | 엔진 설계, 데이터 흐름, 이벤트 스트리밍 |
 | [모델 전략](docs/architecture/MODEL_STRATEGY.ko.md) | LLM 역할 배분과 비용 최적화 |
-| [UI/UX 명세](docs/architecture/UI_UX_SPEC.ko.md) | 갓뷰 대시보드 명세 |
+| [UI/UX 명세](docs/architecture/UI_UX_SPEC.ko.md) | 옴니스코프 — 코스모그래프 공간 UI 명세 |
 | [로드맵](docs/ROADMAP.ko.md) | 개발 단계와 마일스톤 |
 | [기술적 과제](docs/CHALLENGES.ko.md) | 기술적 과제와 해결 전략 |
 | [시나리오: 네온 조선](docs/scenarios/NEON_JOSEON.ko.md) | 시뮬레이션 예시 워크스루 |
@@ -57,7 +61,7 @@
 - [ ] **Phase 1** — 코어 엔진 (에이전트 오케스트레이션, 페르소나 생성)
 - [ ] **Phase 2** — 시뮬레이션 루프 (대화 엔진, 이벤트 시스템)
 - [ ] **Phase 3** — 하이브 마인드 (자동 위키, 벡터 DB)
-- [ ] **Phase 4** — 갓뷰 UI (대시보드)
+- [ ] **Phase 4** — 옴니스코프 (코스모그래프 UI: 4a 코어 → 4b 줌 → 4c 오라클/헤럴드 → 4d 개입/내보내기)
 - [ ] **Phase 5** — 마무리 & 런칭 (외부 데이터, 최적화)
 
 전체 [로드맵](docs/ROADMAP.ko.md)에서 상세 내용을 확인하세요.

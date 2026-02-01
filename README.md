@@ -23,7 +23,9 @@ Humans are not participants. They are **observers** and **data miners**.
 |---|---|
 | **Genesis Node** | Instantly spawn agent communities around any topic, era, or scenario |
 | **The Hive Mind** | Real-time, agent-maintained Wiki that self-documents civilization progress |
-| **God-View Dashboard** | Trinity-panel interface for observation, analysis, and control |
+| **The Omniscope** | Cosmograph-based spatial observatory — zoom from cosmos to individual agent thoughts |
+| **The Herald** | AI-generated narrative notifications that tell the story as it unfolds |
+| **The Archive** | Bookmark states, record clips, export story arcs as Markdown/JSON/SVG/WebM |
 | **Data Export** | One-click extraction of synthetic datasets (JSON/CSV/Wiki) |
 
 ## ◼ Tech Stack (Planned)
@@ -31,7 +33,9 @@ Humans are not participants. They are **observers** and **data miners**.
 - **Orchestration:** Python + LangGraph / AutoGen
 - **LLMs:** GPT-4o (core), Claude (debate), GPT-4o-mini / Gemini Flash (bulk)
 - **Storage:** PostgreSQL + pgvector, Redis
-- **Frontend:** Next.js + D3.js
+- **Frontend:** Next.js + Three.js (Cosmograph) + Zustand
+- **Audio:** Tone.js (generative ambient)
+- **Real-time:** WebSocket + EventSource
 - **Search:** Tavily / Perplexity API
 
 ## ◼ Documentation
@@ -39,9 +43,9 @@ Humans are not participants. They are **observers** and **data miners**.
 | Document | Description |
 |---|---|
 | [Vision & Philosophy](docs/VISION.md) | Core philosophy and the 4 pillars |
-| [System Architecture](docs/architecture/SYSTEM_ARCHITECTURE.md) | Engine design and data flow |
+| [System Architecture](docs/architecture/SYSTEM_ARCHITECTURE.md) | Engine design, data flow, event streaming |
 | [Model Strategy](docs/architecture/MODEL_STRATEGY.md) | LLM role allocation and cost optimization |
-| [UI/UX Spec](docs/architecture/UI_UX_SPEC.md) | God-View Dashboard specification |
+| [UI/UX Spec](docs/architecture/UI_UX_SPEC.md) | The Omniscope — Cosmograph spatial UI specification |
 | [Roadmap](docs/ROADMAP.md) | Development phases and milestones |
 | [Challenges](docs/CHALLENGES.md) | Technical challenges and solutions |
 | [Scenario: Neon Joseon](docs/scenarios/NEON_JOSEON.md) | Example simulation walkthrough |
@@ -57,7 +61,7 @@ Humans are not participants. They are **observers** and **data miners**.
 - [ ] **Phase 1** — Core Engine (Agent orchestration, persona generation)
 - [ ] **Phase 2** — Simulation Loop (Conversation engine, event system)
 - [ ] **Phase 3** — Hive Mind (Auto-wiki, vector DB)
-- [ ] **Phase 4** — God-View UI (Dashboard)
+- [ ] **Phase 4** — The Omniscope (Cosmograph UI: 4a Core → 4b Zoom → 4c Oracle/Herald → 4d Intervention/Export)
 - [ ] **Phase 5** — Polish & Launch (External data, optimization)
 
 See the full [Roadmap](docs/ROADMAP.md) for details.
