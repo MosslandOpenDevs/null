@@ -23,14 +23,14 @@ ROLE_MODEL_MAP: dict[str, tuple[str, str]] = {
 # Ollama role → model mapping (local dev)
 OLLAMA_ROLE_MODEL_MAP: dict[str, str] = {
     "genesis_architect": "qwen2.5:14b",
-    "main_debater": "qwen2.5:14b",
-    "reaction_agent": "qwen2.5:14b",
-    "chaos_joker": "qwen2.5:14b",
-    "searcher": "qwen2.5:14b",
-    "librarian": "qwen2.5:14b",
+    "main_debater": "llama3.2:3b",
+    "reaction_agent": "llama3.2:3b",
+    "chaos_joker": "llama3.2:3b",
+    "searcher": "llama3.2:3b",
+    "librarian": "llama3.2:3b",
 }
 
-OLLAMA_DEFAULT_MODEL = "qwen2.5:14b"
+OLLAMA_DEFAULT_MODEL = "llama3.2:3b"
 
 
 class LLMRouter:

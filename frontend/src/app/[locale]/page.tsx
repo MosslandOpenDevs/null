@@ -2,10 +2,13 @@
 
 import { useTranslations } from "next-intl";
 import { useState, useEffect, useRef, useMemo } from "react";
-import { useSimulationStore } from "@/stores/simulation";
+import { useParams } from "next/navigation";
+import { useSimulationStore, WorldData } from "@/stores/simulation";
 import { CommandPalette } from "@/components/CommandPalette";
 import { TaxonomyTreeMap } from "@/components/TaxonomyTreeMap";
 import { BookmarkDrawer } from "@/components/BookmarkDrawer";
+import { WorldCard } from "@/components/WorldCard";
+import { IncubatorChip } from "@/components/IncubatorChip";
 import { useBookmarkStore } from "@/stores/bookmarks";
 import { useTaxonomyStore } from "@/stores/taxonomy";
 
@@ -36,8 +39,10 @@ const INITIAL_EXAMPLES = [
 
 export default function HomePage() {
   const t = useTranslations();
+  const { locale } = useParams<{ locale: string }>();
   const [seedPrompt, setSeedPrompt] = useState("");
   const [creating, setCreating] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
   const [examples, setExamples] = useState<string[]>(INITIAL_EXAMPLES);
   const [exampleIndex, setExampleIndex] = useState(0);
   const [displayedExample, setDisplayedExample] = useState("");
@@ -48,6 +53,24 @@ export default function HomePage() {
   const { fetchNode } = useTaxonomyStore();
   const [taxonomyWorldFilter, setTaxonomyWorldFilter] = useState<string | null>(null);
   const [taxonomyWorlds, setTaxonomyWorlds] = useState<Array<{ id: string; seed_prompt: string; status: string }>>([]);
+
+  // Split worlds into mature (Observatory) vs actively incubating
+  const { matureWorlds, incubatingWorlds } = useMemo(() => {
+    const mature: WorldData[] = [];
+    const incubating: WorldData[] = [];
+    for (const w of autoWorlds) {
+      const convCount = w.conversation_count ?? 0;
+      const wikiCount = w.wiki_page_count ?? 0;
+      const isMature = convCount >= 5 && wikiCount >= 1;
+      if (isMature) {
+        mature.push(w);
+      } else if (w.status === "generating" || w.status === "running") {
+        // Only show actively running/generating worlds in incubator
+        incubating.push(w);
+      }
+    }
+    return { matureWorlds: mature, incubatingWorlds: incubating };
+  }, [autoWorlds]);
 
   // Collect all unique tags from worlds
   const allTags = useMemo(() => {
@@ -116,6 +139,9 @@ export default function HomePage() {
     setCreating(true);
     try {
       await createWorld(seedPrompt);
+      setSeedPrompt("");
+      setToast("World queued — check the Incubator");
+      setTimeout(() => setToast(null), 4000);
     } finally {
       setCreating(false);
     }
@@ -126,93 +152,60 @@ export default function HomePage() {
   };
 
   return (
-    <main className="flex flex-col items-center justify-center min-h-screen p-8">
+    <main className="flex flex-col items-center min-h-screen p-8">
       <h1 className="text-4xl font-bold mb-2 tracking-tight">
         {t("app.title")}
       </h1>
-      <p className="text-gray-400 mb-12">{t("app.subtitle")}</p>
+      <p className="text-gray-400 mb-8">{t("app.subtitle")}</p>
 
-      <div className="w-full max-w-2xl space-y-4">
-        {/* Rotating example */}
-        <button
-          onClick={handleExampleClick}
-          className="w-full text-left px-4 py-3 rounded-lg border border-gray-800 bg-void-light/50 hover:border-accent/50 transition-colors group"
-        >
-          <span className="text-[10px] uppercase tracking-widest text-gray-600 group-hover:text-accent/70">
-            Example — click to use
-          </span>
-          <p className="text-sm text-gray-400 mt-1 min-h-[2.5rem]">
-            {displayedExample}
-            <span className="inline-block w-[2px] h-4 bg-accent/70 ml-0.5 animate-pulse align-middle" />
-          </p>
-        </button>
+      {/* Toast */}
+      {toast && (
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2 bg-accent text-void font-mono text-[11px] uppercase tracking-wider rounded shadow-lg">
+          {toast}
+        </div>
+      )}
 
-        <textarea
-          value={seedPrompt}
-          onChange={(e) => setSeedPrompt(e.target.value)}
-          placeholder={t("world.seedPlaceholder")}
-          className="w-full h-32 bg-void-light border border-gray-700 rounded-lg p-4 text-white placeholder-gray-500 focus:border-accent focus:outline-none resize-none"
-        />
-        <button
-          onClick={handleCreate}
-          disabled={creating || !seedPrompt.trim()}
-          className="w-full py-3 bg-accent hover:bg-accent/80 disabled:opacity-50 rounded-lg font-semibold transition-colors"
-        >
-          {creating ? "Launching genesis..." : t("world.create")}
-        </button>
-      </div>
-
-      {/* Taxonomy TreeMap */}
-      <div className="w-full max-w-2xl mt-8">
-        <TaxonomyTreeMap
-          onSelectNode={async (nodeId) => {
-            setTaxonomyWorldFilter(nodeId);
-            try {
-              const resp = await fetch(`${API_URL}/api/taxonomy/tree/${nodeId}/worlds`);
-              if (resp.ok) {
-                setTaxonomyWorlds(await resp.json());
-              }
-            } catch {
-              setTaxonomyWorlds([]);
-            }
-          }}
-        />
-      </div>
-
-      {/* Taxonomy-filtered worlds */}
-      {taxonomyWorldFilter && taxonomyWorlds.length > 0 && (
-        <div className="w-full max-w-2xl mt-4">
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-sm uppercase tracking-widest text-gray-600">
-              Worlds in category
-            </h2>
-            <button
-              onClick={() => {
-                setTaxonomyWorldFilter(null);
-                setTaxonomyWorlds([]);
-              }}
-              className="text-[9px] font-mono text-hud-muted hover:text-accent uppercase"
-            >
-              CLEAR
-            </button>
-          </div>
-          <div className="space-y-1">
-            {taxonomyWorlds.map((w) => (
-              <a
-                key={w.id}
-                href={`/en/world/${w.id}`}
-                className="block px-4 py-2 rounded-lg border border-accent/30 bg-accent/5 hover:bg-accent/10 transition-all"
-              >
-                <p className="text-sm text-gray-300 truncate">{w.seed_prompt}</p>
-              </a>
+      {/* ===== OBSERVATORY — Mature worlds (TOP, hero section) ===== */}
+      {matureWorlds.length > 0 && (
+        <div className="w-full max-w-5xl mb-12">
+          <h2 className="text-sm uppercase tracking-widest text-gray-600 mb-4">
+            Observatory — Mature Worlds
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {matureWorlds.map((w) => (
+              <WorldCard key={w.id} world={w} locale={locale} />
             ))}
           </div>
         </div>
       )}
 
-      {/* Tag filter */}
+      {/* Empty state when no mature worlds */}
+      {matureWorlds.length === 0 && (
+        <div className="w-full max-w-5xl mb-12 py-12 text-center border border-dashed border-gray-800 rounded-lg">
+          <div className="font-mono text-[11px] text-hud-muted mb-1">NO MATURE WORLDS YET</div>
+          <div className="font-mono text-[9px] text-gray-600">
+            Worlds need 5+ conversations and 1+ wiki page to appear here
+          </div>
+        </div>
+      )}
+
+      {/* ===== INCUBATOR — Only generating/running worlds ===== */}
+      {incubatingWorlds.length > 0 && (
+        <div className="w-full max-w-5xl mb-12">
+          <h2 className="text-sm uppercase tracking-widest text-gray-600 mb-3">
+            Incubator — Active
+          </h2>
+          <div className="flex flex-wrap gap-2">
+            {incubatingWorlds.map((w) => (
+              <IncubatorChip key={w.id} world={w} locale={locale} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ===== Tag filter ===== */}
       {allTags.length > 0 && (
-        <div className="w-full max-w-2xl mt-8">
+        <div className="w-full max-w-5xl mb-8">
           <h2 className="text-sm uppercase tracking-widest text-gray-600 mb-3">
             Filter by tag
           </h2>
@@ -244,55 +237,87 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Auto-generated worlds feed */}
-      {autoWorlds.length > 0 && (
-        <div className="w-full max-w-2xl mt-8">
-          <h2 className="text-sm uppercase tracking-widest text-gray-600 mb-4">
-            Live Worlds — auto-generated
-          </h2>
-          <div className="space-y-2">
-            {autoWorlds.map((w) => {
-              const tags = worldTags[w.id] || [];
-              return (
-                <a
-                  key={w.id}
-                  href={`/en/world/${w.id}`}
-                  className="block px-4 py-3 rounded-lg border border-gray-800 bg-void-light/30 hover:border-accent/40 hover:bg-void-light/60 transition-all group"
-                >
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm text-gray-300 group-hover:text-white truncate flex-1 mr-4">
-                      {w.seed_prompt}
-                    </p>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <span className={`inline-block w-1.5 h-1.5 rounded-full ${
-                        w.status === "running" ? "bg-green-500 animate-pulse" :
-                        w.status === "generating" ? "bg-accent animate-spin rounded-none rotate-45" :
-                        "bg-gray-600"
-                      }`} />
-                      <span className="text-[10px] text-gray-500 uppercase">
-                        {w.status}
-                      </span>
-                    </div>
-                  </div>
-                  {/* World tags */}
-                  {tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-2">
-                      {tags.map((t) => (
-                        <span
-                          key={t.tag}
-                          className="px-1.5 py-0.5 text-[8px] font-mono uppercase tracking-wider text-gray-500 border border-gray-700 rounded"
-                        >
-                          {t.tag}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </a>
-              );
-            })}
+      {/* ===== Taxonomy TreeMap ===== */}
+      <div className="w-full max-w-5xl mb-8">
+        <TaxonomyTreeMap
+          onSelectNode={async (nodeId) => {
+            setTaxonomyWorldFilter(nodeId);
+            try {
+              const resp = await fetch(`${API_URL}/api/taxonomy/tree/${nodeId}/worlds`);
+              if (resp.ok) {
+                setTaxonomyWorlds(await resp.json());
+              }
+            } catch {
+              setTaxonomyWorlds([]);
+            }
+          }}
+        />
+      </div>
+
+      {/* Taxonomy-filtered worlds */}
+      {taxonomyWorldFilter && taxonomyWorlds.length > 0 && (
+        <div className="w-full max-w-5xl mb-8">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-sm uppercase tracking-widest text-gray-600">
+              Worlds in category
+            </h2>
+            <button
+              onClick={() => {
+                setTaxonomyWorldFilter(null);
+                setTaxonomyWorlds([]);
+              }}
+              className="text-[9px] font-mono text-hud-muted hover:text-accent uppercase"
+            >
+              CLEAR
+            </button>
+          </div>
+          <div className="space-y-1">
+            {taxonomyWorlds.map((w) => (
+              <a
+                key={w.id}
+                href={`/${locale}/world/${w.id}`}
+                className="block px-4 py-2 rounded-lg border border-accent/30 bg-accent/5 hover:bg-accent/10 transition-all"
+              >
+                <p className="text-sm text-gray-300 truncate">{w.seed_prompt}</p>
+              </a>
+            ))}
           </div>
         </div>
       )}
+
+      {/* ===== CREATE WORLD (bottom — secondary action) ===== */}
+      <div className="w-full max-w-2xl space-y-4 mt-4 pt-8 border-t border-gray-800/50">
+        <h2 className="text-sm uppercase tracking-widest text-gray-600 mb-2 text-center">
+          Launch New World
+        </h2>
+
+        <button
+          onClick={handleExampleClick}
+          className="w-full text-left px-4 py-3 rounded-lg border border-gray-800 bg-void-light/50 hover:border-accent/50 transition-colors group"
+        >
+          <span className="text-[10px] uppercase tracking-widest text-gray-600 group-hover:text-accent/70">
+            Example — click to use
+          </span>
+          <p className="text-sm text-gray-400 mt-1 min-h-[2.5rem]">
+            {displayedExample}
+            <span className="inline-block w-[2px] h-4 bg-accent/70 ml-0.5 animate-pulse align-middle" />
+          </p>
+        </button>
+
+        <textarea
+          value={seedPrompt}
+          onChange={(e) => setSeedPrompt(e.target.value)}
+          placeholder={t("world.seedPlaceholder")}
+          className="w-full h-32 bg-void-light border border-gray-700 rounded-lg p-4 text-white placeholder-gray-500 focus:border-accent focus:outline-none resize-none"
+        />
+        <button
+          onClick={handleCreate}
+          disabled={creating || !seedPrompt.trim()}
+          className="w-full py-3 bg-accent hover:bg-accent/80 disabled:opacity-50 rounded-lg font-semibold transition-colors"
+        >
+          {creating ? "Queuing genesis..." : t("world.create")}
+        </button>
+      </div>
 
       <CommandPalette />
       <BookmarkDrawer />

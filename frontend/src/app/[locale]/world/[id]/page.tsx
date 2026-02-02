@@ -5,9 +5,8 @@ import { useParams } from "next/navigation";
 import { useSimulationStore } from "@/stores/simulation";
 import { useWSClient } from "@/lib/wsClient";
 import { StatusBar } from "@/components/hud/StatusBar";
-import { FactionSidebar } from "@/components/hud/FactionSidebar";
-import { LiveFeed } from "@/components/hud/LiveFeed";
-import { IntelPanel } from "@/components/hud/IntelPanel";
+import { KnowledgeHub } from "@/components/KnowledgeHub";
+import { SystemPulse } from "@/components/SystemPulse";
 import { TimelineRibbon } from "@/components/TimelineRibbon";
 import { CommandPalette } from "@/components/CommandPalette";
 import { BreadcrumbBar } from "@/components/BreadcrumbBar";
@@ -25,7 +24,7 @@ const GENERATING_MESSAGES = [
 ];
 
 export default function WorldPage() {
-  const { id } = useParams<{ id: string }>();
+  const { id, locale } = useParams<{ id: string; locale: string }>();
   const { connect, disconnect } = useWSClient();
   const { fetchWorld, world } = useSimulationStore();
   const { setDrawerOpen } = useBookmarkStore();
@@ -119,8 +118,8 @@ export default function WorldPage() {
         <div className="font-mono text-[9px] text-hud-muted">
           World creation encountered an error.
         </div>
-        <a href="/en" className="font-mono text-[10px] text-accent hover:text-accent/80">
-          ← BACK TO HOME
+        <a href={`/${locale}`} className="font-mono text-[10px] text-accent hover:text-accent/80">
+          &larr; BACK TO OBSERVATORY
         </a>
       </div>
     );
@@ -133,7 +132,7 @@ export default function WorldPage() {
       {/* Breadcrumb */}
       <BreadcrumbBar
         items={[
-          { label: "Home", href: "/en" },
+          { label: "Observatory", href: `/${locale}` },
           { label: world.seed_prompt.slice(0, 40) + (world.seed_prompt.length > 40 ? "..." : "") },
         ]}
       />
@@ -141,11 +140,12 @@ export default function WorldPage() {
       {/* Status bar */}
       <StatusBar />
 
-      {/* Main content: 3-column layout */}
+      {/* Main content: 2-column layout — KnowledgeHub (left ~70%) + SystemPulse (right ~30%) */}
       <div className="flex flex-1 min-h-0">
-        <FactionSidebar />
-        <LiveFeed />
-        <IntelPanel />
+        <div className="flex-1 min-w-0">
+          <KnowledgeHub />
+        </div>
+        <SystemPulse />
       </div>
 
       {/* Timeline */}

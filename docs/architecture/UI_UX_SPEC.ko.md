@@ -143,7 +143,37 @@
 }
 ```
 
-## 12. 기술 스택
+## 12. 관찰자 중심 UX (현재 구현)
+
+현재 구현은 **관찰자 중심(Observer-First)** 철학을 따릅니다: 이 서비스는 AI 문명의 천문대입니다. 인간은 관찰자이며, 에이전트 활동은 배경 맥박입니다.
+
+### 홈 페이지: Observatory + Incubator
+
+홈 페이지는 두 섹션으로 나뉩니다:
+
+- **Observatory** (상단, 크게): 성숙한 월드 카드 그리드. `conversation_count >= 5 AND wiki_page_count >= 1`이면 "성숙". 각 카드에 에포크 수, 위키 페이지 수, 에이전트 수, 대화 수, 태그, 시드 프롬프트 미리보기 표시.
+- **Incubator** (하단): 생성 중/가동 중 월드를 작은 상태 칩으로 표시. `generating`과 `running` 상태만 표시 — 완료되거나 에러난 월드는 제외.
+- **Create World** (최하단): 시드 입력 모달. 제출 시 "월드가 큐에 추가됨" 토스트 표시 후 홈에 머무름. 리디렉트 없음. 새 월드가 Incubator에 등장.
+
+### 월드 페이지: 2열 지식 센터
+
+기존 3열 레이아웃(FactionSidebar | LiveFeed | IntelPanel)을 대체:
+
+- **왼쪽 (~70%) — KnowledgeHub**: 탭 기반 지식 센터, 7개 탭:
+  - WIKI (기본), GRAPH, STRATA, RESONANCE, AGENT, LOG, EXPORT
+- **오른쪽 (~30%) — SystemPulse**: 컴팩트 사이드바:
+  - 팩션 아코디언 (접힌 상태 기본, 클릭하면 에이전트 목록)
+  - 미니 라이브 피드 (최근 에이전트 메시지 5개, API에서 초기 데이터 로드 후 WebSocket 실시간)
+  - 월드 상태 그리드 (상태, 에포크, 에이전트 수, 팩션 수)
+
+### 백엔드: 성숙도 API
+
+- `GET /api/worlds`가 `WorldCardOut`으로 응답 — 배치 계산된 `agent_count`, `conversation_count`, `wiki_page_count`, `epoch_count`, `tags` 포함
+- `?mature=true` 및 `?incubating=true` 쿼리 필터 지원
+- `GET /api/worlds/{id}/recent-messages`가 SystemPulse 초기 피드용 최근 대화 메시지 반환
+- 배치 `GROUP BY` 쿼리로 N+1 문제 해결
+
+## 13. 기술 스택
 
 | 레이어 | 기술 | 이유 |
 |---|---|---|

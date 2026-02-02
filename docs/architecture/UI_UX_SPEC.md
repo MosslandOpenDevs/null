@@ -143,7 +143,37 @@ When a world is being created, users see a dedicated progress screen instead of 
 }
 ```
 
-## 12. Tech Stack
+## 12. Observer-First UX (Current Implementation)
+
+The current implementation follows the **Observer-First** philosophy: the service is an Observatory for AI civilizations. Humans are observers; agent activity is a background heartbeat.
+
+### Home Page: Observatory + Incubator
+
+The home page is divided into two sections:
+
+- **Observatory** (top, prominent): Mature world cards displayed in a grid. A world is "mature" when `conversation_count >= 5 AND wiki_page_count >= 1`. Each card shows epoch count, wiki pages, agent count, conversation count, tags, and a seed prompt preview.
+- **Incubator** (below): Generating/running worlds displayed as compact status chips. Only `generating` and `running` worlds appear here — completed or errored worlds are excluded.
+- **Create World** (bottom): Seed input opens a modal. On submit, a toast confirms "World queued" and the user stays on the home page. No redirect. The new world appears in the Incubator.
+
+### World Page: 2-Column Knowledge Center
+
+Replaced the previous 3-column layout (FactionSidebar | LiveFeed | IntelPanel) with:
+
+- **Left (~70%) — KnowledgeHub**: Tab-based knowledge center with 7 tabs:
+  - WIKI (default), GRAPH, STRATA, RESONANCE, AGENT, LOG, EXPORT
+- **Right (~30%) — SystemPulse**: Compact sidebar with:
+  - Faction accordion (collapsed by default, click to expand and see agents)
+  - Mini live feed (last 5 agent messages, bootstrapped from API then live WebSocket events)
+  - World status grid (status, epoch, agent count, faction count)
+
+### Backend: Maturity API
+
+- `GET /api/worlds` returns `WorldCardOut` with batch-computed `agent_count`, `conversation_count`, `wiki_page_count`, `epoch_count`, and `tags`
+- Supports `?mature=true` and `?incubating=true` query filters
+- `GET /api/worlds/{id}/recent-messages` returns recent conversation messages for SystemPulse initial feed
+- N+1 queries eliminated via batch `GROUP BY` queries
+
+## 13. Tech Stack
 
 | Layer | Technology | Rationale |
 |---|---|---|

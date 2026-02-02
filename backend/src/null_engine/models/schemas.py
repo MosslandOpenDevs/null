@@ -157,6 +157,24 @@ class WorldWithTagsOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+# --- WorldCardOut (maturity metadata) ---
+class WorldCardOut(BaseModel):
+    id: uuid.UUID
+    seed_prompt: str
+    config: dict[str, Any]
+    status: str
+    current_epoch: int
+    current_tick: int
+    created_at: datetime
+    tags: list[WorldTagOut] = Field(default_factory=list)
+    agent_count: int = 0
+    conversation_count: int = 0
+    wiki_page_count: int = 0
+    epoch_count: int = 0
+
+    model_config = {"from_attributes": True}
+
+
 # --- Concept Cluster ---
 class ClusterOut(BaseModel):
     id: uuid.UUID

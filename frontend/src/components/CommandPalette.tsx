@@ -2,12 +2,14 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
+import { useParams } from "next/navigation";
 import { useSimulationStore } from "@/stores/simulation";
 import { useMultiverseStore, GlobalSearchResult } from "@/stores/multiverse";
 import { useTaxonomyStore, TaxonomyNode } from "@/stores/taxonomy";
 
 export function CommandPalette() {
   const t = useTranslations("command");
+  const { locale } = useParams<{ locale: string }>();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [mode, setMode] = useState<"local" | "global" | "taxonomy">("local");
@@ -50,11 +52,11 @@ export function CommandPalette() {
     }
   }, [mode, fetchTree]);
 
+  const q = query.toLowerCase();
+
   const filteredNodes = mode === "taxonomy" && query
     ? rootNodes.filter((n) => n.label.toLowerCase().includes(q))
     : rootNodes;
-
-  const q = query.toLowerCase();
 
   const agentResults = mode === "local" && q
     ? agents.filter(
@@ -199,7 +201,7 @@ export function CommandPalette() {
                   key={node.id}
                   onClick={() => {
                     // Navigate to taxonomy filter on home page
-                    window.location.href = `/en?taxonomy=${node.id}`;
+                    window.location.href = `/${locale}?taxonomy=${node.id}`;
                   }}
                   className="w-full px-4 py-2 text-left hover:bg-accent/10 flex items-center gap-3 transition-colors"
                 >
@@ -231,12 +233,12 @@ export function CommandPalette() {
                 No results found across worlds
               </div>
             )}
-            {searchResults.map((result: GlobalSearchResult) => (
+            {[...searchResults].sort((a, b) => b.score - a.score).map((result: GlobalSearchResult) => (
               <button
                 key={`${result.entity_type}-${result.entity_id}`}
                 onClick={() => {
                   // Navigate to the world containing the result
-                  window.location.href = `/en/world/${result.world_id}`;
+                  window.location.href = `/${locale}/world/${result.world_id}`;
                 }}
                 className="w-full px-4 py-2 text-left hover:bg-accent/10 flex items-center gap-3 transition-colors"
               >

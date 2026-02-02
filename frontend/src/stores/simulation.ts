@@ -9,6 +9,11 @@ export interface WorldData {
   status: string;
   current_epoch: number;
   current_tick: number;
+  agent_count?: number;
+  conversation_count?: number;
+  wiki_page_count?: number;
+  epoch_count?: number;
+  tags?: Array<{ tag: string; weight: number }>;
 }
 
 export interface AgentData {
@@ -72,7 +77,7 @@ interface SimulationState {
   events: WSEvent[];
   selectedAgent: string | null;
   selectedFaction: string | null;
-  intelTab: "agent" | "wiki" | "graph" | "log" | "resonance" | "strata";
+  intelTab: "agent" | "wiki" | "graph" | "log" | "resonance" | "strata" | "export";
   heraldMessages: Array<{ id: string; text: string; timestamp: number }>;
   autoWorlds: WorldData[];
   worldTags: Record<string, Array<{ tag: string; weight: number }>>;
@@ -91,7 +96,7 @@ interface SimulationState {
   addEvent: (event: WSEvent) => void;
   setSelectedAgent: (id: string | null) => void;
   setSelectedFaction: (id: string | null) => void;
-  setIntelTab: (tab: "agent" | "wiki" | "graph" | "log" | "resonance" | "strata") => void;
+  setIntelTab: (tab: "agent" | "wiki" | "graph" | "log" | "resonance" | "strata" | "export") => void;
   addHeraldMessage: (text: string) => void;
   dismissHerald: (id: string) => void;
   setTagFilter: (tag: string | null) => void;
@@ -121,11 +126,9 @@ export const useSimulationStore = create<SimulationState>((set, get) => ({
       body: JSON.stringify({ seed_prompt: seedPrompt }),
     });
     const world = await resp.json();
-    set({ world });
-    // Redirect immediately — world page will handle the "generating" state
-    if (typeof window !== "undefined") {
-      window.location.href = `/en/world/${world.id}`;
-    }
+    // No redirect — stay on home page, world appears in Incubator
+    // Refresh the world list so the new world shows up
+    get().fetchAutoWorlds();
   },
 
   fetchWorld: async (id: string) => {

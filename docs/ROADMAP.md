@@ -89,6 +89,23 @@
 - [x] Genesis Progress UI — Real-time progress bar with step tracking during world creation
 - [x] Background Genesis — Non-blocking world creation with async population
 
+## Phase 4f: Observer-First UX
+*Knowledge-centered redesign with maturity-based world organization.*
+
+- [x] Backend: WorldCardOut schema with maturity metadata
+- [x] Backend: Batch N+1 query optimization for world listing
+- [x] Backend: `GET /worlds?mature=true&incubating=true` maturity filters
+- [x] Backend: `GET /worlds/{id}/recent-messages` for SystemPulse initial feed
+- [x] Frontend: Observatory (mature worlds) + Incubator (generating/running) home page
+- [x] Frontend: WorldCard component with stats, tags, description preview
+- [x] Frontend: IncubatorChip component with genesis progress
+- [x] Frontend: 2-column world page (KnowledgeHub 70% + SystemPulse 30%)
+- [x] Frontend: KnowledgeHub with 7 tabs (Wiki, Graph, Strata, Resonance, Agent, Log, Export)
+- [x] Frontend: SystemPulse with faction accordion, mini live feed, world status
+- [x] Frontend: Create world stays on home page (no redirect), toast notification
+- [x] Frontend: Dynamic locale routing (no hardcoded `/en/` paths)
+- [x] Frontend: CommandPalette global search with score-based sorting
+
 ## Phase 5: Polish & Launch
 *External data integration and optimization.*
 

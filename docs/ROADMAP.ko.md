@@ -89,6 +89,23 @@
 - [x] 제네시스 진행 UI — 월드 생성 중 실시간 프로그레스 바 + 단계 추적
 - [x] 백그라운드 제네시스 — 비동기 월드 생성으로 논블로킹 응답
 
+## Phase 4f: 관찰자 중심 UX (Observer-First UX)
+*지식 중심 리디자인 + 성숙도 기반 월드 분류.*
+
+- [x] 백엔드: 성숙도 메타데이터 포함 WorldCardOut 스키마
+- [x] 백엔드: 월드 목록 배치 N+1 쿼리 최적화
+- [x] 백엔드: `GET /worlds?mature=true&incubating=true` 성숙도 필터
+- [x] 백엔드: `GET /worlds/{id}/recent-messages` SystemPulse 초기 피드
+- [x] 프론트엔드: Observatory (성숙 월드) + Incubator (생성/가동 중) 홈 페이지
+- [x] 프론트엔드: WorldCard 컴포넌트 (통계, 태그, 설명 미리보기)
+- [x] 프론트엔드: IncubatorChip 컴포넌트 (제네시스 진행률)
+- [x] 프론트엔드: 2열 월드 페이지 (KnowledgeHub 70% + SystemPulse 30%)
+- [x] 프론트엔드: KnowledgeHub 7개 탭 (Wiki, Graph, Strata, Resonance, Agent, Log, Export)
+- [x] 프론트엔드: SystemPulse (팩션 아코디언, 미니 라이브 피드, 월드 상태)
+- [x] 프론트엔드: 월드 생성 시 홈 유지 (리디렉트 없음), 토스트 알림
+- [x] 프론트엔드: 동적 로케일 라우팅 (`/en/` 하드코딩 제거)
+- [x] 프론트엔드: CommandPalette 글로벌 검색 점수 기반 정렬
+
 ## Phase 5: 마무리 & 런칭
 *외부 데이터 연동과 최적화.*
 

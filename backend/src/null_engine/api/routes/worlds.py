@@ -2,14 +2,14 @@ import asyncio
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from null_engine.core.genesis import create_world
 from null_engine.core.runner import SimulationRunner
 from null_engine.db import get_db, async_session
-from null_engine.models.tables import World, WorldTag
-from null_engine.models.schemas import WorldCreate, WorldOut, WorldTagOut, WorldWithTagsOut
+from null_engine.models.tables import World, WorldTag, Agent, Conversation, WikiPage
+from null_engine.models.schemas import WorldCreate, WorldOut, WorldTagOut, WorldWithTagsOut, WorldCardOut
 
 router = APIRouter(tags=["worlds"])
 
@@ -17,33 +17,102 @@ _runners: dict[uuid.UUID, SimulationRunner] = {}
 _genesis_tasks: dict[uuid.UUID, asyncio.Task] = {}
 
 
-@router.get("/worlds", response_model=list[WorldWithTagsOut])
+@router.get("/worlds", response_model=list[WorldCardOut])
 async def list_worlds(
     tag: str | None = None,
+    mature: bool | None = None,
+    incubating: bool | None = None,
     db: AsyncSession = Depends(get_db),
 ):
     query = select(World).order_by(World.created_at.desc()).limit(50)
 
     if tag:
-        # Filter worlds that have this tag
         world_ids_q = select(WorldTag.world_id).where(WorldTag.tag.ilike(f"%{tag}%"))
         query = query.where(World.id.in_(world_ids_q))
 
     result = await db.execute(query)
     worlds = result.scalars().all()
 
-    # Attach tags to each world
+    if not worlds:
+        return []
+
+    world_ids = [w.id for w in worlds]
+
+    # Batch count agents per world
+    agent_counts_q = await db.execute(
+        select(Agent.world_id, func.count()).where(Agent.world_id.in_(world_ids)).group_by(Agent.world_id)
+    )
+    agent_counts = dict(agent_counts_q.all())
+
+    # Batch count conversations per world
+    conv_counts_q = await db.execute(
+        select(Conversation.world_id, func.count()).where(Conversation.world_id.in_(world_ids)).group_by(Conversation.world_id)
+    )
+    conv_counts = dict(conv_counts_q.all())
+
+    # Batch count wiki pages per world
+    wiki_counts_q = await db.execute(
+        select(WikiPage.world_id, func.count()).where(WikiPage.world_id.in_(world_ids)).group_by(WikiPage.world_id)
+    )
+    wiki_counts = dict(wiki_counts_q.all())
+
+    # Batch fetch all tags
+    tags_q = await db.execute(
+        select(WorldTag).where(WorldTag.world_id.in_(world_ids))
+    )
+    all_tags = tags_q.scalars().all()
+    tags_by_world: dict[uuid.UUID, list[WorldTagOut]] = {}
+    for t in all_tags:
+        tags_by_world.setdefault(t.world_id, []).append(WorldTagOut.model_validate(t))
+
     out = []
     for w in worlds:
-        tags_result = await db.execute(
-            select(WorldTag).where(WorldTag.world_id == w.id)
-        )
-        tags = [WorldTagOut.model_validate(t) for t in tags_result.scalars().all()]
-        world_dict = WorldWithTagsOut.model_validate(w)
-        world_dict.tags = tags
-        out.append(world_dict)
+        agent_count = agent_counts.get(w.id, 0)
+        conversation_count = conv_counts.get(w.id, 0)
+        wiki_page_count = wiki_counts.get(w.id, 0)
+
+        # Apply maturity filters
+        is_mature = conversation_count >= 5 and wiki_page_count >= 1
+        if mature and not is_mature:
+            continue
+        if incubating and is_mature:
+            continue
+
+        card = WorldCardOut.model_validate(w)
+        card.tags = tags_by_world.get(w.id, [])
+        card.agent_count = agent_count
+        card.conversation_count = conversation_count
+        card.wiki_page_count = wiki_page_count
+        card.epoch_count = w.current_epoch
+
+        out.append(card)
 
     return out
+
+
+@router.get("/worlds/{world_id}/recent-messages")
+async def get_recent_messages(world_id: uuid.UUID, limit: int = 5, db: AsyncSession = Depends(get_db)):
+    """Return recent conversation messages for the SystemPulse mini-feed."""
+    result = await db.execute(
+        select(Conversation)
+        .where(Conversation.world_id == world_id)
+        .order_by(Conversation.created_at.desc())
+        .limit(limit)
+    )
+    conversations = result.scalars().all()
+
+    messages = []
+    for conv in reversed(conversations):
+        for msg in (conv.messages or [])[-2:]:
+            messages.append({
+                "agent_id": msg.get("agent_id", ""),
+                "agent_name": msg.get("agent_name", ""),
+                "content": msg.get("content", ""),
+                "epoch": conv.epoch,
+                "topic": conv.topic,
+            })
+
+    return messages[-10:]
 
 
 async def _background_genesis(world_id: uuid.UUID, seed_prompt: str, extra_config: dict):
@@ -69,7 +138,6 @@ async def _background_genesis(world_id: uuid.UUID, seed_prompt: str, extra_confi
             logger.info("genesis.background_complete", world_id=str(world_id), status="running")
     except Exception:
         logger.exception("genesis.background_failed", world_id=str(world_id))
-        # Mark as error
         try:
             async with async_session() as db:
                 result = await db.execute(select(World).where(World.id == world_id))
@@ -85,14 +153,12 @@ async def _background_genesis(world_id: uuid.UUID, seed_prompt: str, extra_confi
 
 @router.post("/worlds", response_model=WorldOut, status_code=201)
 async def create_world_endpoint(body: WorldCreate, db: AsyncSession = Depends(get_db)):
-    # Create world row immediately, then populate in background
     world = World(seed_prompt=body.seed_prompt, config=body.config or {}, status="generating")
     db.add(world)
     await db.flush()
     await db.commit()
     await db.refresh(world)
 
-    # Launch background genesis
     task = asyncio.create_task(
         _background_genesis(world.id, body.seed_prompt, body.config or {})
     )

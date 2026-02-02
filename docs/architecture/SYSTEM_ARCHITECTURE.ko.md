@@ -101,7 +101,7 @@ NULL은 순차적으로 작동하는 네 개의 핵심 엔진으로 운영됩니
     ↓
 [이벤트 스트림] → WebSocket / SSE
     ↓
-[옴니스코프] → 코스모그래프 + 오라클 패널 + 헤럴드 + 타임라인 리본
+[옴니스코프] → KnowledgeHub (위키/그래프/스트라타/레조넌스) + SystemPulse + 타임라인 리본
     ↓
 [내보내기] → JSON / CSV / Wiki / WebM / SVG / Markdown 내러티브 / 학습 데이터 (ChatML / Alpaca / ShareGPT)
     ↑

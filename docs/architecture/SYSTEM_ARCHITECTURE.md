@@ -101,7 +101,7 @@ AI-powered narrative summarization layer that transforms raw simulation events i
     ↓
 [Event Stream] → WebSocket / SSE
     ↓
-[Omniscope] → Cosmograph + Oracle Panel + Herald + Timeline Ribbon
+[Omniscope] → KnowledgeHub (Wiki/Graph/Strata/Resonance) + SystemPulse + Timeline Ribbon
     ↓
 [Export] → JSON / CSV / Wiki / WebM / SVG / Markdown Narratives / Training Data (ChatML / Alpaca / ShareGPT)
     ↑
