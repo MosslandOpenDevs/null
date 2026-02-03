@@ -40,7 +40,7 @@ export function SemanticSidebar({
 
   return (
     <div className="border-t border-hud-border mt-2 pt-2">
-      <div className="font-mono text-[9px] text-hud-label uppercase tracking-wider mb-1">
+      <div className="font-mono text-sm text-hud-label uppercase tracking-wider mb-1">
         SEMANTIC NEIGHBORS
       </div>
       <div className="space-y-0.5">
@@ -49,10 +49,10 @@ export function SemanticSidebar({
             key={n.id}
             className="flex items-center justify-between px-1 py-0.5"
           >
-            <span className="font-mono text-[9px] text-hud-muted truncate flex-1">
+            <span className="font-mono text-sm text-hud-muted truncate flex-1">
               {n.entity_b_type.replace("_", " ")}
             </span>
-            <span className="font-mono text-[8px] text-accent flex-shrink-0 ml-1">
+            <span className="font-mono text-[11px] text-accent flex-shrink-0 ml-1">
               {(n.similarity * 100).toFixed(0)}%
             </span>
           </div>

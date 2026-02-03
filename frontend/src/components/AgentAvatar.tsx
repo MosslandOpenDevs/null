@@ -1,9 +1,9 @@
 "use client";
 
 const SIZE_MAP = {
-  sm: "w-5 h-5 text-[9px]",
-  md: "w-7 h-7 text-[11px]",
-  lg: "w-9 h-9 text-sm",
+  sm: "w-6 h-6 text-xs",
+  md: "w-8 h-8 text-sm",
+  lg: "w-10 h-10 text-base",
 } as const;
 
 const FALLBACK_COLORS = [

@@ -45,11 +45,11 @@ export function ExportPanel({ open, onClose }: ExportPanelProps) {
         <div className="corner-mark corner-mark-bl" />
         <div className="corner-mark corner-mark-br" />
 
-        <h2 className="font-mono text-sm text-hud-text uppercase tracking-[0.15em]">
+        <h2 className="font-mono text-base text-hud-text uppercase tracking-[0.15em]">
           EXPORT DATA
         </h2>
 
-        <div className="font-mono text-[10px] text-hud-muted">
+        <div className="font-mono text-[13px] text-hud-muted">
           World: {(world.config as Record<string, unknown>)?.description
             ? String((world.config as Record<string, unknown>).description).slice(0, 50)
             : world.seed_prompt.slice(0, 50)}
@@ -57,7 +57,7 @@ export function ExportPanel({ open, onClose }: ExportPanelProps) {
 
         {/* Type selection */}
         <div>
-          <div className="font-mono text-[9px] uppercase tracking-[0.15em] text-hud-label mb-2">
+          <div className="font-mono text-sm uppercase tracking-[0.15em] text-hud-label mb-2">
             DATA TYPE
           </div>
           <div className="grid grid-cols-2 gap-1">
@@ -68,7 +68,7 @@ export function ExportPanel({ open, onClose }: ExportPanelProps) {
                   setSelectedType(type.id);
                   setSelectedFormat(type.formats[0]);
                 }}
-                className={`font-mono text-[10px] px-2 py-1.5 border transition-colors ${
+                className={`font-mono text-[13px] px-2 py-1.5 border transition-colors ${
                   selectedType === type.id
                     ? "border-accent text-accent"
                     : "border-hud-border text-hud-muted hover:text-hud-text"
@@ -82,7 +82,7 @@ export function ExportPanel({ open, onClose }: ExportPanelProps) {
 
         {/* Format selection */}
         <div>
-          <div className="font-mono text-[9px] uppercase tracking-[0.15em] text-hud-label mb-2">
+          <div className="font-mono text-sm uppercase tracking-[0.15em] text-hud-label mb-2">
             FORMAT
           </div>
           <div className="flex gap-2">
@@ -90,7 +90,7 @@ export function ExportPanel({ open, onClose }: ExportPanelProps) {
               <button
                 key={fmt}
                 onClick={() => setSelectedFormat(fmt)}
-                className={`font-mono text-[10px] px-3 py-1 border transition-colors ${
+                className={`font-mono text-[13px] px-3 py-1 border transition-colors ${
                   selectedFormat === fmt
                     ? "border-accent text-accent"
                     : "border-hud-border text-hud-muted hover:text-hud-text"
@@ -107,13 +107,13 @@ export function ExportPanel({ open, onClose }: ExportPanelProps) {
           <button
             onClick={handleExport}
             disabled={exporting}
-            className="flex-1 py-2 bg-accent hover:bg-accent/80 disabled:opacity-50 font-mono text-[10px] uppercase tracking-wider transition-colors"
+            className="flex-1 py-2 bg-accent hover:bg-accent/80 disabled:opacity-50 font-mono text-[13px] uppercase tracking-wider transition-colors"
           >
             {exporting ? "EXPORTING..." : "DOWNLOAD"}
           </button>
           <button
             onClick={onClose}
-            className="px-4 py-2 border border-hud-border text-hud-muted hover:text-hud-text font-mono text-[10px] uppercase tracking-wider transition-colors"
+            className="px-4 py-2 border border-hud-border text-hud-muted hover:text-hud-text font-mono text-[13px] uppercase tracking-wider transition-colors"
           >
             CLOSE
           </button>

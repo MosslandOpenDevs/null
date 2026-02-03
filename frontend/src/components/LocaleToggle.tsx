@@ -13,7 +13,7 @@ export function LocaleToggle() {
   return (
     <a
       href={newPath}
-      className="flex items-center gap-1.5 px-3 py-1.5 border border-hud-border hover:border-accent bg-void-light/80 rounded font-mono text-xs text-hud-muted hover:text-accent transition-colors"
+      className="flex items-center gap-1.5 px-3 py-1.5 border border-hud-border hover:border-accent bg-void-light/80 rounded font-mono text-sm text-hud-muted hover:text-accent transition-colors"
       title={locale === "ko" ? "Switch to English" : "한국어로 전환"}
     >
       <span className={locale === "ko" ? "text-hud-muted" : "text-accent font-semibold"}>EN</span>

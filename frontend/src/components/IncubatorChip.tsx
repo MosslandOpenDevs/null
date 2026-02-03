@@ -38,11 +38,11 @@ export function IncubatorChip({ world, locale }: IncubatorChipProps) {
         }`}
       />
 
-      <span className="font-mono text-[10px] text-hud-muted group-hover:text-hud-text truncate max-w-[180px]">
+      <span className="font-mono text-[13px] text-hud-muted group-hover:text-hud-text truncate max-w-[180px]">
         {world.seed_prompt.slice(0, 40)}
       </span>
 
-      <span className="font-mono text-[8px] text-accent uppercase tracking-wider flex-shrink-0">
+      <span className="font-mono text-[11px] text-accent uppercase tracking-wider flex-shrink-0">
         {statusLabel}
       </span>
 

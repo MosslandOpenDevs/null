@@ -17,7 +17,7 @@ export function ConversationReader() {
   if (!conv) {
     return (
       <div className="flex items-center justify-center h-full">
-        <span className="font-sans text-sm text-hud-muted">
+        <span className="font-sans text-base text-hud-muted">
           Select a conversation to read
         </span>
       </div>
@@ -49,14 +49,14 @@ export function ConversationReader() {
         >
           ← BACK TO FEED
         </button>
-        <h2 className="font-sans text-base font-semibold text-hud-text leading-snug">
+        <h2 className="font-sans text-lg font-semibold text-hud-text leading-snug">
           {displayTopic}
         </h2>
         <div className="flex items-center gap-3">
-          <span className="font-mono text-xs text-accent uppercase">
+          <span className="font-mono text-sm text-accent uppercase">
             Epoch {conv.epoch}
           </span>
-          <span className="font-mono text-xs text-hud-muted">
+          <span className="font-mono text-sm text-hud-muted">
             {conv.participants.length} participants
           </span>
         </div>
@@ -98,19 +98,19 @@ export function ConversationReader() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
                   <span
-                    className="font-sans text-sm font-semibold"
+                    className="font-sans text-base font-semibold"
                     style={{ color }}
                   >
                     {agentName}
                   </span>
                   {participant && (
-                    <span className="font-mono text-[11px] text-hud-muted">
+                    <span className="font-mono text-base text-hud-muted">
                       {/* Faction name could be derived but we have color */}
                     </span>
                   )}
                 </div>
                 <div
-                  className="font-sans text-sm text-hud-text leading-relaxed pl-3"
+                  className="font-sans text-base text-hud-text leading-relaxed pl-3"
                   style={{ borderLeft: `3px solid ${color}40` }}
                 >
                   {content}
@@ -128,7 +128,7 @@ export function ConversationReader() {
             <summary className="label-text cursor-pointer select-none">
               SUMMARY
             </summary>
-            <p className="font-sans text-sm text-hud-muted mt-2 leading-relaxed">
+            <p className="font-sans text-base text-hud-muted mt-2 leading-relaxed">
               {displaySummary}
             </p>
           </details>
@@ -137,14 +137,14 @@ export function ConversationReader() {
           <button
             onClick={() => prevConv && setSelectedConversation(prevConv.id)}
             disabled={!prevConv}
-            className="font-mono text-xs text-accent hover:text-accent/80 disabled:text-hud-label disabled:cursor-not-allowed uppercase"
+            className="font-mono text-sm text-accent hover:text-accent/80 disabled:text-hud-label disabled:cursor-not-allowed uppercase"
           >
             ← Prev
           </button>
           <button
             onClick={() => nextConv && setSelectedConversation(nextConv.id)}
             disabled={!nextConv}
-            className="font-mono text-xs text-accent hover:text-accent/80 disabled:text-hud-label disabled:cursor-not-allowed uppercase"
+            className="font-mono text-sm text-accent hover:text-accent/80 disabled:text-hud-label disabled:cursor-not-allowed uppercase"
           >
             Next →
           </button>

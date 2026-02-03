@@ -17,18 +17,18 @@ export function WorldCard({ world, locale }: WorldCardProps) {
       href={`/${locale}/world/${world.id}`}
       className="block p-4 rounded-lg border border-hud-border bg-void-light/30 hover:border-accent/50 hover:bg-void-light/60 transition-all group"
     >
-      <p className="text-sm text-hud-text group-hover:text-accent font-medium truncate mb-2">
+      <p className="text-base text-hud-text group-hover:text-accent font-medium truncate mb-2">
         {world.seed_prompt}
       </p>
 
       {description && (
-        <p className="text-sm font-sans text-hud-muted line-clamp-2 mb-3">
+        <p className="text-base font-sans text-hud-muted line-clamp-2 mb-3">
           {description}
         </p>
       )}
 
       {world.latest_activity && (
-        <p className="font-sans text-xs text-hud-muted italic truncate mb-2">
+        <p className="font-sans text-sm text-hud-muted italic truncate mb-2">
           {world.latest_activity}
         </p>
       )}
@@ -45,7 +45,7 @@ export function WorldCard({ world, locale }: WorldCardProps) {
           {tags.slice(0, 5).map((t) => (
             <span
               key={t.tag}
-              className="px-1.5 py-0.5 text-xs font-mono uppercase tracking-wider text-hud-muted border border-hud-border rounded"
+              className="px-1.5 py-0.5 text-sm font-mono uppercase tracking-wider text-hud-muted border border-hud-border rounded"
             >
               {t.tag}
             </span>
@@ -59,8 +59,8 @@ export function WorldCard({ world, locale }: WorldCardProps) {
 function Stat({ label, value }: { label: string; value: number }) {
   return (
     <div className="flex items-center gap-1">
-      <span className="font-mono text-xs text-accent">{value}</span>
-      <span className="font-mono text-xs text-hud-label uppercase">{label}</span>
+      <span className="font-mono text-sm text-accent">{value}</span>
+      <span className="font-mono text-sm text-hud-label uppercase">{label}</span>
     </div>
   );
 }

@@ -164,7 +164,7 @@ export default function HomePage() {
 
       {/* Toast */}
       {toast && (
-        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2 bg-accent text-void font-mono text-[11px] uppercase tracking-wider rounded shadow-lg">
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2 bg-accent text-void font-mono text-base uppercase tracking-wider rounded shadow-lg">
           {toast}
         </div>
       )}
@@ -172,7 +172,7 @@ export default function HomePage() {
       {/* ===== OBSERVATORY — Mature worlds (TOP, hero section) ===== */}
       {matureWorlds.length > 0 && (
         <div className="w-full max-w-5xl mb-12">
-          <h2 className="text-sm uppercase tracking-widest text-hud-label mb-4">
+          <h2 className="text-base uppercase tracking-widest text-hud-label mb-4">
             Observatory — Mature Worlds
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -186,8 +186,8 @@ export default function HomePage() {
       {/* Empty state when no mature worlds */}
       {matureWorlds.length === 0 && (
         <div className="w-full max-w-5xl mb-12 py-12 text-center border border-dashed border-hud-border rounded-lg">
-          <div className="font-mono text-[11px] text-hud-muted mb-1">NO MATURE WORLDS YET</div>
-          <div className="font-mono text-[9px] text-hud-label">
+          <div className="font-mono text-base text-hud-muted mb-1">NO MATURE WORLDS YET</div>
+          <div className="font-mono text-sm text-hud-label">
             Worlds need 5+ conversations and 1+ wiki page to appear here
           </div>
         </div>
@@ -196,7 +196,7 @@ export default function HomePage() {
       {/* ===== INCUBATOR — Only generating/running worlds ===== */}
       {incubatingWorlds.length > 0 && (
         <div className="w-full max-w-5xl mb-12">
-          <h2 className="text-sm uppercase tracking-widest text-hud-label mb-3">
+          <h2 className="text-base uppercase tracking-widest text-hud-label mb-3">
             Incubator — Active
           </h2>
           <div className="flex flex-wrap gap-2">
@@ -210,13 +210,13 @@ export default function HomePage() {
       {/* ===== Tag filter ===== */}
       {allTags.length > 0 && (
         <div className="w-full max-w-5xl mb-8">
-          <h2 className="text-sm uppercase tracking-widest text-hud-label mb-3">
+          <h2 className="text-base uppercase tracking-widest text-hud-label mb-3">
             Filter by tag
           </h2>
           <div className="flex flex-wrap gap-1.5">
             <button
               onClick={() => setTagFilter(null)}
-              className={`px-2.5 py-1 rounded text-[10px] font-mono uppercase tracking-wider border transition-colors ${
+              className={`px-2.5 py-1 rounded text-[13px] font-mono uppercase tracking-wider border transition-colors ${
                 !tagFilter
                   ? "border-accent text-accent bg-accent/10"
                   : "border-hud-border text-hud-muted hover:text-hud-text hover:border-hud-border-active"
@@ -228,7 +228,7 @@ export default function HomePage() {
               <button
                 key={tag}
                 onClick={() => setTagFilter(tagFilter === tag ? null : tag)}
-                className={`px-2.5 py-1 rounded text-[10px] font-mono uppercase tracking-wider border transition-colors ${
+                className={`px-2.5 py-1 rounded text-[13px] font-mono uppercase tracking-wider border transition-colors ${
                   tagFilter === tag
                     ? "border-accent text-accent bg-accent/10"
                     : "border-hud-border text-hud-muted hover:text-hud-text hover:border-hud-border-active"
@@ -262,7 +262,7 @@ export default function HomePage() {
       {taxonomyWorldFilter && taxonomyWorlds.length > 0 && (
         <div className="w-full max-w-5xl mb-8">
           <div className="flex items-center justify-between mb-2">
-            <h2 className="text-sm uppercase tracking-widest text-hud-label">
+            <h2 className="text-base uppercase tracking-widest text-hud-label">
               Worlds in category
             </h2>
             <button
@@ -270,7 +270,7 @@ export default function HomePage() {
                 setTaxonomyWorldFilter(null);
                 setTaxonomyWorlds([]);
               }}
-              className="text-[9px] font-mono text-hud-muted hover:text-accent uppercase"
+              className="text-sm font-mono text-hud-muted hover:text-accent uppercase"
             >
               CLEAR
             </button>
@@ -282,7 +282,7 @@ export default function HomePage() {
                 href={`/${locale}/world/${w.id}`}
                 className="block px-4 py-2 rounded-lg border border-accent/30 bg-accent/5 hover:bg-accent/10 transition-all"
               >
-                <p className="text-sm text-hud-text truncate">{w.seed_prompt}</p>
+                <p className="text-base text-hud-text truncate">{w.seed_prompt}</p>
               </a>
             ))}
           </div>
@@ -291,7 +291,7 @@ export default function HomePage() {
 
       {/* ===== CREATE WORLD (bottom — secondary action) ===== */}
       <div className="w-full max-w-2xl space-y-4 mt-4 pt-8 border-t border-hud-border/50">
-        <h2 className="text-sm uppercase tracking-widest text-hud-label mb-2 text-center">
+        <h2 className="text-base uppercase tracking-widest text-hud-label mb-2 text-center">
           Launch New World
         </h2>
 
@@ -299,10 +299,10 @@ export default function HomePage() {
           onClick={handleExampleClick}
           className="w-full text-left px-4 py-3 rounded-lg border border-hud-border bg-void-light/50 hover:border-accent/50 transition-colors group"
         >
-          <span className="text-[10px] uppercase tracking-widest text-hud-label group-hover:text-accent/70">
+          <span className="text-[13px] uppercase tracking-widest text-hud-label group-hover:text-accent/70">
             Example — click to use
           </span>
-          <p className="text-sm text-hud-muted mt-1 min-h-[2.5rem]">
+          <p className="text-base text-hud-muted mt-1 min-h-[2.5rem]">
             {displayedExample}
             <span className="inline-block w-[2px] h-4 bg-accent/70 ml-0.5 animate-pulse align-middle" />
           </p>
@@ -329,7 +329,7 @@ export default function HomePage() {
       {/* Bookmark toggle button */}
       <button
         onClick={() => setDrawerOpen(true)}
-        className="fixed right-4 bottom-4 z-40 px-3 py-2 bg-void-light border border-hud-border hover:border-accent font-mono text-[9px] text-hud-muted hover:text-accent uppercase tracking-wider transition-colors"
+        className="fixed right-4 bottom-4 z-40 px-3 py-2 bg-void-light border border-hud-border hover:border-accent font-mono text-sm text-hud-muted hover:text-accent uppercase tracking-wider transition-colors"
       >
         BOOKMARKS
       </button>

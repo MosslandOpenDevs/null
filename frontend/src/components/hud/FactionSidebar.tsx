@@ -64,7 +64,7 @@ export function FactionSidebar() {
     <div className="flex flex-col h-full bg-void-light border-r border-hud-border w-[250px] min-w-[250px] overflow-y-auto">
       {/* Header */}
       <div className="px-3 py-2 border-b border-hud-border">
-        <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-hud-label">
+        <span className="font-mono text-[13px] uppercase tracking-[0.2em] text-hud-label">
           FACTION OVERVIEW
         </span>
       </div>
@@ -93,10 +93,10 @@ export function FactionSidebar() {
                   className="w-2 h-2 rounded-full flex-shrink-0"
                   style={{ backgroundColor: faction.color }}
                 />
-                <span className="font-mono text-[11px] text-hud-text truncate">
+                <span className="font-mono text-base text-hud-text truncate">
                   {faction.name}
                 </span>
-                <span className="font-mono text-[9px] text-hud-muted ml-auto">
+                <span className="font-mono text-sm text-hud-muted ml-auto">
                   {faction.agent_count}
                 </span>
               </div>
@@ -118,7 +118,7 @@ export function FactionSidebar() {
                   {factionAgents.map((agent) => (
                     <button
                       key={agent.id}
-                      className="w-full text-left px-1 py-0.5 text-[10px] font-mono text-hud-muted hover:text-hud-text transition-colors truncate"
+                      className="w-full text-left px-1 py-0.5 text-[13px] font-mono text-hud-muted hover:text-hud-text transition-colors truncate"
                       onClick={(e) => {
                         e.stopPropagation();
                         setSelectedAgent(agent.id);
@@ -138,7 +138,7 @@ export function FactionSidebar() {
       {/* Relationship matrix */}
       {displayFactions.length > 1 && factions.length > 0 && (
         <div className="border-t border-hud-border p-2">
-          <div className="font-mono text-[9px] uppercase tracking-[0.15em] text-hud-label mb-2">
+          <div className="font-mono text-sm uppercase tracking-[0.15em] text-hud-label mb-2">
             RELATIONS
           </div>
           <div className="grid gap-px" style={{ gridTemplateColumns: `auto repeat(${displayFactions.length}, 1fr)` }}>
@@ -147,7 +147,7 @@ export function FactionSidebar() {
             {displayFactions.map((f) => (
               <div
                 key={f.id}
-                className="text-[8px] font-mono text-center truncate px-0.5"
+                className="text-[11px] font-mono text-center truncate px-0.5"
                 style={{ color: f.color }}
               >
                 {f.name.slice(0, 3)}
@@ -157,7 +157,7 @@ export function FactionSidebar() {
             {displayFactions.map((fA) => (
               <div key={fA.id} className="contents">
                 <div
-                  className="text-[8px] font-mono truncate pr-1"
+                  className="text-[11px] font-mono truncate pr-1"
                   style={{ color: fA.color }}
                 >
                   {fA.name.slice(0, 3)}

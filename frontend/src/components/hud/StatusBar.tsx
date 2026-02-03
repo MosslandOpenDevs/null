@@ -23,7 +23,7 @@ export function StatusBar() {
 
   return (
     <>
-      <div className="relative h-8 flex items-center justify-between px-4 bg-void-light border-b border-hud-border font-mono text-xs uppercase tracking-[0.2em] text-hud-muted overflow-hidden scanline-sweep">
+      <div className="relative h-8 flex items-center justify-between px-4 bg-void-light border-b border-hud-border font-mono text-sm uppercase tracking-[0.2em] text-hud-muted overflow-hidden scanline-sweep">
         <div className="flex items-center gap-6">
           <span className="text-hud-label">WORLD:</span>
           <span className="text-hud-text truncate max-w-[200px]">{worldName}</span>

@@ -20,7 +20,7 @@ export function TaxonomyTreeMap({ onSelectNode }: TaxonomyTreeMapProps) {
 
   return (
     <div className="w-full">
-      <h2 className="text-sm uppercase tracking-widest text-hud-label mb-3">
+      <h2 className="text-base uppercase tracking-widest text-hud-label mb-3">
         Taxonomy
       </h2>
       <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-1.5">
@@ -35,14 +35,14 @@ export function TaxonomyTreeMap({ onSelectNode }: TaxonomyTreeMapProps) {
                 backgroundColor: `rgba(99, 102, 241, ${intensity * 0.2})`,
               }}
             >
-              <div className="font-mono text-[10px] text-hud-text group-hover:text-accent truncate">
+              <div className="font-mono text-[13px] text-hud-text group-hover:text-accent truncate">
                 {node.label}
               </div>
-              <div className="font-mono text-[8px] text-hud-muted mt-0.5">
+              <div className="font-mono text-[11px] text-hud-muted mt-0.5">
                 {node.member_count} items
               </div>
               {node.description && (
-                <div className="font-mono text-[7px] text-hud-label mt-1 truncate">
+                <div className="font-mono text-[10px] text-hud-label mt-1 truncate">
                   {node.description}
                 </div>
               )}

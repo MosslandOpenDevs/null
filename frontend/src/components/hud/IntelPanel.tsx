@@ -30,7 +30,7 @@ export function IntelPanel() {
           <button
             key={tab.id}
             onClick={() => setIntelTab(tab.id)}
-            className={`flex-1 py-2 font-mono text-[10px] uppercase tracking-[0.15em] transition-colors border-b-2 ${
+            className={`flex-1 py-2 font-mono text-[13px] uppercase tracking-[0.15em] transition-colors border-b-2 ${
               intelTab === tab.id
                 ? "text-accent border-accent"
                 : "text-hud-muted border-transparent hover:text-hud-text"

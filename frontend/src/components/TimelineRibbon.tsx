@@ -38,7 +38,7 @@ export function TimelineRibbon() {
           return (
             <div
               key={i}
-              className="relative flex items-center justify-center font-mono text-[9px] transition-all cursor-pointer hover:brightness-125 group"
+              className="relative flex items-center justify-center font-mono text-sm transition-all cursor-pointer hover:brightness-125 group"
               style={{
                 width,
                 backgroundColor: color + (isCurrent ? "18" : "0a"),

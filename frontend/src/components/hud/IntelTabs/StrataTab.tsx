@@ -9,7 +9,7 @@ export function StrataTab() {
   if (!world) {
     return (
       <div className="flex items-center justify-center h-full">
-        <span className="font-mono text-[11px] text-hud-muted">
+        <span className="font-mono text-base text-hud-muted">
           NO WORLD LOADED
         </span>
       </div>

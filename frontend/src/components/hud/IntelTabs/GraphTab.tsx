@@ -100,7 +100,7 @@ export function GraphTab() {
   if (knowledgeEdges.length === 0) {
     return (
       <div className="flex items-center justify-center h-full">
-        <span className="font-mono text-[11px] text-hud-muted">
+        <span className="font-mono text-base text-hud-muted">
           NO KNOWLEDGE GRAPH DATA
         </span>
       </div>
@@ -136,7 +136,7 @@ export function GraphTab() {
                 x={(s.x + t.x) / 2}
                 y={(s.y + t.y) / 2 - 4}
                 fill="#9d9a92"
-                fontSize="6"
+                fontSize="8"
                 fontFamily="monospace"
                 textAnchor="middle"
               >
@@ -164,7 +164,7 @@ export function GraphTab() {
               x={node.x}
               y={node.y + 10}
               fill="#3d3b37"
-              fontSize="7"
+              fontSize="9"
               fontFamily="monospace"
               textAnchor="middle"
             >
@@ -176,7 +176,7 @@ export function GraphTab() {
       </svg>
 
       {/* Edge count */}
-      <div className="font-mono text-[9px] text-hud-label text-center mt-2">
+      <div className="font-mono text-sm text-hud-label text-center mt-2">
         {nodes.length} NODES · {links.length} EDGES
       </div>
     </div>

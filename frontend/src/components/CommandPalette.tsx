@@ -96,7 +96,7 @@ export function CommandPalette() {
         <div className="flex border-b border-hud-border">
           <button
             onClick={() => setMode("local")}
-            className={`flex-1 py-1.5 font-mono text-[9px] uppercase tracking-[0.15em] ${
+            className={`flex-1 py-1.5 font-mono text-sm uppercase tracking-[0.15em] ${
               mode === "local" ? "text-accent border-b border-accent" : "text-hud-muted"
             }`}
           >
@@ -104,7 +104,7 @@ export function CommandPalette() {
           </button>
           <button
             onClick={() => setMode("global")}
-            className={`flex-1 py-1.5 font-mono text-[9px] uppercase tracking-[0.15em] ${
+            className={`flex-1 py-1.5 font-mono text-sm uppercase tracking-[0.15em] ${
               mode === "global" ? "text-accent border-b border-accent" : "text-hud-muted"
             }`}
           >
@@ -112,7 +112,7 @@ export function CommandPalette() {
           </button>
           <button
             onClick={() => setMode("taxonomy")}
-            className={`flex-1 py-1.5 font-mono text-[9px] uppercase tracking-[0.15em] ${
+            className={`flex-1 py-1.5 font-mono text-sm uppercase tracking-[0.15em] ${
               mode === "taxonomy" ? "text-accent border-b border-accent" : "text-hud-muted"
             }`}
           >
@@ -125,7 +125,7 @@ export function CommandPalette() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder={mode === "global" ? "Search across all worlds..." : t("placeholder")}
-          className="w-full px-4 py-3 bg-transparent text-hud-text font-mono text-sm placeholder-hud-label focus:outline-none"
+          className="w-full px-4 py-3 bg-transparent text-hud-text font-mono text-base placeholder-hud-label focus:outline-none"
         />
 
         {/* Local results */}
@@ -133,7 +133,7 @@ export function CommandPalette() {
           <div className="border-t border-hud-border max-h-64 overflow-y-auto">
             {agentResults.length > 0 && (
               <div>
-                <div className="px-4 py-1 font-mono text-[9px] uppercase tracking-[0.15em] text-hud-label">
+                <div className="px-4 py-1 font-mono text-sm uppercase tracking-[0.15em] text-hud-label">
                   AGENTS
                 </div>
                 {agentResults.map((agent) => (
@@ -149,8 +149,8 @@ export function CommandPalette() {
                   >
                     <div className="w-1.5 h-1.5 rounded-full bg-accent" />
                     <div>
-                      <div className="font-mono text-[11px] text-hud-text">{agent.name}</div>
-                      <div className="font-mono text-[9px] text-hud-muted">
+                      <div className="font-mono text-base text-hud-text">{agent.name}</div>
+                      <div className="font-mono text-sm text-hud-muted">
                         {agent.persona.role as string}
                       </div>
                     </div>
@@ -161,7 +161,7 @@ export function CommandPalette() {
 
             {wikiResults.length > 0 && (
               <div>
-                <div className="px-4 py-1 font-mono text-[9px] uppercase tracking-[0.15em] text-hud-label">
+                <div className="px-4 py-1 font-mono text-sm uppercase tracking-[0.15em] text-hud-label">
                   WIKI
                 </div>
                 {wikiResults.map((page) => (
@@ -176,8 +176,8 @@ export function CommandPalette() {
                   >
                     <div className="w-1.5 h-1.5 rounded-full bg-success" />
                     <div>
-                      <div className="font-mono text-[11px] text-hud-text">{page.title}</div>
-                      <div className="font-mono text-[9px] text-hud-muted">
+                      <div className="font-mono text-base text-hud-text">{page.title}</div>
+                      <div className="font-mono text-sm text-hud-muted">
                         {page.content.slice(0, 50)}
                       </div>
                     </div>
@@ -192,7 +192,7 @@ export function CommandPalette() {
         {mode === "taxonomy" && (
           <div className="border-t border-hud-border max-h-64 overflow-y-auto">
             {filteredNodes.length === 0 ? (
-              <div className="px-4 py-3 font-mono text-[10px] text-hud-label">
+              <div className="px-4 py-3 font-mono text-[13px] text-hud-label">
                 No taxonomy nodes
               </div>
             ) : (
@@ -207,10 +207,10 @@ export function CommandPalette() {
                 >
                   <div className="w-1.5 h-1.5 rounded-full bg-herald" />
                   <div className="flex-1 min-w-0">
-                    <div className="font-mono text-[11px] text-hud-text truncate">
+                    <div className="font-mono text-base text-hud-text truncate">
                       {node.label}
                     </div>
-                    <div className="font-mono text-[9px] text-hud-muted">
+                    <div className="font-mono text-sm text-hud-muted">
                       {node.member_count} members · depth {node.depth}
                     </div>
                   </div>
@@ -224,12 +224,12 @@ export function CommandPalette() {
         {mode === "global" && (
           <div className="border-t border-hud-border max-h-64 overflow-y-auto">
             {searching && (
-              <div className="px-4 py-3 font-mono text-[10px] text-hud-muted animate-pulse">
+              <div className="px-4 py-3 font-mono text-[13px] text-hud-muted animate-pulse">
                 Searching all worlds...
               </div>
             )}
             {!searching && searchResults.length === 0 && query.length >= 2 && (
-              <div className="px-4 py-3 font-mono text-[10px] text-hud-label">
+              <div className="px-4 py-3 font-mono text-[13px] text-hud-label">
                 No results found across worlds
               </div>
             )}
@@ -248,16 +248,16 @@ export function CommandPalette() {
                 }`} />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="font-mono text-[11px] text-hud-text truncate">{result.title}</span>
-                    <span className="font-mono text-[8px] text-hud-label uppercase flex-shrink-0">
+                    <span className="font-mono text-base text-hud-text truncate">{result.title}</span>
+                    <span className="font-mono text-[11px] text-hud-label uppercase flex-shrink-0">
                       {result.entity_type.replace("_", " ")}
                     </span>
                   </div>
-                  <div className="font-mono text-[9px] text-hud-muted truncate">
+                  <div className="font-mono text-sm text-hud-muted truncate">
                     {result.snippet}
                   </div>
                 </div>
-                <span className="font-mono text-[8px] text-hud-label flex-shrink-0">
+                <span className="font-mono text-[11px] text-hud-label flex-shrink-0">
                   {(result.score * 100).toFixed(0)}%
                 </span>
               </button>

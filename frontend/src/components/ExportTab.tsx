@@ -33,7 +33,7 @@ export function ExportTab() {
 
   return (
     <div className="p-4 space-y-4">
-      <div className="font-mono text-[10px] text-hud-muted">
+      <div className="font-mono text-[13px] text-hud-muted">
         World: {(world.config as Record<string, unknown>)?.description
           ? String((world.config as Record<string, unknown>).description).slice(0, 80)
           : world.seed_prompt.slice(0, 80)}
@@ -41,7 +41,7 @@ export function ExportTab() {
 
       {/* Type selection */}
       <div>
-        <div className="font-mono text-[9px] uppercase tracking-[0.15em] text-hud-label mb-2">
+        <div className="font-mono text-sm uppercase tracking-[0.15em] text-hud-label mb-2">
           DATA TYPE
         </div>
         <div className="grid grid-cols-3 gap-1">
@@ -52,7 +52,7 @@ export function ExportTab() {
                 setSelectedType(type.id);
                 setSelectedFormat(type.formats[0]);
               }}
-              className={`font-mono text-[10px] px-2 py-1.5 border transition-colors ${
+              className={`font-mono text-[13px] px-2 py-1.5 border transition-colors ${
                 selectedType === type.id
                   ? "border-accent text-accent"
                   : "border-hud-border text-hud-muted hover:text-hud-text"
@@ -66,7 +66,7 @@ export function ExportTab() {
 
       {/* Format selection */}
       <div>
-        <div className="font-mono text-[9px] uppercase tracking-[0.15em] text-hud-label mb-2">
+        <div className="font-mono text-sm uppercase tracking-[0.15em] text-hud-label mb-2">
           FORMAT
         </div>
         <div className="flex gap-2">
@@ -74,7 +74,7 @@ export function ExportTab() {
             <button
               key={fmt}
               onClick={() => setSelectedFormat(fmt)}
-              className={`font-mono text-[10px] px-3 py-1 border transition-colors ${
+              className={`font-mono text-[13px] px-3 py-1 border transition-colors ${
                 selectedFormat === fmt
                   ? "border-accent text-accent"
                   : "border-hud-border text-hud-muted hover:text-hud-text"
@@ -89,7 +89,7 @@ export function ExportTab() {
       <button
         onClick={handleExport}
         disabled={exporting}
-        className="py-2 px-6 bg-accent hover:bg-accent/80 disabled:opacity-50 font-mono text-[10px] uppercase tracking-wider transition-colors"
+        className="py-2 px-6 bg-accent hover:bg-accent/80 disabled:opacity-50 font-mono text-[13px] uppercase tracking-wider transition-colors"
       >
         {exporting ? "EXPORTING..." : "DOWNLOAD"}
       </button>

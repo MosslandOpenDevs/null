@@ -69,16 +69,16 @@ export function EntityCard({
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-2 border-b border-hud-border">
         <div>
-          <div className="font-mono text-[11px] text-hud-text font-semibold truncate">
+          <div className="font-mono text-base text-hud-text font-semibold truncate">
             {entityName}
           </div>
-          <div className="font-mono text-[8px] text-hud-label uppercase">
+          <div className="font-mono text-[11px] text-hud-label uppercase">
             {entityType.replace("_", " ")}
           </div>
         </div>
         <button
           onClick={onClose}
-          className="font-mono text-[10px] text-hud-muted hover:text-danger"
+          className="font-mono text-[13px] text-hud-muted hover:text-danger"
         >
           ✕
         </button>
@@ -88,7 +88,7 @@ export function EntityCard({
       <div className="flex border-b border-hud-border">
         <button
           onClick={() => setTab("mentions")}
-          className={`flex-1 py-1 font-mono text-[9px] uppercase tracking-wider ${
+          className={`flex-1 py-1 font-mono text-sm uppercase tracking-wider ${
             tab === "mentions" ? "text-accent border-b border-accent" : "text-hud-muted"
           }`}
         >
@@ -96,7 +96,7 @@ export function EntityCard({
         </button>
         <button
           onClick={() => setTab("neighbors")}
-          className={`flex-1 py-1 font-mono text-[9px] uppercase tracking-wider ${
+          className={`flex-1 py-1 font-mono text-sm uppercase tracking-wider ${
             tab === "neighbors" ? "text-accent border-b border-accent" : "text-hud-muted"
           }`}
         >
@@ -108,7 +108,7 @@ export function EntityCard({
       <div className="max-h-48 overflow-y-auto p-2 space-y-1">
         {tab === "mentions" &&
           (mentions.length === 0 ? (
-            <div className="font-mono text-[9px] text-hud-label text-center py-2">
+            <div className="font-mono text-sm text-hud-label text-center py-2">
               No mentions found
             </div>
           ) : (
@@ -117,10 +117,10 @@ export function EntityCard({
                 key={m.id}
                 className="px-2 py-1 border border-hud-border text-left"
               >
-                <div className="font-mono text-[9px] text-hud-text">
+                <div className="font-mono text-sm text-hud-text">
                   &quot;{m.mention_text}&quot;
                 </div>
-                <div className="font-mono text-[8px] text-hud-label">
+                <div className="font-mono text-[11px] text-hud-label">
                   {m.source_type} · {(m.confidence * 100).toFixed(0)}%
                 </div>
               </div>
@@ -129,7 +129,7 @@ export function EntityCard({
 
         {tab === "neighbors" &&
           (neighbors.length === 0 ? (
-            <div className="font-mono text-[9px] text-hud-label text-center py-2">
+            <div className="font-mono text-sm text-hud-label text-center py-2">
               No neighbors found
             </div>
           ) : (
@@ -138,10 +138,10 @@ export function EntityCard({
                 key={n.id}
                 className="px-2 py-1 border border-hud-border text-left"
               >
-                <div className="font-mono text-[9px] text-hud-text">
+                <div className="font-mono text-sm text-hud-text">
                   {n.entity_b_type.replace("_", " ")}
                 </div>
-                <div className="font-mono text-[8px] text-hud-label">
+                <div className="font-mono text-[11px] text-hud-label">
                   similarity: {(n.similarity * 100).toFixed(0)}%
                 </div>
               </div>

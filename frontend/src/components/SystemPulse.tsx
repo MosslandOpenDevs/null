@@ -114,7 +114,7 @@ export function SystemPulse() {
       {/* FACTION ACCORDION */}
       <div className="border-b border-hud-border">
         <div className="px-3 py-2 border-b border-hud-border">
-          <span className="font-mono text-xs uppercase tracking-[0.2em] text-hud-label">
+          <span className="font-mono text-sm uppercase tracking-[0.2em] text-hud-label">
             FACTIONS
           </span>
         </div>
@@ -142,10 +142,10 @@ export function SystemPulse() {
                     className="w-2 h-2 rounded-full flex-shrink-0"
                     style={{ backgroundColor: faction.color }}
                   />
-                  <span className="font-mono text-xs text-hud-text truncate flex-1 text-left">
+                  <span className="font-mono text-sm text-hud-text truncate flex-1 text-left">
                     {faction.name}
                   </span>
-                  <span className="font-mono text-[11px] text-hud-muted">
+                  <span className="font-mono text-base text-hud-muted">
                     {faction.agent_count}
                   </span>
                 </button>
@@ -154,7 +154,7 @@ export function SystemPulse() {
                     {factionAgents.map((agent) => (
                       <button
                         key={agent.id}
-                        className="w-full text-left px-1 py-0.5 text-[11px] font-mono text-hud-muted hover:text-hud-text transition-colors truncate"
+                        className="w-full text-left px-1 py-0.5 text-base font-mono text-hud-muted hover:text-hud-text transition-colors truncate"
                         onClick={(e) => {
                           e.stopPropagation();
                           setSelectedAgent(agent.id);
@@ -175,18 +175,18 @@ export function SystemPulse() {
       {/* MINI LIVE FEED */}
       <div className="border-b border-hud-border flex-1 min-h-0">
         <div className="px-3 py-2 border-b border-hud-border">
-          <span className="font-mono text-xs uppercase tracking-[0.2em] text-hud-label">
+          <span className="font-mono text-sm uppercase tracking-[0.2em] text-hud-label">
             RECENT ACTIVITY
           </span>
         </div>
         <div className="p-2 space-y-1.5 overflow-hidden">
           {recentMessages.length === 0 && (
-            <div className="font-mono text-[11px] text-hud-muted animate-pulse py-2 text-center">
+            <div className="font-mono text-base text-hud-muted animate-pulse py-2 text-center">
               AWAITING TRANSMISSION
             </div>
           )}
           {recentMessages.map((msg) => (
-            <div key={msg.id} className="flex items-start gap-1.5 text-xs leading-tight">
+            <div key={msg.id} className="flex items-start gap-1.5 text-sm leading-tight">
               <AgentAvatar name={msg.agentName} factionColor={msg.color} size="sm" />
               <div className="flex-1 min-w-0">
                 <button
@@ -194,12 +194,12 @@ export function SystemPulse() {
                     setSelectedAgent(msg.agentId);
                     setIntelTab("agent");
                   }}
-                  className="hover:underline font-semibold font-sans text-xs"
+                  className="hover:underline font-semibold font-sans text-sm"
                   style={{ color: msg.color }}
                 >
                   {msg.agentName}
                 </button>
-                <span className="text-hud-text font-sans text-xs line-clamp-1 block">{msg.content}</span>
+                <span className="text-hud-text font-sans text-sm line-clamp-1 block">{msg.content}</span>
               </div>
             </div>
           ))}
@@ -208,7 +208,7 @@ export function SystemPulse() {
 
       {/* WORLD STATUS */}
       <div className="px-3 py-3">
-        <div className="font-mono text-xs uppercase tracking-[0.2em] text-hud-label mb-2">
+        <div className="font-mono text-sm uppercase tracking-[0.2em] text-hud-label mb-2">
           WORLD STATUS
         </div>
         <div className="grid grid-cols-2 gap-2">
@@ -225,8 +225,8 @@ export function SystemPulse() {
 function StatusItem({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <div className="font-mono text-[11px] text-hud-label uppercase">{label}</div>
-      <div className="font-mono text-xs text-accent">{value}</div>
+      <div className="font-mono text-base text-hud-label uppercase">{label}</div>
+      <div className="font-mono text-sm text-accent">{value}</div>
     </div>
   );
 }

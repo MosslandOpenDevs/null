@@ -17,7 +17,7 @@ export function ResonanceTab() {
   if (!world) {
     return (
       <div className="flex items-center justify-center h-full">
-        <span className="font-mono text-[11px] text-hud-muted">NO WORLD SELECTED</span>
+        <span className="font-mono text-base text-hud-muted">NO WORLD SELECTED</span>
       </div>
     );
   }
@@ -25,10 +25,10 @@ export function ResonanceTab() {
   if (resonanceLinks.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-2 p-4">
-        <span className="font-mono text-[11px] text-hud-muted text-center">
+        <span className="font-mono text-base text-hud-muted text-center">
           NO RESONANCE DETECTED
         </span>
-        <span className="font-mono text-[9px] text-hud-label text-center">
+        <span className="font-mono text-sm text-hud-label text-center">
           Resonance links appear when similar concepts are found across different worlds.
           Run multiple simulations to discover cross-world connections.
         </span>
@@ -38,7 +38,7 @@ export function ResonanceTab() {
 
   return (
     <div className="p-3 space-y-3">
-      <div className="font-mono text-[9px] uppercase tracking-[0.15em] text-hud-label">
+      <div className="font-mono text-sm uppercase tracking-[0.15em] text-hud-label">
         CROSS-WORLD RESONANCE ({resonanceLinks.length})
       </div>
 
@@ -54,14 +54,14 @@ export function ResonanceTab() {
               className="p-2 border border-hud-border hover:border-accent/40 transition-colors"
             >
               <div className="flex items-center justify-between">
-                <span className="font-mono text-[10px] text-accent">
+                <span className="font-mono text-[13px] text-accent">
                   {link.entity_type.toUpperCase()}
                 </span>
-                <span className="font-mono text-[9px] text-herald">
+                <span className="font-mono text-sm text-herald">
                   {strengthPct}% match
                 </span>
               </div>
-              <div className="font-mono text-[9px] text-hud-muted mt-1">
+              <div className="font-mono text-sm text-hud-muted mt-1">
                 World: {otherWorldId.slice(0, 8)}…
               </div>
               <div className="w-full bg-void h-1 mt-1.5">

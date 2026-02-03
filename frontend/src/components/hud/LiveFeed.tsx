@@ -141,7 +141,7 @@ export function LiveFeed() {
       <CornerMark />
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-2 border-b border-hud-border">
-        <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-hud-label">
+        <span className="font-mono text-[13px] uppercase tracking-[0.2em] text-hud-label">
           LIVE FEED
         </span>
         {!autoScroll && (
@@ -150,7 +150,7 @@ export function LiveFeed() {
               setAutoScroll(true);
               scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
             }}
-            className="font-mono text-[9px] text-accent hover:text-accent/80 uppercase tracking-wider"
+            className="font-mono text-sm text-accent hover:text-accent/80 uppercase tracking-wider"
           >
             ▼ LATEST
           </button>
@@ -165,7 +165,7 @@ export function LiveFeed() {
       >
         {displayedItems.length === 0 && (
           <div className="flex items-center justify-center h-full">
-            <span className="font-mono text-[11px] text-hud-muted animate-pulse-glow">
+            <span className="font-mono text-base text-hud-muted animate-pulse-glow">
               AWAITING TRANSMISSION<span className="animate-blink">_</span>
             </span>
           </div>
@@ -192,9 +192,9 @@ export function LiveFeed() {
             return (
               <div
                 key={item.id}
-                className="my-2 p-2 border border-herald/20 bg-herald/5 font-mono text-[11px]"
+                className="my-2 p-2 border border-herald/20 bg-herald/5 font-mono text-base"
               >
-                <div className="text-herald text-[9px] uppercase tracking-[0.15em] mb-1">
+                <div className="text-herald text-sm uppercase tracking-[0.15em] mb-1">
                   ◆ HERALD
                 </div>
                 <div className="text-hud-text italic">{item.content}</div>
@@ -204,7 +204,7 @@ export function LiveFeed() {
 
           // Message
           return (
-            <div key={item.id} className="animate-fade-in font-mono text-[11px] leading-relaxed group">
+            <div key={item.id} className="animate-fade-in font-mono text-base leading-relaxed group">
               <button
                 onClick={() => {
                   if (item.agentId) {
@@ -221,7 +221,7 @@ export function LiveFeed() {
               <span className="text-hud-text">{item.content}</span>
               <button
                 onClick={() => copy(`${item.agentName}: ${item.content}`)}
-                className="ml-1 opacity-0 group-hover:opacity-100 text-[8px] text-hud-muted hover:text-accent transition-opacity"
+                className="ml-1 opacity-0 group-hover:opacity-100 text-[11px] text-hud-muted hover:text-accent transition-opacity"
                 title="Copy message"
               >
                 📋
@@ -233,7 +233,7 @@ export function LiveFeed() {
 
       {/* Copy toast */}
       {toast && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-3 py-1 bg-accent text-void font-mono text-[9px] uppercase tracking-wider">
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-3 py-1 bg-accent text-void font-mono text-sm uppercase tracking-wider">
           {toast}
         </div>
       )}

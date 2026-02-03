@@ -173,11 +173,11 @@ body {
 
 /* Content typography utilities */
 .content-text {
-  @apply font-sans text-sm leading-relaxed text-hud-text;
+  @apply font-sans text-base leading-relaxed text-hud-text;
 }
 .content-heading {
-  @apply font-sans text-base font-semibold text-hud-text;
+  @apply font-sans text-lg font-semibold text-hud-text;
 }
 .label-text {
-  @apply font-mono text-[10px] uppercase tracking-wider text-hud-label;
+  @apply font-mono text-[13px] uppercase tracking-wider text-hud-label;
 }

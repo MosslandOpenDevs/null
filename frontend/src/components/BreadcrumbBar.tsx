@@ -20,17 +20,17 @@ export function BreadcrumbBar({ items }: BreadcrumbBarProps) {
         {items.map((item, i) => (
           <span key={i} className="flex items-center gap-1">
             {i > 0 && (
-              <span className="font-mono text-xs text-hud-label">›</span>
+              <span className="font-mono text-sm text-hud-label">›</span>
             )}
             {item.href ? (
               <a
                 href={item.href}
-                className="font-mono text-xs text-hud-muted hover:text-accent uppercase tracking-wider transition-colors"
+                className="font-mono text-sm text-hud-muted hover:text-accent uppercase tracking-wider transition-colors"
               >
                 {item.label}
               </a>
             ) : (
-              <span className="font-mono text-xs text-hud-text uppercase tracking-wider">
+              <span className="font-mono text-sm text-hud-text uppercase tracking-wider">
                 {item.label}
               </span>
             )}
