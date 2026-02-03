@@ -6,7 +6,7 @@ from sqlalchemy import select, func, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from null_engine.db import get_db
-from null_engine.models.tables import Conversation, WikiPage, Stratum, Agent, Faction
+from null_engine.models.tables import Conversation, WikiPage, Stratum, Agent, Faction, AgentPost
 
 router = APIRouter(tags=["conversations"])
 
@@ -151,6 +151,24 @@ async def get_feed(
     )
     strata = strata_result.scalars().all()
 
+    # Fetch agent posts
+    posts_result = await db.execute(
+        select(AgentPost)
+        .where(AgentPost.world_id == world_id, AgentPost.created_at < before_dt)
+        .order_by(AgentPost.created_at.desc())
+        .limit(limit)
+    )
+    agent_posts = posts_result.scalars().all()
+
+    # Fetch agent names for posts
+    post_agent_ids = {p.agent_id for p in agent_posts}
+    post_agent_names: dict[str, str] = {}
+    if post_agent_ids:
+        pa_result = await db.execute(
+            select(Agent.id, Agent.name).where(Agent.id.in_(list(post_agent_ids)))
+        )
+        post_agent_names = {str(r.id): r.name for r in pa_result.all()}
+
     # Merge into feed items
     items = []
 
@@ -202,6 +220,23 @@ async def get_feed(
                 "theme_count": len(s.dominant_themes or []),
             },
             "created_at": None,  # strata don't have created_at, sort by epoch
+        })
+
+    for p in agent_posts:
+        items.append({
+            "type": "post",
+            "data": {
+                "id": str(p.id),
+                "agent_id": str(p.agent_id),
+                "agent_name": post_agent_names.get(str(p.agent_id), "Unknown"),
+                "title": p.title,
+                "content": p.content,
+                "title_ko": p.title_ko,
+                "content_ko": p.content_ko,
+                "epoch": p.epoch,
+                "tick": p.tick,
+            },
+            "created_at": p.created_at.isoformat() if p.created_at else None,
         })
 
     # Sort by created_at descending, None items at end

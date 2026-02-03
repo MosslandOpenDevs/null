@@ -6,7 +6,6 @@ import { useSimulationStore } from "@/stores/simulation";
 const EXPORT_TYPES = [
   { id: "wiki", label: "Wiki Pages", formats: ["md", "json"] },
   { id: "conversations", label: "Conversations", formats: ["jsonl", "json"] },
-  { id: "knowledge-graph", label: "Knowledge Graph", formats: ["csv", "json"] },
   { id: "agents", label: "Agents", formats: ["json"] },
   { id: "all", label: "Everything", formats: ["jsonl"] },
   { id: "training", label: "Training Data", formats: ["chatml", "alpaca", "sharegpt"] },

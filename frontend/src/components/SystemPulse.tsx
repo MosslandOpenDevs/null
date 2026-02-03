@@ -173,13 +173,13 @@ export function SystemPulse() {
       </div>
 
       {/* MINI LIVE FEED */}
-      <div className="border-b border-hud-border flex-1 min-h-0">
-        <div className="px-3 py-2 border-b border-hud-border">
+      <div className="border-b border-hud-border flex-1 min-h-0 flex flex-col">
+        <div className="px-3 py-2 border-b border-hud-border shrink-0">
           <span className="font-mono text-sm uppercase tracking-[0.2em] text-hud-label">
             RECENT ACTIVITY
           </span>
         </div>
-        <div className="p-2 space-y-1.5 overflow-hidden">
+        <div className="p-2 space-y-1.5 overflow-y-auto flex-1">
           {recentMessages.length === 0 && (
             <div className="font-mono text-base text-hud-muted animate-pulse py-2 text-center">
               AWAITING TRANSMISSION
@@ -207,7 +207,7 @@ export function SystemPulse() {
       </div>
 
       {/* WORLD STATUS */}
-      <div className="px-3 py-3">
+      <div className="px-3 py-3 shrink-0 border-t border-hud-border">
         <div className="font-mono text-sm uppercase tracking-[0.2em] text-hud-label mb-2">
           WORLD STATUS
         </div>

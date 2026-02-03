@@ -4,7 +4,6 @@ import { useSimulationStore } from "@/stores/simulation";
 import { CornerMark } from "./CornerMark";
 import { AgentTab } from "./IntelTabs/AgentTab";
 import { WikiTab } from "./IntelTabs/WikiTab";
-import { GraphTab } from "./IntelTabs/GraphTab";
 import { LogTab } from "./IntelTabs/LogTab";
 import { ResonanceTab } from "./IntelTabs/ResonanceTab";
 import { StrataTab } from "./IntelTabs/StrataTab";
@@ -12,7 +11,6 @@ import { StrataTab } from "./IntelTabs/StrataTab";
 const TABS = [
   { id: "agent" as const, label: "AGENT" },
   { id: "wiki" as const, label: "WIKI" },
-  { id: "graph" as const, label: "GRAPH" },
   { id: "log" as const, label: "LOG" },
   { id: "resonance" as const, label: "RESONANCE" },
   { id: "strata" as const, label: "STRATA" },
@@ -45,7 +43,6 @@ export function IntelPanel() {
       <div className="flex-1 overflow-y-auto">
         {intelTab === "agent" && <AgentTab />}
         {intelTab === "wiki" && <WikiTab />}
-        {intelTab === "graph" && <GraphTab />}
         {intelTab === "log" && <LogTab />}
         {intelTab === "resonance" && <ResonanceTab />}
         {intelTab === "strata" && <StrataTab />}

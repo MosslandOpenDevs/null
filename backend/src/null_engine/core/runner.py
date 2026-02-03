@@ -8,6 +8,7 @@ from null_engine.core.consensus import consensus_engine
 from null_engine.core.conversation import run_conversation
 from null_engine.core.events import check_random_events
 from null_engine.core.herald import herald
+from null_engine.core.posts import generate_agent_posts
 from null_engine.core.time_dilation import time_dilation
 from null_engine.core.wiki import wiki_engine
 from null_engine.db import async_session
@@ -85,10 +86,13 @@ class SimulationRunner:
         for ev in events:
             herald.buffer_event(self.world_id, {"description": ev.description, "type": ev.type})
 
-        # 3. Check consensus
+        # 3. Generate agent posts
+        await generate_agent_posts(db, self.world_id, epoch, tick)
+
+        # 4. Check consensus
         canon = await consensus_engine.check_consensus(db, self.world_id)
 
-        # 4. Advance time
+        # 5. Advance time
         epoch_changed = await time_dilation.advance_tick(db, world)
 
         if epoch_changed:

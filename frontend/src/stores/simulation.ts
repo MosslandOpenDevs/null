@@ -56,12 +56,6 @@ export interface WikiPageData {
   created_at: string;
 }
 
-export interface KnowledgeEdgeData {
-  subject: string;
-  predicate: string;
-  object: string;
-  confidence: number;
-}
 
 export interface WSEvent {
   type: string;
@@ -85,7 +79,7 @@ export interface ConversationData {
 }
 
 export type FeedItem = {
-  type: "conversation" | "wiki_edit" | "epoch";
+  type: "conversation" | "wiki_edit" | "epoch" | "post";
   data: Record<string, unknown>;
   created_at: string | null;
 };
@@ -96,11 +90,10 @@ interface SimulationState {
   factions: FactionData[];
   relationships: RelationshipData[];
   wikiPages: WikiPageData[];
-  knowledgeEdges: KnowledgeEdgeData[];
   events: WSEvent[];
   selectedAgent: string | null;
   selectedFaction: string | null;
-  intelTab: "agent" | "wiki" | "graph" | "log" | "resonance" | "strata" | "export" | "feed";
+  intelTab: "agent" | "wiki" | "log" | "resonance" | "strata" | "export" | "feed";
   heraldMessages: Array<{ id: string; text: string; timestamp: number }>;
   conversations: ConversationData[];
   feedItems: FeedItem[];
@@ -115,7 +108,6 @@ interface SimulationState {
   fetchFactions: (worldId: string) => Promise<void>;
   fetchRelationships: (worldId: string) => Promise<void>;
   fetchWikiPages: (worldId: string) => Promise<void>;
-  fetchKnowledgeGraph: (worldId: string) => Promise<void>;
   fetchAutoWorlds: () => Promise<void>;
   startSimulation: (worldId: string) => Promise<void>;
   stopSimulation: (worldId: string) => Promise<void>;
@@ -125,7 +117,7 @@ interface SimulationState {
   fetchConversations: (worldId: string) => Promise<void>;
   fetchFeed: (worldId: string, before?: string) => Promise<void>;
   setSelectedConversation: (id: string | null) => void;
-  setIntelTab: (tab: "agent" | "wiki" | "graph" | "log" | "resonance" | "strata" | "export" | "feed") => void;
+  setIntelTab: (tab: "agent" | "wiki" | "log" | "resonance" | "strata" | "export" | "feed") => void;
   addHeraldMessage: (text: string) => void;
   dismissHerald: (id: string) => void;
   setTagFilter: (tag: string | null) => void;
@@ -138,7 +130,6 @@ export const useSimulationStore = create<SimulationState>((set, get) => ({
   factions: [],
   relationships: [],
   wikiPages: [],
-  knowledgeEdges: [],
   events: [],
   selectedAgent: null,
   selectedFaction: null,
@@ -171,7 +162,6 @@ export const useSimulationStore = create<SimulationState>((set, get) => ({
     get().fetchFactions(id);
     get().fetchRelationships(id);
     get().fetchWikiPages(id);
-    get().fetchKnowledgeGraph(id);
   },
 
   fetchAgents: async (worldId: string) => {
@@ -210,18 +200,6 @@ export const useSimulationStore = create<SimulationState>((set, get) => ({
       if (resp.ok) {
         const wikiPages = await resp.json();
         set({ wikiPages });
-      }
-    } catch {
-      // endpoint may not exist yet
-    }
-  },
-
-  fetchKnowledgeGraph: async (worldId: string) => {
-    try {
-      const resp = await fetch(`${API_URL}/api/worlds/${worldId}/knowledge-graph`);
-      if (resp.ok) {
-        const knowledgeEdges = await resp.json();
-        set({ knowledgeEdges });
       }
     } catch {
       // endpoint may not exist yet
@@ -283,7 +261,6 @@ export const useSimulationStore = create<SimulationState>((set, get) => ({
     const world = get().world;
     if (world && (event.type === "wiki.edit" || event.type === "epoch.transition")) {
       get().fetchWikiPages(world.id);
-      get().fetchKnowledgeGraph(world.id);
     }
     if (world && event.type === "relation.update") {
       get().fetchRelationships(world.id);

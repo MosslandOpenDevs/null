@@ -252,3 +252,18 @@ class Bookmark(Base):
     world_id = Column(UUID(as_uuid=True), ForeignKey("worlds.id", ondelete="CASCADE"), nullable=False)
     note = Column(Text, default="")
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class AgentPost(Base):
+    __tablename__ = "agent_posts"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=new_uuid)
+    world_id = Column(UUID(as_uuid=True), ForeignKey("worlds.id", ondelete="CASCADE"), nullable=False)
+    agent_id = Column(UUID(as_uuid=True), ForeignKey("agents.id", ondelete="CASCADE"), nullable=False)
+    epoch = Column(Integer, nullable=False)
+    tick = Column(Integer, nullable=False)
+    title = Column(String(500), nullable=True)
+    content = Column(Text, nullable=False)
+    title_ko = Column(String(500), nullable=True)
+    content_ko = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)

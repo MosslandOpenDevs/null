@@ -383,5 +383,19 @@ class EntityGraphOut(BaseModel):
     edges: list[EntityGraphEdge] = Field(default_factory=list)
 
 
+# --- Agent Post ---
+class AgentPostOut(BaseModel):
+    id: uuid.UUID
+    agent_id: uuid.UUID
+    agent_name: str
+    title: str | None = None
+    content: str
+    title_ko: str | None = None
+    content_ko: str | None = None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
 # Resolve forward references
 WorldConfig.model_rebuild()

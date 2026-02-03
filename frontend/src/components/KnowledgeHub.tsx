@@ -3,7 +3,6 @@
 import { useSimulationStore } from "@/stores/simulation";
 import { AgentTab } from "./hud/IntelTabs/AgentTab";
 import { WikiTab } from "./hud/IntelTabs/WikiTab";
-import { GraphTab } from "./hud/IntelTabs/GraphTab";
 import { LogTab } from "./hud/IntelTabs/LogTab";
 import { StrataTab } from "./hud/IntelTabs/StrataTab";
 import { ResonanceTab } from "./hud/IntelTabs/ResonanceTab";
@@ -14,7 +13,6 @@ import { ConversationReader } from "./ConversationReader";
 const TABS = [
   { id: "feed" as const, label: "FEED" },
   { id: "wiki" as const, label: "WIKI" },
-  { id: "graph" as const, label: "GRAPH" },
   { id: "strata" as const, label: "STRATA" },
   { id: "resonance" as const, label: "RESONANCE" },
   { id: "agent" as const, label: "AGENT" },
@@ -80,7 +78,6 @@ export function KnowledgeHub() {
       <div className="flex-1 overflow-y-auto">
         {activeTab === "feed" && <FeedTab />}
         {activeTab === "wiki" && <WikiTab />}
-        {activeTab === "graph" && <GraphTab />}
         {activeTab === "strata" && <StrataTab />}
         {activeTab === "resonance" && <ResonanceTab />}
         {activeTab === "agent" && <AgentTab />}

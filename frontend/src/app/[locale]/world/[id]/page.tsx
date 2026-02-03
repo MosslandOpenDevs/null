@@ -158,7 +158,7 @@ export default function WorldPage() {
       {/* Bookmark toggle */}
       <button
         onClick={() => setDrawerOpen(true)}
-        className="fixed right-4 bottom-4 z-40 px-3 py-2 bg-void-light border border-hud-border hover:border-accent font-mono text-sm text-hud-muted hover:text-accent uppercase tracking-wider transition-colors"
+        className="fixed right-4 bottom-12 z-40 px-3 py-2 bg-void-light border border-hud-border hover:border-accent font-mono text-sm text-hud-muted hover:text-accent uppercase tracking-wider transition-colors"
       >
         BOOKMARKS
       </button>

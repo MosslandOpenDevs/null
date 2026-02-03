@@ -5,6 +5,16 @@ import { useLocale } from "next-intl";
 import { useSimulationStore } from "@/stores/simulation";
 import { AgentAvatar } from "./AgentAvatar";
 
+function relativeTime(date: string, locale: string): string {
+  const diff = Date.now() - new Date(date).getTime();
+  const hours = Math.floor(diff / 3600000);
+  if (hours < 1) return locale === "ko" ? "방금 전" : "just now";
+  if (hours < 24) return locale === "ko" ? `${hours}시간 전` : `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return locale === "ko" ? `${days}일 전` : `${days}d ago`;
+  return locale === "ko" ? `${Math.floor(days / 7)}주 전` : `${Math.floor(days / 7)}w ago`;
+}
+
 export function FeedTab() {
   const locale = useLocale();
   const { world, feedItems, fetchFeed, setSelectedConversation, setIntelTab, fetchConversations } =
@@ -95,6 +105,17 @@ export function FeedTab() {
             />
           );
         }
+        if (item.type === "post") {
+          return (
+            <PostCard
+              key={`post-${item.data.id || i}`}
+              data={item.data}
+              createdAt={item.created_at}
+              locale={locale}
+              t={t}
+            />
+          );
+        }
         return null;
       })}
       <div ref={sentinelRef} className="h-8" />
@@ -119,40 +140,49 @@ function ConversationCard({
   const names = (data.participant_names as string[]) || [];
   const msgCount = (data.message_count as number) || 0;
   const preview = (data.first_message_preview as string) || "";
+  const firstSpeaker = names[0] || "";
 
   return (
     <button
       onClick={onClick}
       className="w-full text-left p-4 border border-hud-border hover:border-accent/40 hover:bg-accent/5 transition-colors rounded"
     >
-      <div className="flex items-start justify-between gap-2 mb-2">
-        <h4 className="font-sans text-base font-semibold text-hud-text leading-snug flex-1">
-          {topic}
-        </h4>
-        <span className="font-mono text-sm text-accent flex-shrink-0">
-          {msgCount} msg
-        </span>
-      </div>
-      <div className="flex items-center gap-1 mb-2">
-        {names.slice(0, 3).map((name, i) => (
-          <AgentAvatar key={i} name={name} size="sm" />
-        ))}
-        {names.length > 3 && (
-          <span className="font-mono text-base text-hud-muted">
-            +{names.length - 3}
-          </span>
+      {/* Topic */}
+      <h4 className="font-sans text-base font-semibold text-hud-text leading-snug mb-1">
+        {topic}
+      </h4>
+
+      {/* First speaker • relative time */}
+      <div className="font-sans text-sm text-hud-muted mb-2">
+        {firstSpeaker}
+        {createdAt && (
+          <span className="text-hud-label"> • {relativeTime(createdAt, locale)}</span>
         )}
       </div>
+
+      {/* Preview */}
       {preview && (
-        <p className="font-sans text-sm text-hud-muted line-clamp-2 leading-relaxed">
+        <p className="font-sans text-sm text-hud-muted line-clamp-2 leading-relaxed mb-3">
           {preview}
         </p>
       )}
-      {createdAt && (
-        <div className="font-mono text-base text-hud-label mt-2">
-          {new Date(createdAt).toLocaleString()}
+
+      {/* Bottom row: avatars + message count */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-1">
+          {names.slice(0, 3).map((name, i) => (
+            <AgentAvatar key={i} name={name} size="sm" />
+          ))}
+          {names.length > 3 && (
+            <span className="font-mono text-sm text-hud-muted ml-1">
+              +{names.length - 3}
+            </span>
+          )}
         </div>
-      )}
+        <span className="font-mono text-sm text-hud-muted">
+          💬 {msgCount}
+        </span>
+      </div>
     </button>
   );
 }
@@ -224,6 +254,54 @@ function EpochCard({
           </span>
         )}
       </span>
+    </div>
+  );
+}
+
+function PostCard({
+  data,
+  createdAt,
+  locale,
+  t,
+}: {
+  data: Record<string, unknown>;
+  createdAt: string | null;
+  locale: string;
+  t: (en: string, ko?: string | null) => string;
+}) {
+  const agentName = data.agent_name as string;
+  const rawTitle = data.title as string | null;
+  const title = rawTitle ? t(rawTitle, data.title_ko as string | undefined) : null;
+  const content = t(data.content as string, data.content_ko as string | undefined);
+
+  return (
+    <div className="w-full p-4 border border-hud-border rounded bg-surface/50">
+      {/* Header: Avatar + Name + Time */}
+      <div className="flex items-center gap-3 mb-3">
+        <AgentAvatar name={agentName} size="md" />
+        <div className="flex-1 min-w-0">
+          <span className="font-sans text-base font-semibold text-hud-text">
+            {agentName}
+          </span>
+          {createdAt && (
+            <span className="font-sans text-sm text-hud-muted ml-2">
+              {relativeTime(createdAt, locale)}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Title (if present) */}
+      {title && (
+        <h4 className="font-sans text-base font-semibold text-hud-text mb-2">
+          {title}
+        </h4>
+      )}
+
+      {/* Content */}
+      <p className="font-sans text-sm text-hud-text leading-relaxed whitespace-pre-wrap">
+        {content}
+      </p>
     </div>
   );
 }
