@@ -10,6 +10,7 @@ import { BookmarkDrawer } from "@/components/BookmarkDrawer";
 import { WorldCard } from "@/components/WorldCard";
 import { IncubatorChip } from "@/components/IncubatorChip";
 import { useBookmarkStore } from "@/stores/bookmarks";
+import { LocaleToggle } from "@/components/LocaleToggle";
 import { useTaxonomyStore } from "@/stores/taxonomy";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3301";
@@ -153,6 +154,9 @@ export default function HomePage() {
 
   return (
     <main className="flex flex-col items-center min-h-screen p-8">
+      <div className="fixed top-4 right-4 z-40">
+        <LocaleToggle />
+      </div>
       <h1 className="text-4xl font-bold mb-2 tracking-tight">
         {t("app.title")}
       </h1>
