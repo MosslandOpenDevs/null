@@ -58,7 +58,7 @@ export default function WorldPage() {
   if (!world) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-void">
-        <div className="font-mono text-[11px] text-hud-muted animate-pulse-glow">
+        <div className="font-mono text-sm text-hud-muted animate-pulse-glow">
           INITIALIZING<span className="animate-blink">_</span>
         </div>
       </div>
@@ -82,7 +82,7 @@ export default function WorldPage() {
           </div>
         </div>
         <div className="text-center space-y-3 w-full max-w-sm">
-          <div className="font-mono text-[11px] text-accent animate-pulse">
+          <div className="font-mono text-sm text-accent animate-pulse">
             GENESIS IN PROGRESS
           </div>
           {/* Progress bar */}
@@ -93,15 +93,15 @@ export default function WorldPage() {
             />
           </div>
           <div className="flex justify-between items-center">
-            <span className="font-mono text-[10px] text-hud-muted">{detail}</span>
-            <span className="font-mono text-[10px] text-accent">{percent}%</span>
+            <span className="font-mono text-xs text-hud-muted">{detail}</span>
+            <span className="font-mono text-xs text-accent">{percent}%</span>
           </div>
           {stepLabel && (
-            <div className="font-mono text-[9px] text-hud-label">
+            <div className="font-mono text-xs text-hud-label">
               STEP {stepLabel}
             </div>
           )}
-          <div className="font-mono text-[9px] text-hud-label mt-2">
+          <div className="font-mono text-xs text-hud-label mt-2">
             {world.seed_prompt.slice(0, 80)}{world.seed_prompt.length > 80 ? "..." : ""}
           </div>
         </div>
@@ -112,13 +112,13 @@ export default function WorldPage() {
   if (world.status === "error") {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-void gap-4">
-        <div className="font-mono text-[11px] text-danger">
+        <div className="font-mono text-sm text-danger">
           GENESIS FAILED
         </div>
-        <div className="font-mono text-[9px] text-hud-muted">
+        <div className="font-mono text-xs text-hud-muted">
           World creation encountered an error.
         </div>
-        <a href={`/${locale}`} className="font-mono text-[10px] text-accent hover:text-accent/80">
+        <a href={`/${locale}`} className="font-mono text-xs text-accent hover:text-accent/80">
           &larr; BACK TO OBSERVATORY
         </a>
       </div>
@@ -158,7 +158,7 @@ export default function WorldPage() {
       {/* Bookmark toggle */}
       <button
         onClick={() => setDrawerOpen(true)}
-        className="fixed right-4 bottom-4 z-40 px-3 py-2 bg-void-light border border-hud-border hover:border-accent font-mono text-[9px] text-hud-muted hover:text-accent uppercase tracking-wider transition-colors"
+        className="fixed right-4 bottom-4 z-40 px-3 py-2 bg-void-light border border-hud-border hover:border-accent font-mono text-xs text-hud-muted hover:text-accent uppercase tracking-wider transition-colors"
       >
         BOOKMARKS
       </button>

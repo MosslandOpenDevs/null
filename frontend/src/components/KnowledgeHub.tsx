@@ -40,7 +40,7 @@ export function KnowledgeHub() {
                 useSimulationStore.getState().setSelectedConversation(null);
                 setIntelTab(tab.id);
               }}
-              className={`px-4 py-2.5 font-mono text-[10px] uppercase tracking-[0.15em] transition-colors border-b-2 ${
+              className={`px-4 py-2.5 font-mono text-xs uppercase tracking-[0.15em] transition-colors border-b-2 ${
                 tab.id === "feed"
                   ? "text-accent border-accent"
                   : "text-hud-muted border-transparent hover:text-hud-text"
@@ -65,7 +65,7 @@ export function KnowledgeHub() {
           <button
             key={tab.id}
             onClick={() => setIntelTab(tab.id)}
-            className={`px-4 py-2.5 font-mono text-[10px] uppercase tracking-[0.15em] transition-colors border-b-2 ${
+            className={`px-4 py-2.5 font-mono text-xs uppercase tracking-[0.15em] transition-colors border-b-2 ${
               activeTab === tab.id
                 ? "text-accent border-accent"
                 : "text-hud-muted border-transparent hover:text-hud-text"

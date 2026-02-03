@@ -129,7 +129,7 @@ function ConversationCard({
         <h4 className="font-sans text-sm font-semibold text-white leading-snug flex-1">
           {topic}
         </h4>
-        <span className="font-mono text-[10px] text-accent flex-shrink-0">
+        <span className="font-mono text-xs text-accent flex-shrink-0">
           {msgCount} msg
         </span>
       </div>
@@ -138,7 +138,7 @@ function ConversationCard({
           <AgentAvatar key={i} name={name} size="sm" />
         ))}
         {names.length > 3 && (
-          <span className="font-mono text-[9px] text-hud-muted">
+          <span className="font-mono text-[11px] text-hud-muted">
             +{names.length - 3}
           </span>
         )}
@@ -149,7 +149,7 @@ function ConversationCard({
         </p>
       )}
       {createdAt && (
-        <div className="font-mono text-[9px] text-hud-label mt-2">
+        <div className="font-mono text-[11px] text-hud-label mt-2">
           {new Date(createdAt).toLocaleString()}
         </div>
       )}
@@ -185,18 +185,18 @@ function WikiEditCard({
       className="w-full text-left p-4 border border-hud-border hover:border-success/40 hover:bg-success/5 transition-colors rounded"
     >
       <div className="flex items-center gap-2">
-        <span className="font-mono text-[9px] text-success uppercase">WIKI</span>
+        <span className="font-mono text-[11px] text-success uppercase">WIKI</span>
         <span className="font-sans text-sm text-hud-text flex-1 truncate">
           {agentName ? `${agentName} updated ` : ""}<span className="font-semibold text-white">{title}</span>
         </span>
         <span
-          className={`font-mono text-[9px] px-1.5 py-0.5 border rounded uppercase ${statusColor[status] || "text-hud-muted border-hud-border"}`}
+          className={`font-mono text-[11px] px-1.5 py-0.5 border rounded uppercase ${statusColor[status] || "text-hud-muted border-hud-border"}`}
         >
           {status}
         </span>
       </div>
       {createdAt && (
-        <div className="font-mono text-[9px] text-hud-label mt-1">
+        <div className="font-mono text-[11px] text-hud-label mt-1">
           {new Date(createdAt).toLocaleString()}
         </div>
       )}
@@ -219,7 +219,7 @@ function EpochCard({
       <span className="whitespace-nowrap">
         EPOCH {data.epoch as number}
         {themeCount > 0 && (
-          <span className="text-hud-muted ml-2 normal-case text-[9px]">
+          <span className="text-hud-muted ml-2 normal-case text-[11px]">
             {themeCount} themes
           </span>
         )}

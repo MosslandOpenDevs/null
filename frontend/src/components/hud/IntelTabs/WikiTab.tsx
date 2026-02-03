@@ -35,7 +35,7 @@ function CopyButton({ text, label }: { text: string; label?: string }) {
   return (
     <button
       onClick={handleCopy}
-      className="font-mono text-[8px] px-1.5 py-0.5 border border-hud-border text-hud-muted hover:text-accent hover:border-accent transition-colors flex-shrink-0"
+      className="font-mono text-[11px] px-1.5 py-0.5 border border-hud-border text-hud-muted hover:text-accent hover:border-accent transition-colors flex-shrink-0"
       title="Copy to clipboard"
     >
       {copied ? "COPIED" : label || "📋"}
@@ -168,7 +168,7 @@ export function WikiTab() {
         <div className="flex items-center justify-between">
           <button
             onClick={() => setSelectedPage(null)}
-            className="font-mono text-[9px] text-accent hover:text-accent/80 uppercase tracking-wider"
+            className="font-mono text-[11px] text-accent hover:text-accent/80 uppercase tracking-wider"
           >
             ← BACK TO INDEX
           </button>
@@ -177,10 +177,10 @@ export function WikiTab() {
         <div>
           <h3 className="font-sans text-lg text-white font-semibold">{displayTitle}</h3>
           <div className="flex items-center gap-2 mt-1">
-            <span className={`font-mono text-[9px] uppercase ${STATUS_COLOR[page.status] || "text-hud-muted"}`}>
+            <span className={`font-mono text-[11px] uppercase ${STATUS_COLOR[page.status] || "text-hud-muted"}`}>
               {page.status}
             </span>
-            <span className="font-mono text-[9px] text-hud-label">v{page.version}</span>
+            <span className="font-mono text-[11px] text-hud-label">v{page.version}</span>
           </div>
         </div>
         <HighlightedContent
@@ -199,12 +199,12 @@ export function WikiTab() {
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         placeholder="Search wiki..."
-        className="w-full px-2 py-1.5 bg-void border border-hud-border font-mono text-[10px] text-hud-text placeholder-hud-label focus:outline-none focus:border-hud-border-active"
+        className="w-full px-2 py-1.5 bg-void border border-hud-border font-mono text-xs text-hud-text placeholder-hud-label focus:outline-none focus:border-hud-border-active"
       />
 
       {/* Page list */}
       {filtered.length === 0 ? (
-        <div className="font-mono text-[10px] text-hud-label text-center py-4">
+        <div className="font-mono text-xs text-hud-label text-center py-4">
           {wikiPages.length === 0 ? "NO WIKI PAGES YET" : "NO RESULTS"}
         </div>
       ) : (
@@ -225,7 +225,7 @@ export function WikiTab() {
                   <CopyButton
                     text={`# ${t(p.title, p.title_ko)}\n\n${t(p.content, p.content_ko)}`}
                   />
-                  <span className={`font-mono text-[8px] uppercase ${STATUS_COLOR[p.status] || "text-hud-muted"}`}>
+                  <span className={`font-mono text-[11px] uppercase ${STATUS_COLOR[p.status] || "text-hud-muted"}`}>
                     {p.status}
                   </span>
                 </div>

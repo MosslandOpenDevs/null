@@ -53,10 +53,10 @@ export function ConversationReader() {
           {displayTopic}
         </h2>
         <div className="flex items-center gap-3">
-          <span className="font-mono text-[10px] text-accent uppercase">
+          <span className="font-mono text-xs text-accent uppercase">
             Epoch {conv.epoch}
           </span>
-          <span className="font-mono text-[10px] text-hud-muted">
+          <span className="font-mono text-xs text-hud-muted">
             {conv.participants.length} participants
           </span>
         </div>
@@ -104,7 +104,7 @@ export function ConversationReader() {
                     {agentName}
                   </span>
                   {participant && (
-                    <span className="font-mono text-[9px] text-hud-muted">
+                    <span className="font-mono text-[11px] text-hud-muted">
                       {/* Faction name could be derived but we have color */}
                     </span>
                   )}
@@ -137,14 +137,14 @@ export function ConversationReader() {
           <button
             onClick={() => prevConv && setSelectedConversation(prevConv.id)}
             disabled={!prevConv}
-            className="font-mono text-[10px] text-accent hover:text-accent/80 disabled:text-hud-label disabled:cursor-not-allowed uppercase"
+            className="font-mono text-xs text-accent hover:text-accent/80 disabled:text-hud-label disabled:cursor-not-allowed uppercase"
           >
             ← Prev
           </button>
           <button
             onClick={() => nextConv && setSelectedConversation(nextConv.id)}
             disabled={!nextConv}
-            className="font-mono text-[10px] text-accent hover:text-accent/80 disabled:text-hud-label disabled:cursor-not-allowed uppercase"
+            className="font-mono text-xs text-accent hover:text-accent/80 disabled:text-hud-label disabled:cursor-not-allowed uppercase"
           >
             Next →
           </button>

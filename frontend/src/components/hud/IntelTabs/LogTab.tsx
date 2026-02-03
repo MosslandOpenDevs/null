@@ -59,7 +59,7 @@ export function LogTab() {
           <button
             key={type}
             onClick={() => setFilter(type)}
-            className={`font-mono text-[8px] uppercase px-1.5 py-0.5 border transition-colors ${
+            className={`font-mono text-xs uppercase px-1.5 py-0.5 border transition-colors ${
               filter === type
                 ? "border-accent text-accent"
                 : "border-hud-border text-hud-muted hover:text-hud-text"
@@ -73,7 +73,7 @@ export function LogTab() {
       {/* Log entries */}
       <div className="flex-1 overflow-y-auto p-2 space-y-0.5">
         {displayed.length === 0 && (
-          <div className="font-mono text-[10px] text-hud-label text-center py-4">
+          <div className="font-mono text-xs text-hud-label text-center py-4">
             NO EVENTS
           </div>
         )}
@@ -103,7 +103,7 @@ export function LogTab() {
                 {event.type.split(".")[1]}
               </span>
               <span className="text-hud-muted truncate flex-1">{summary}</span>
-              <span className="text-[8px] text-hud-label opacity-0 group-hover:opacity-100 flex-shrink-0">
+              <span className="text-xs text-hud-label opacity-0 group-hover:opacity-100 flex-shrink-0">
                 {copiedIdx === i ? "COPIED" : "📋"}
               </span>
             </div>

@@ -142,10 +142,10 @@ export function SystemPulse() {
                     className="w-2 h-2 rounded-full flex-shrink-0"
                     style={{ backgroundColor: faction.color }}
                   />
-                  <span className="font-mono text-[10px] text-hud-text truncate flex-1 text-left">
+                  <span className="font-mono text-xs text-hud-text truncate flex-1 text-left">
                     {faction.name}
                   </span>
-                  <span className="font-mono text-[8px] text-hud-muted">
+                  <span className="font-mono text-[11px] text-hud-muted">
                     {faction.agent_count}
                   </span>
                 </button>
@@ -154,7 +154,7 @@ export function SystemPulse() {
                     {factionAgents.map((agent) => (
                       <button
                         key={agent.id}
-                        className="w-full text-left px-1 py-0.5 text-[9px] font-mono text-hud-muted hover:text-hud-text transition-colors truncate"
+                        className="w-full text-left px-1 py-0.5 text-[11px] font-mono text-hud-muted hover:text-hud-text transition-colors truncate"
                         onClick={(e) => {
                           e.stopPropagation();
                           setSelectedAgent(agent.id);
@@ -181,7 +181,7 @@ export function SystemPulse() {
         </div>
         <div className="p-2 space-y-1.5 overflow-hidden">
           {recentMessages.length === 0 && (
-            <div className="font-mono text-[9px] text-hud-muted animate-pulse py-2 text-center">
+            <div className="font-mono text-[11px] text-hud-muted animate-pulse py-2 text-center">
               AWAITING TRANSMISSION
             </div>
           )}
@@ -225,7 +225,7 @@ export function SystemPulse() {
 function StatusItem({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <div className="font-mono text-[9px] text-hud-label uppercase">{label}</div>
+      <div className="font-mono text-[11px] text-hud-label uppercase">{label}</div>
       <div className="font-mono text-xs text-accent">{value}</div>
     </div>
   );
