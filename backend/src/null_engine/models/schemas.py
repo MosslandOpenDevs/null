@@ -176,8 +176,37 @@ class WorldCardOut(BaseModel):
     conversation_count: int = 0
     wiki_page_count: int = 0
     epoch_count: int = 0
+    latest_activity: str | None = None
 
     model_config = {"from_attributes": True}
+
+
+# --- Conversation Detail ---
+class ConversationParticipant(BaseModel):
+    id: str
+    name: str
+    faction_color: str = "#6366f1"
+
+
+class ConversationDetailOut(BaseModel):
+    id: uuid.UUID
+    epoch: int
+    tick: int
+    topic: str
+    topic_ko: str | None = None
+    participants: list[ConversationParticipant] = Field(default_factory=list)
+    messages: list[dict[str, Any]]
+    messages_ko: list[dict[str, Any]] | None = None
+    summary: str
+    summary_ko: str | None = None
+    created_at: datetime
+
+
+# --- Feed Item ---
+class FeedItemOut(BaseModel):
+    type: str  # "conversation" | "wiki_edit" | "epoch"
+    data: dict[str, Any]
+    created_at: str | None = None
 
 
 # --- Concept Cluster ---

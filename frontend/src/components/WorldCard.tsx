@@ -22,8 +22,14 @@ export function WorldCard({ world, locale }: WorldCardProps) {
       </p>
 
       {description && (
-        <p className="text-[11px] text-gray-500 line-clamp-2 mb-3">
+        <p className="text-sm font-sans text-gray-500 line-clamp-2 mb-3">
           {description}
+        </p>
+      )}
+
+      {world.latest_activity && (
+        <p className="font-sans text-xs text-gray-400 italic truncate mb-2">
+          {world.latest_activity}
         </p>
       )}
 
@@ -39,7 +45,7 @@ export function WorldCard({ world, locale }: WorldCardProps) {
           {tags.slice(0, 5).map((t) => (
             <span
               key={t.tag}
-              className="px-1.5 py-0.5 text-[8px] font-mono uppercase tracking-wider text-gray-500 border border-gray-700 rounded"
+              className="px-1.5 py-0.5 text-xs font-mono uppercase tracking-wider text-gray-500 border border-gray-700 rounded"
             >
               {t.tag}
             </span>
@@ -53,8 +59,8 @@ export function WorldCard({ world, locale }: WorldCardProps) {
 function Stat({ label, value }: { label: string; value: number }) {
   return (
     <div className="flex items-center gap-1">
-      <span className="font-mono text-[9px] text-accent">{value}</span>
-      <span className="font-mono text-[8px] text-gray-600 uppercase">{label}</span>
+      <span className="font-mono text-xs text-accent">{value}</span>
+      <span className="font-mono text-xs text-gray-600 uppercase">{label}</span>
     </div>
   );
 }

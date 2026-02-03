@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useLocale } from "next-intl";
 import { useSimulationStore } from "@/stores/simulation";
+import { AgentAvatar } from "@/components/AgentAvatar";
 
 const EVENT_TYPES = [
   "all",
@@ -39,7 +40,7 @@ function useCopy() {
 
 export function LogTab() {
   const locale = useLocale();
-  const { events } = useSimulationStore();
+  const { events, agents, factions } = useSimulationStore();
   const [filter, setFilter] = useState<string>("all");
   const { copiedIdx, copy } = useCopy();
 
@@ -88,9 +89,15 @@ export function LogTab() {
           return (
             <div
               key={i}
-              className="font-mono text-[10px] flex gap-2 group cursor-pointer hover:bg-accent/5"
+              className="font-mono text-xs flex gap-2 group cursor-pointer hover:bg-accent/5"
               onClick={() => copy(`[${time}] ${event.type}: ${summary}`, i)}
             >
+              {event.type === "agent.message" && (() => {
+                const agentId = event.payload.agent_id as string;
+                const agent = agents.find(a => a.id === agentId);
+                const faction = agent?.faction_id ? factions.find(f => f.id === agent.faction_id) : null;
+                return <AgentAvatar name={agent?.name || "?"} factionColor={faction?.color} size="sm" />;
+              })()}
               <span className="text-hud-label flex-shrink-0 w-[52px]">{time}</span>
               <span className={`flex-shrink-0 w-[60px] truncate ${TYPE_COLOR[event.type] || "text-hud-muted"}`}>
                 {event.type.split(".")[1]}

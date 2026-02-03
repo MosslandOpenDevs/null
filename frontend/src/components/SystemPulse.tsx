@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useLocale } from "next-intl";
 import { useSimulationStore } from "@/stores/simulation";
+import { AgentAvatar } from "./AgentAvatar";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3301";
 
@@ -113,7 +114,7 @@ export function SystemPulse() {
       {/* FACTION ACCORDION */}
       <div className="border-b border-hud-border">
         <div className="px-3 py-2 border-b border-hud-border">
-          <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-hud-label">
+          <span className="font-mono text-xs uppercase tracking-[0.2em] text-hud-label">
             FACTIONS
           </span>
         </div>
@@ -174,7 +175,7 @@ export function SystemPulse() {
       {/* MINI LIVE FEED */}
       <div className="border-b border-hud-border flex-1 min-h-0">
         <div className="px-3 py-2 border-b border-hud-border">
-          <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-hud-label">
+          <span className="font-mono text-xs uppercase tracking-[0.2em] text-hud-label">
             RECENT ACTIVITY
           </span>
         </div>
@@ -185,19 +186,21 @@ export function SystemPulse() {
             </div>
           )}
           {recentMessages.map((msg) => (
-            <div key={msg.id} className="font-mono text-[10px] leading-tight">
-              <button
-                onClick={() => {
-                  setSelectedAgent(msg.agentId);
-                  setIntelTab("agent");
-                }}
-                className="hover:underline font-semibold"
-                style={{ color: msg.color }}
-              >
-                {msg.agentName}
-              </button>
-              <span className="text-hud-muted">: </span>
-              <span className="text-hud-text line-clamp-1">{msg.content}</span>
+            <div key={msg.id} className="flex items-start gap-1.5 text-xs leading-tight">
+              <AgentAvatar name={msg.agentName} factionColor={msg.color} size="sm" />
+              <div className="flex-1 min-w-0">
+                <button
+                  onClick={() => {
+                    setSelectedAgent(msg.agentId);
+                    setIntelTab("agent");
+                  }}
+                  className="hover:underline font-semibold font-sans text-xs"
+                  style={{ color: msg.color }}
+                >
+                  {msg.agentName}
+                </button>
+                <span className="text-hud-text font-sans text-xs line-clamp-1 block">{msg.content}</span>
+              </div>
             </div>
           ))}
         </div>
@@ -205,7 +208,7 @@ export function SystemPulse() {
 
       {/* WORLD STATUS */}
       <div className="px-3 py-3">
-        <div className="font-mono text-[9px] uppercase tracking-[0.2em] text-hud-label mb-2">
+        <div className="font-mono text-xs uppercase tracking-[0.2em] text-hud-label mb-2">
           WORLD STATUS
         </div>
         <div className="grid grid-cols-2 gap-2">
@@ -222,8 +225,8 @@ export function SystemPulse() {
 function StatusItem({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <div className="font-mono text-[8px] text-hud-label uppercase">{label}</div>
-      <div className="font-mono text-[11px] text-accent">{value}</div>
+      <div className="font-mono text-[9px] text-hud-label uppercase">{label}</div>
+      <div className="font-mono text-xs text-accent">{value}</div>
     </div>
   );
 }

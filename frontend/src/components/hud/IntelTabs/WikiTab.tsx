@@ -61,7 +61,7 @@ function HighlightedContent({
 
   if (mentions.length === 0) {
     return (
-      <div className="font-mono text-[10px] text-hud-muted leading-relaxed whitespace-pre-wrap">
+      <div className="font-sans text-sm text-hud-text leading-relaxed whitespace-pre-wrap">
         {content}
       </div>
     );
@@ -93,7 +93,7 @@ function HighlightedContent({
 
   return (
     <div className="relative">
-      <div className="font-mono text-[10px] text-hud-muted leading-relaxed whitespace-pre-wrap">
+      <div className="font-sans text-sm text-hud-text leading-relaxed whitespace-pre-wrap">
         {parts.map((part, i) =>
           part.mention ? (
             <span
@@ -175,7 +175,7 @@ export function WikiTab() {
           <CopyButton text={markdown} label="COPY MD" />
         </div>
         <div>
-          <h3 className="font-mono text-sm text-hud-text font-semibold">{displayTitle}</h3>
+          <h3 className="font-sans text-lg text-white font-semibold">{displayTitle}</h3>
           <div className="flex items-center gap-2 mt-1">
             <span className={`font-mono text-[9px] uppercase ${STATUS_COLOR[page.status] || "text-hud-muted"}`}>
               {page.status}
@@ -217,7 +217,7 @@ export function WikiTab() {
               <div className="flex items-center justify-between">
                 <button
                   onClick={() => setSelectedPage(p.id)}
-                  className="font-mono text-[11px] text-hud-text truncate text-left flex-1"
+                  className="font-sans text-sm text-hud-text truncate text-left flex-1"
                 >
                   {t(p.title, p.title_ko)}
                 </button>
@@ -232,7 +232,7 @@ export function WikiTab() {
               </div>
               <button
                 onClick={() => setSelectedPage(p.id)}
-                className="font-mono text-[9px] text-hud-label mt-0.5 truncate block w-full text-left"
+                className="font-sans text-xs text-hud-label mt-0.5 truncate block w-full text-left"
               >
                 {t(p.content, p.content_ko).slice(0, 80)}
               </button>

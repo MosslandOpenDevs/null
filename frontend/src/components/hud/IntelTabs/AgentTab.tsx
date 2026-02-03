@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useSimulationStore } from "@/stores/simulation";
+import { AgentAvatar } from "@/components/AgentAvatar";
 
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
@@ -72,13 +73,8 @@ export function AgentTab() {
       <div>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            {faction && (
-              <span
-                className="w-2 h-2 rounded-full flex-shrink-0"
-                style={{ backgroundColor: faction.color }}
-              />
-            )}
-            <h3 className="font-mono text-sm font-semibold text-hud-text">{agent.name}</h3>
+            <AgentAvatar name={agent.name} factionColor={faction?.color} size="md" />
+            <h3 className="font-sans text-base font-semibold text-white">{agent.name}</h3>
           </div>
           <CopyButton text={agentJson} />
         </div>
@@ -149,8 +145,12 @@ export function AgentTab() {
         </div>
         <div className="space-y-1">
           {agentMessages.map((e, i) => (
-            <div key={i} className="font-mono text-[10px] text-hud-muted bg-void/50 p-1.5 border border-hud-border">
-              {e.payload.content as string}
+            <div key={i} className="flex gap-2 items-start">
+              <AgentAvatar name={agent.name} factionColor={faction?.color} size="sm" />
+              <div className="font-sans text-sm text-hud-muted bg-void/50 p-2 border border-hud-border rounded flex-1"
+                style={{ borderLeft: `3px solid ${faction?.color || "#6366f1"}40` }}>
+                {e.payload.content as string}
+              </div>
             </div>
           ))}
           {agentMessages.length === 0 && (
@@ -169,7 +169,7 @@ function InfoSection({ label, value }: { label: string; value?: string }) {
       <div className="font-mono text-[9px] uppercase tracking-[0.15em] text-hud-label mb-0.5">
         {label}
       </div>
-      <div className="font-mono text-[10px] text-hud-muted leading-relaxed">{value}</div>
+      <div className="font-sans text-sm text-hud-muted leading-relaxed">{value}</div>
     </div>
   );
 }

@@ -4,7 +4,7 @@ import structlog
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from null_engine.api.routes import worlds, agents, events, wiki, seeds, factions, export, multiverse, taxonomy, entities, strata, bookmarks
+from null_engine.api.routes import worlds, agents, events, wiki, seeds, factions, export, multiverse, taxonomy, entities, strata, bookmarks, conversations
 from null_engine.db import engine, create_tables
 from null_engine.ws.handler import router as ws_router
 
@@ -63,6 +63,7 @@ app.include_router(taxonomy.router, prefix="/api")
 app.include_router(entities.router, prefix="/api")
 app.include_router(strata.router, prefix="/api")
 app.include_router(bookmarks.router, prefix="/api")
+app.include_router(conversations.router, prefix="/api")
 app.include_router(ws_router)
 
 

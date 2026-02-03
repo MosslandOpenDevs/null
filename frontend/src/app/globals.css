@@ -170,3 +170,14 @@ body {
 .animate-fade-in {
   animation: fade-in 0.3s ease-out forwards;
 }
+
+/* Content typography utilities */
+.content-text {
+  @apply font-sans text-sm leading-relaxed text-hud-text;
+}
+.content-heading {
+  @apply font-sans text-base font-semibold text-white;
+}
+.label-text {
+  @apply font-mono text-[10px] uppercase tracking-wider text-hud-label;
+}

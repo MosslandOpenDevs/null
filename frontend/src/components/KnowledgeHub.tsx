@@ -8,8 +8,11 @@ import { LogTab } from "./hud/IntelTabs/LogTab";
 import { StrataTab } from "./hud/IntelTabs/StrataTab";
 import { ResonanceTab } from "./hud/IntelTabs/ResonanceTab";
 import { ExportTab } from "./ExportTab";
+import { FeedTab } from "./FeedTab";
+import { ConversationReader } from "./ConversationReader";
 
 const TABS = [
+  { id: "feed" as const, label: "FEED" },
   { id: "wiki" as const, label: "WIKI" },
   { id: "graph" as const, label: "GRAPH" },
   { id: "strata" as const, label: "STRATA" },
@@ -20,10 +23,39 @@ const TABS = [
 ];
 
 export function KnowledgeHub() {
-  const { intelTab, setIntelTab } = useSimulationStore();
+  const { intelTab, setIntelTab, selectedConversation } = useSimulationStore();
 
-  // Default to wiki if current tab isn't in our list
-  const activeTab = TABS.some((t) => t.id === intelTab) ? intelTab : "wiki";
+  // Default to feed if current tab isn't in our list
+  const activeTab = TABS.some((t) => t.id === intelTab) ? intelTab : "feed";
+
+  // If a conversation is selected, show the reader
+  if (selectedConversation) {
+    return (
+      <div className="flex flex-col h-full min-w-0">
+        <div className="flex border-b border-hud-border bg-void-light">
+          {TABS.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => {
+                useSimulationStore.getState().setSelectedConversation(null);
+                setIntelTab(tab.id);
+              }}
+              className={`px-4 py-2.5 font-mono text-[10px] uppercase tracking-[0.15em] transition-colors border-b-2 ${
+                tab.id === "feed"
+                  ? "text-accent border-accent"
+                  : "text-hud-muted border-transparent hover:text-hud-text"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+        <div className="flex-1 overflow-y-auto">
+          <ConversationReader />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-full min-w-0">
@@ -46,6 +78,7 @@ export function KnowledgeHub() {
 
       {/* Tab content */}
       <div className="flex-1 overflow-y-auto">
+        {activeTab === "feed" && <FeedTab />}
         {activeTab === "wiki" && <WikiTab />}
         {activeTab === "graph" && <GraphTab />}
         {activeTab === "strata" && <StrataTab />}

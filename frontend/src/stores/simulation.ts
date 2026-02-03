@@ -13,6 +13,7 @@ export interface WorldData {
   conversation_count?: number;
   wiki_page_count?: number;
   epoch_count?: number;
+  latest_activity?: string | null;
   tags?: Array<{ tag: string; weight: number }>;
 }
 
@@ -69,6 +70,26 @@ export interface WSEvent {
   payload: Record<string, unknown>;
 }
 
+export interface ConversationData {
+  id: string;
+  epoch: number;
+  tick: number;
+  topic: string;
+  topic_ko?: string | null;
+  participants: Array<{ id: string; name: string; faction_color: string }>;
+  messages: Array<Record<string, unknown>>;
+  messages_ko?: Array<Record<string, unknown>> | null;
+  summary: string;
+  summary_ko?: string | null;
+  created_at: string;
+}
+
+export type FeedItem = {
+  type: "conversation" | "wiki_edit" | "epoch";
+  data: Record<string, unknown>;
+  created_at: string | null;
+};
+
 interface SimulationState {
   world: WorldData | null;
   agents: AgentData[];
@@ -79,8 +100,11 @@ interface SimulationState {
   events: WSEvent[];
   selectedAgent: string | null;
   selectedFaction: string | null;
-  intelTab: "agent" | "wiki" | "graph" | "log" | "resonance" | "strata" | "export";
+  intelTab: "agent" | "wiki" | "graph" | "log" | "resonance" | "strata" | "export" | "feed";
   heraldMessages: Array<{ id: string; text: string; timestamp: number }>;
+  conversations: ConversationData[];
+  feedItems: FeedItem[];
+  selectedConversation: string | null;
   autoWorlds: WorldData[];
   worldTags: Record<string, Array<{ tag: string; weight: number }>>;
   tagFilter: string | null;
@@ -98,7 +122,10 @@ interface SimulationState {
   addEvent: (event: WSEvent) => void;
   setSelectedAgent: (id: string | null) => void;
   setSelectedFaction: (id: string | null) => void;
-  setIntelTab: (tab: "agent" | "wiki" | "graph" | "log" | "resonance" | "strata" | "export") => void;
+  fetchConversations: (worldId: string) => Promise<void>;
+  fetchFeed: (worldId: string, before?: string) => Promise<void>;
+  setSelectedConversation: (id: string | null) => void;
+  setIntelTab: (tab: "agent" | "wiki" | "graph" | "log" | "resonance" | "strata" | "export" | "feed") => void;
   addHeraldMessage: (text: string) => void;
   dismissHerald: (id: string) => void;
   setTagFilter: (tag: string | null) => void;
@@ -115,8 +142,11 @@ export const useSimulationStore = create<SimulationState>((set, get) => ({
   events: [],
   selectedAgent: null,
   selectedFaction: null,
-  intelTab: "agent",
+  intelTab: "feed",
   heraldMessages: [],
+  conversations: [],
+  feedItems: [],
+  selectedConversation: null,
   autoWorlds: [],
   worldTags: {},
   tagFilter: null,
@@ -259,6 +289,39 @@ export const useSimulationStore = create<SimulationState>((set, get) => ({
       get().fetchRelationships(world.id);
     }
   },
+
+  fetchConversations: async (worldId: string) => {
+    try {
+      const resp = await fetch(`${API_URL}/api/worlds/${worldId}/conversations?limit=50`);
+      if (resp.ok) {
+        const conversations = await resp.json();
+        set({ conversations });
+      }
+    } catch {
+      // endpoint may not be ready
+    }
+  },
+
+  fetchFeed: async (worldId: string, before?: string) => {
+    try {
+      const url = before
+        ? `${API_URL}/api/worlds/${worldId}/feed?limit=20&before=${encodeURIComponent(before)}`
+        : `${API_URL}/api/worlds/${worldId}/feed?limit=20`;
+      const resp = await fetch(url);
+      if (resp.ok) {
+        const items = await resp.json();
+        if (before) {
+          set((s) => ({ feedItems: [...s.feedItems, ...items] }));
+        } else {
+          set({ feedItems: items });
+        }
+      }
+    } catch {
+      // endpoint may not be ready
+    }
+  },
+
+  setSelectedConversation: (id) => set({ selectedConversation: id }),
 
   setSelectedAgent: (id) => set({ selectedAgent: id, intelTab: "agent" }),
   setSelectedFaction: (id) => set({ selectedFaction: id }),

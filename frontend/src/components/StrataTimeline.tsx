@@ -55,7 +55,7 @@ export function StrataTimeline({ worldId }: StrataTimelineProps) {
           <h3 className="font-mono text-sm text-hud-text font-semibold">
             EPOCH {selected.epoch}
           </h3>
-          <p className="font-mono text-[10px] text-hud-muted mt-1 leading-relaxed">
+          <p className="font-sans text-sm text-hud-muted mt-1 leading-relaxed">
             {ts(selected.summary, selected.summary_ko)}
           </p>
         </div>
@@ -136,14 +136,14 @@ export function StrataTimeline({ worldId }: StrataTimelineProps) {
               {s.dominant_themes.length} themes
             </span>
           </div>
-          <div className="font-mono text-[9px] text-hud-muted mt-0.5 truncate">
+          <div className="font-sans text-xs text-hud-muted mt-0.5 truncate">
             {ts(s.summary, s.summary_ko)}
           </div>
           <div className="flex gap-1 mt-1">
             {s.emerged_concepts.slice(0, 3).map((c, i) => (
               <span
                 key={i}
-                className="px-1 py-0.5 text-[7px] font-mono text-success/60 border border-success/20 rounded"
+                className="px-1.5 py-0.5 text-[8px] font-mono text-success/60 border border-success/20 rounded"
               >
                 +{c}
               </span>

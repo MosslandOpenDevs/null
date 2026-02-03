@@ -56,6 +56,21 @@ async def list_worlds(
     )
     wiki_counts = dict(wiki_counts_q.all())
 
+    # Batch fetch latest conversation topic per world
+    latest_conv_q = await db.execute(
+        select(
+            Conversation.world_id,
+            Conversation.topic,
+        )
+        .distinct(Conversation.world_id)
+        .where(Conversation.world_id.in_(world_ids))
+        .order_by(Conversation.world_id, Conversation.created_at.desc())
+    )
+    latest_activity_map: dict[uuid.UUID, str] = {}
+    for row in latest_conv_q.all():
+        if row.world_id not in latest_activity_map:
+            latest_activity_map[row.world_id] = row.topic
+
     # Batch fetch all tags
     tags_q = await db.execute(
         select(WorldTag).where(WorldTag.world_id.in_(world_ids))
@@ -84,6 +99,7 @@ async def list_worlds(
         card.conversation_count = conversation_count
         card.wiki_page_count = wiki_page_count
         card.epoch_count = w.current_epoch
+        card.latest_activity = latest_activity_map.get(w.id)
 
         out.append(card)
 

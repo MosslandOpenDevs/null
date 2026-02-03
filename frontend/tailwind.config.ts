@@ -22,6 +22,7 @@ const config: Config = {
       },
       fontFamily: {
         mono: ["JetBrains Mono", "monospace"],
+        sans: ["Inter", "system-ui", "sans-serif"],
       },
     },
   },
