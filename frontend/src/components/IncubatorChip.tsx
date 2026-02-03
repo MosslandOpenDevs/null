@@ -24,7 +24,7 @@ export function IncubatorChip({ world, locale }: IncubatorChipProps) {
   return (
     <a
       href={`/${locale}/world/${world.id}`}
-      className="inline-flex items-center gap-2 px-3 py-1.5 rounded border border-gray-700 bg-void-light/40 hover:border-accent/40 transition-all group"
+      className="inline-flex items-center gap-2 px-3 py-1.5 rounded border border-hud-border bg-void-light/40 hover:border-accent/40 transition-all group"
     >
       <span
         className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
@@ -34,11 +34,11 @@ export function IncubatorChip({ world, locale }: IncubatorChipProps) {
             ? "bg-green-500 animate-pulse"
             : world.status === "error"
             ? "bg-red-500"
-            : "bg-gray-600"
+            : "bg-hud-muted"
         }`}
       />
 
-      <span className="font-mono text-[10px] text-gray-400 group-hover:text-gray-200 truncate max-w-[180px]">
+      <span className="font-mono text-[10px] text-hud-muted group-hover:text-hud-text truncate max-w-[180px]">
         {world.seed_prompt.slice(0, 40)}
       </span>
 
@@ -47,7 +47,7 @@ export function IncubatorChip({ world, locale }: IncubatorChipProps) {
       </span>
 
       {world.status === "generating" && progress && (
-        <div className="w-12 h-1 bg-gray-800 rounded-full overflow-hidden flex-shrink-0">
+        <div className="w-12 h-1 bg-hud-border rounded-full overflow-hidden flex-shrink-0">
           <div
             className="h-full bg-accent transition-all duration-500"
             style={{ width: `${progress.percent}%` }}

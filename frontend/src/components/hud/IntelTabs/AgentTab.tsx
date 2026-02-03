@@ -74,7 +74,7 @@ export function AgentTab() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <AgentAvatar name={agent.name} factionColor={faction?.color} size="md" />
-            <h3 className="font-sans text-base font-semibold text-white">{agent.name}</h3>
+            <h3 className="font-sans text-base font-semibold text-hud-text">{agent.name}</h3>
           </div>
           <CopyButton text={agentJson} />
         </div>

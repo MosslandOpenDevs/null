@@ -175,7 +175,7 @@ export function WikiTab() {
           <CopyButton text={markdown} label="COPY MD" />
         </div>
         <div>
-          <h3 className="font-sans text-lg text-white font-semibold">{displayTitle}</h3>
+          <h3 className="font-sans text-lg text-hud-text font-semibold">{displayTitle}</h3>
           <div className="flex items-center gap-2 mt-1">
             <span className={`font-mono text-[11px] uppercase ${STATUS_COLOR[page.status] || "text-hud-muted"}`}>
               {page.status}

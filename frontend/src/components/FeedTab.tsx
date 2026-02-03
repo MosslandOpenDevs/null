@@ -126,7 +126,7 @@ function ConversationCard({
       className="w-full text-left p-4 border border-hud-border hover:border-accent/40 hover:bg-accent/5 transition-colors rounded"
     >
       <div className="flex items-start justify-between gap-2 mb-2">
-        <h4 className="font-sans text-sm font-semibold text-white leading-snug flex-1">
+        <h4 className="font-sans text-sm font-semibold text-hud-text leading-snug flex-1">
           {topic}
         </h4>
         <span className="font-mono text-xs text-accent flex-shrink-0">
@@ -187,7 +187,7 @@ function WikiEditCard({
       <div className="flex items-center gap-2">
         <span className="font-mono text-[11px] text-success uppercase">WIKI</span>
         <span className="font-sans text-sm text-hud-text flex-1 truncate">
-          {agentName ? `${agentName} updated ` : ""}<span className="font-semibold text-white">{title}</span>
+          {agentName ? `${agentName} updated ` : ""}<span className="font-semibold text-hud-text">{title}</span>
         </span>
         <span
           className={`font-mono text-[11px] px-1.5 py-0.5 border rounded uppercase ${statusColor[status] || "text-hud-muted border-hud-border"}`}

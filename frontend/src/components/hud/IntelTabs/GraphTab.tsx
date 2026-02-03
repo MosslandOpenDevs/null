@@ -127,7 +127,7 @@ export function GraphTab() {
                 y1={s.y}
                 x2={t.x}
                 y2={t.y}
-                stroke={link.type === "mention" ? "#6366f1" : "#2a2a4e"}
+                stroke={link.type === "mention" ? "#4f46e5" : "#d4d2ca"}
                 strokeWidth={Math.max(0.5, link.confidence * 2)}
                 strokeOpacity={link.type === "mention" ? 0.4 : 0.6}
                 strokeDasharray={link.type === "mention" ? "2,2" : undefined}
@@ -135,7 +135,7 @@ export function GraphTab() {
               <text
                 x={(s.x + t.x) / 2}
                 y={(s.y + t.y) / 2 - 4}
-                fill="#3a3a4e"
+                fill="#9d9a92"
                 fontSize="6"
                 fontFamily="monospace"
                 textAnchor="middle"
@@ -148,7 +148,7 @@ export function GraphTab() {
 
         {/* Nodes */}
         {nodes.map((node) => {
-          const color = node.type === "agent" ? "#22c55e" : node.type === "wiki_page" ? "#eab308" : "#6366f1";
+          const color = node.type === "agent" ? "#059669" : node.type === "wiki_page" ? "#d97706" : "#4f46e5";
           return (
           <g key={node.id} className="cursor-pointer">
             <circle
@@ -163,7 +163,7 @@ export function GraphTab() {
             <text
               x={node.x}
               y={node.y + 10}
-              fill="#c8c8d4"
+              fill="#3d3b37"
               fontSize="7"
               fontFamily="monospace"
               textAnchor="middle"

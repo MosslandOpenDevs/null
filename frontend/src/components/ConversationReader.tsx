@@ -49,7 +49,7 @@ export function ConversationReader() {
         >
           ← BACK TO FEED
         </button>
-        <h2 className="font-sans text-base font-semibold text-white leading-snug">
+        <h2 className="font-sans text-base font-semibold text-hud-text leading-snug">
           {displayTopic}
         </h2>
         <div className="flex items-center gap-3">

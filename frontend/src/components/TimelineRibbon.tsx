@@ -3,9 +3,9 @@
 import { useSimulationStore } from "@/stores/simulation";
 
 const EPOCH_COLORS = [
-  "#6366f1", "#8b5cf6", "#a855f7", "#d946ef",
-  "#ec4899", "#f43f5e", "#ef4444", "#f97316",
-  "#f59e0b", "#eab308", "#84cc16", "#22c55e",
+  "#4f46e5", "#7c3aed", "#9333ea", "#c026d3",
+  "#db2777", "#e11d48", "#dc2626", "#ea580c",
+  "#d97706", "#ca8a04", "#65a30d", "#059669",
 ];
 
 export function TimelineRibbon() {
@@ -41,8 +41,8 @@ export function TimelineRibbon() {
               className="relative flex items-center justify-center font-mono text-[9px] transition-all cursor-pointer hover:brightness-125 group"
               style={{
                 width,
-                backgroundColor: color + (isCurrent ? "25" : "10"),
-                borderRight: "1px solid #1a1a2e",
+                backgroundColor: color + (isCurrent ? "18" : "0a"),
+                borderRight: "1px solid #d4d2ca",
               }}
               title={evts ? evts.join("\n") : undefined}
             >

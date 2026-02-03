@@ -86,7 +86,7 @@ export default function WorldPage() {
             GENESIS IN PROGRESS
           </div>
           {/* Progress bar */}
-          <div className="w-full h-1.5 bg-gray-800 rounded-full overflow-hidden">
+          <div className="w-full h-1.5 bg-hud-border rounded-full overflow-hidden">
             <div
               className="h-full bg-accent transition-all duration-700 ease-out"
               style={{ width: `${percent}%` }}

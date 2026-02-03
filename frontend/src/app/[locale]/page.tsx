@@ -160,7 +160,7 @@ export default function HomePage() {
       <h1 className="text-4xl font-bold mb-2 tracking-tight">
         {t("app.title")}
       </h1>
-      <p className="text-gray-400 mb-8">{t("app.subtitle")}</p>
+      <p className="text-hud-muted mb-8">{t("app.subtitle")}</p>
 
       {/* Toast */}
       {toast && (
@@ -172,7 +172,7 @@ export default function HomePage() {
       {/* ===== OBSERVATORY — Mature worlds (TOP, hero section) ===== */}
       {matureWorlds.length > 0 && (
         <div className="w-full max-w-5xl mb-12">
-          <h2 className="text-sm uppercase tracking-widest text-gray-600 mb-4">
+          <h2 className="text-sm uppercase tracking-widest text-hud-label mb-4">
             Observatory — Mature Worlds
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -185,9 +185,9 @@ export default function HomePage() {
 
       {/* Empty state when no mature worlds */}
       {matureWorlds.length === 0 && (
-        <div className="w-full max-w-5xl mb-12 py-12 text-center border border-dashed border-gray-800 rounded-lg">
+        <div className="w-full max-w-5xl mb-12 py-12 text-center border border-dashed border-hud-border rounded-lg">
           <div className="font-mono text-[11px] text-hud-muted mb-1">NO MATURE WORLDS YET</div>
-          <div className="font-mono text-[9px] text-gray-600">
+          <div className="font-mono text-[9px] text-hud-label">
             Worlds need 5+ conversations and 1+ wiki page to appear here
           </div>
         </div>
@@ -196,7 +196,7 @@ export default function HomePage() {
       {/* ===== INCUBATOR — Only generating/running worlds ===== */}
       {incubatingWorlds.length > 0 && (
         <div className="w-full max-w-5xl mb-12">
-          <h2 className="text-sm uppercase tracking-widest text-gray-600 mb-3">
+          <h2 className="text-sm uppercase tracking-widest text-hud-label mb-3">
             Incubator — Active
           </h2>
           <div className="flex flex-wrap gap-2">
@@ -210,7 +210,7 @@ export default function HomePage() {
       {/* ===== Tag filter ===== */}
       {allTags.length > 0 && (
         <div className="w-full max-w-5xl mb-8">
-          <h2 className="text-sm uppercase tracking-widest text-gray-600 mb-3">
+          <h2 className="text-sm uppercase tracking-widest text-hud-label mb-3">
             Filter by tag
           </h2>
           <div className="flex flex-wrap gap-1.5">
@@ -219,7 +219,7 @@ export default function HomePage() {
               className={`px-2.5 py-1 rounded text-[10px] font-mono uppercase tracking-wider border transition-colors ${
                 !tagFilter
                   ? "border-accent text-accent bg-accent/10"
-                  : "border-gray-700 text-gray-500 hover:text-gray-300 hover:border-gray-600"
+                  : "border-hud-border text-hud-muted hover:text-hud-text hover:border-hud-border-active"
               }`}
             >
               ALL
@@ -231,7 +231,7 @@ export default function HomePage() {
                 className={`px-2.5 py-1 rounded text-[10px] font-mono uppercase tracking-wider border transition-colors ${
                   tagFilter === tag
                     ? "border-accent text-accent bg-accent/10"
-                    : "border-gray-700 text-gray-500 hover:text-gray-300 hover:border-gray-600"
+                    : "border-hud-border text-hud-muted hover:text-hud-text hover:border-hud-border-active"
                 }`}
               >
                 {tag} ({count})
@@ -262,7 +262,7 @@ export default function HomePage() {
       {taxonomyWorldFilter && taxonomyWorlds.length > 0 && (
         <div className="w-full max-w-5xl mb-8">
           <div className="flex items-center justify-between mb-2">
-            <h2 className="text-sm uppercase tracking-widest text-gray-600">
+            <h2 className="text-sm uppercase tracking-widest text-hud-label">
               Worlds in category
             </h2>
             <button
@@ -282,7 +282,7 @@ export default function HomePage() {
                 href={`/${locale}/world/${w.id}`}
                 className="block px-4 py-2 rounded-lg border border-accent/30 bg-accent/5 hover:bg-accent/10 transition-all"
               >
-                <p className="text-sm text-gray-300 truncate">{w.seed_prompt}</p>
+                <p className="text-sm text-hud-text truncate">{w.seed_prompt}</p>
               </a>
             ))}
           </div>
@@ -290,19 +290,19 @@ export default function HomePage() {
       )}
 
       {/* ===== CREATE WORLD (bottom — secondary action) ===== */}
-      <div className="w-full max-w-2xl space-y-4 mt-4 pt-8 border-t border-gray-800/50">
-        <h2 className="text-sm uppercase tracking-widest text-gray-600 mb-2 text-center">
+      <div className="w-full max-w-2xl space-y-4 mt-4 pt-8 border-t border-hud-border/50">
+        <h2 className="text-sm uppercase tracking-widest text-hud-label mb-2 text-center">
           Launch New World
         </h2>
 
         <button
           onClick={handleExampleClick}
-          className="w-full text-left px-4 py-3 rounded-lg border border-gray-800 bg-void-light/50 hover:border-accent/50 transition-colors group"
+          className="w-full text-left px-4 py-3 rounded-lg border border-hud-border bg-void-light/50 hover:border-accent/50 transition-colors group"
         >
-          <span className="text-[10px] uppercase tracking-widest text-gray-600 group-hover:text-accent/70">
+          <span className="text-[10px] uppercase tracking-widest text-hud-label group-hover:text-accent/70">
             Example — click to use
           </span>
-          <p className="text-sm text-gray-400 mt-1 min-h-[2.5rem]">
+          <p className="text-sm text-hud-muted mt-1 min-h-[2.5rem]">
             {displayedExample}
             <span className="inline-block w-[2px] h-4 bg-accent/70 ml-0.5 animate-pulse align-middle" />
           </p>
@@ -312,7 +312,7 @@ export default function HomePage() {
           value={seedPrompt}
           onChange={(e) => setSeedPrompt(e.target.value)}
           placeholder={t("world.seedPlaceholder")}
-          className="w-full h-32 bg-void-light border border-gray-700 rounded-lg p-4 text-white placeholder-gray-500 focus:border-accent focus:outline-none resize-none"
+          className="w-full h-32 bg-void-light border border-hud-border rounded-lg p-4 text-hud-text placeholder-hud-muted focus:border-accent focus:outline-none resize-none"
         />
         <button
           onClick={handleCreate}
