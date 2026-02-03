@@ -18,6 +18,7 @@ ROLE_MODEL_MAP: dict[str, tuple[str, str]] = {
     "chaos_joker": ("anthropic", "claude-sonnet-4-20250514"),
     "searcher": ("openai", "gpt-4o-mini"),
     "librarian": ("openai", "gpt-4o-mini"),
+    "translator": ("openai", "gpt-4o-mini"),
 }
 
 # Ollama role → model mapping (local dev)
@@ -28,6 +29,7 @@ OLLAMA_ROLE_MODEL_MAP: dict[str, str] = {
     "chaos_joker": "llama3.2:3b",
     "searcher": "llama3.2:3b",
     "librarian": "llama3.2:3b",
+    "translator": "llama3.2:3b",
 }
 
 OLLAMA_DEFAULT_MODEL = "llama3.2:3b"

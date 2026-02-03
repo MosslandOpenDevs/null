@@ -75,6 +75,8 @@ class WikiPage(Base):
     world_id = Column(UUID(as_uuid=True), ForeignKey("worlds.id", ondelete="CASCADE"), nullable=False)
     title = Column(String(500), nullable=False)
     content = Column(Text, default="")
+    title_ko = Column(String(500), nullable=True, default=None)
+    content_ko = Column(Text, nullable=True, default=None)
     status = Column(Enum("draft", "canon", "legend", "disputed", name="wiki_status"), default="draft")
     version = Column(Integer, default=1)
     embedding = Column(Vector(1536), nullable=True)
@@ -119,6 +121,11 @@ class Conversation(Base):
     summary = Column(Text, default="")
     embedding = Column(Vector(1536), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+    # Korean translations (populated by background worker)
+    topic_ko = Column(String(500), nullable=True, default=None)
+    messages_ko = Column(JSONB, nullable=True, default=None)
+    summary_ko = Column(Text, nullable=True, default=None)
 
 
 class WorldTag(Base):
@@ -227,6 +234,7 @@ class Stratum(Base):
     world_id = Column(UUID(as_uuid=True), ForeignKey("worlds.id", ondelete="CASCADE"), nullable=False)
     epoch = Column(Integer, nullable=False)
     summary = Column(Text, default="")
+    summary_ko = Column(Text, nullable=True, default=None)
     emerged_concepts = Column(JSONB, default=list)
     faded_concepts = Column(JSONB, default=list)
     dominant_themes = Column(JSONB, default=list)

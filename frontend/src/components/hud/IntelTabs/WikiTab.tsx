@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useLocale } from "next-intl";
 import { useSimulationStore } from "@/stores/simulation";
 import { EntityCard } from "@/components/EntityCard";
 
@@ -129,7 +130,9 @@ function HighlightedContent({
 }
 
 export function WikiTab() {
+  const locale = useLocale();
   const { wikiPages, world } = useSimulationStore();
+  const t = (en: string, ko?: string | null) => (locale === "ko" && ko) ? ko : en;
   const [selectedPage, setSelectedPage] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [mentions, setMentions] = useState<MentionData[]>([]);
@@ -156,7 +159,9 @@ export function WikiTab() {
   const page = wikiPages.find((p) => p.id === selectedPage);
 
   if (page) {
-    const markdown = `# ${page.title}\n\n*Status: ${page.status} | Version: ${page.version}*\n\n${page.content}`;
+    const displayTitle = t(page.title, page.title_ko);
+    const displayContent = t(page.content, page.content_ko);
+    const markdown = `# ${displayTitle}\n\n*Status: ${page.status} | Version: ${page.version}*\n\n${displayContent}`;
 
     return (
       <div className="p-3 space-y-3">
@@ -170,7 +175,7 @@ export function WikiTab() {
           <CopyButton text={markdown} label="COPY MD" />
         </div>
         <div>
-          <h3 className="font-mono text-sm text-hud-text font-semibold">{page.title}</h3>
+          <h3 className="font-mono text-sm text-hud-text font-semibold">{displayTitle}</h3>
           <div className="flex items-center gap-2 mt-1">
             <span className={`font-mono text-[9px] uppercase ${STATUS_COLOR[page.status] || "text-hud-muted"}`}>
               {page.status}
@@ -179,7 +184,7 @@ export function WikiTab() {
           </div>
         </div>
         <HighlightedContent
-          content={page.content}
+          content={displayContent}
           mentions={mentions}
           worldId={world?.id || ""}
         />
@@ -214,11 +219,11 @@ export function WikiTab() {
                   onClick={() => setSelectedPage(p.id)}
                   className="font-mono text-[11px] text-hud-text truncate text-left flex-1"
                 >
-                  {p.title}
+                  {t(p.title, p.title_ko)}
                 </button>
                 <div className="flex items-center gap-1 flex-shrink-0 ml-2">
                   <CopyButton
-                    text={`# ${p.title}\n\n${p.content}`}
+                    text={`# ${t(p.title, p.title_ko)}\n\n${t(p.content, p.content_ko)}`}
                   />
                   <span className={`font-mono text-[8px] uppercase ${STATUS_COLOR[p.status] || "text-hud-muted"}`}>
                     {p.status}
@@ -229,7 +234,7 @@ export function WikiTab() {
                 onClick={() => setSelectedPage(p.id)}
                 className="font-mono text-[9px] text-hud-label mt-0.5 truncate block w-full text-left"
               >
-                {p.content.slice(0, 80)}
+                {t(p.content, p.content_ko).slice(0, 80)}
               </button>
             </div>
           ))}

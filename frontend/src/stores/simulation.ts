@@ -48,6 +48,8 @@ export interface WikiPageData {
   world_id: string;
   title: string;
   content: string;
+  title_ko?: string | null;
+  content_ko?: string | null;
   status: string;
   version: number;
   created_at: string;

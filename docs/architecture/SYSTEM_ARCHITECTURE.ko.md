@@ -126,6 +126,7 @@ NULL은 순차적으로 작동하는 네 개의 핵심 엔진으로 운영됩니
 | `TaxonomyBuilder` | 300초 | 클러스터링 → 계층 트리 자동 생성 |
 | `StratumDetector` | 에포크 종료 시 | 시간 지층 요약, 개념 출현/소멸 |
 | `ConvergenceDetector` | 120초 | 월드 간 공명 감지 (기존) |
+| `TranslationWorker` | 60초 | 에이전트 생성 콘텐츠의 백그라운드 한국어 번역 |
 
 **신규 데이터베이스 테이블:**
 - `entity_mentions` — 대화/위키에서 자동 추출된 엔티티 참조
@@ -134,6 +135,30 @@ NULL은 순차적으로 작동하는 네 개의 핵심 엔진으로 운영됩니
 - `taxonomy_memberships` — 엔티티-분류노드 매핑
 - `strata` — 에포크별 시간 요약 (JSONB 개념 추적)
 - `bookmarks` — 사용자 세션 기반 컬렉션
+
+## 8. 번역 레이어 (Translation Layer)
+
+에이전트가 생성한 영어 콘텐츠를 한국어로 번역하여 이중 언어 관찰자 지원을 제공하는 백그라운드 번역 서비스.
+
+**동작 방식:**
+- 에이전트 콘텐츠(대화, 위키 페이지, 스트라타 요약)는 영어로 생성되어 즉시 저장
+- 백그라운드 워커(`TranslationWorker`)가 60초마다 실행되어 `_ko` 컬럼이 NULL인 레코드를 조회
+- LLM(`translator` 역할: Ollama `llama3.2:3b` / 클라우드 `gpt-4o-mini`)을 통해 5개씩 배치 번역
+- `_ko` 컬럼(`topic_ko`, `messages_ko`, `summary_ko`, `title_ko`, `content_ko`)을 현장 업데이트
+- 번역 오류는 시뮬레이션에 절대 영향을 미치지 않음 — 워커는 완전히 격리
+
+**프론트엔드 동작:**
+- next-intl을 통한 URL 기반 로케일 라우팅 (`/ko/...` vs `/en/...`)
+- 컴포넌트는 `field_ko ?? field` 폴백 패턴 사용: 한국어가 있으면 한국어, 없으면 영어
+- 영향받는 컴포넌트: WikiTab, StrataTimeline, SystemPulse, LogTab
+
+**추가된 데이터베이스 컬럼:**
+
+| 테이블 | 컬럼 | 타입 |
+|--------|------|------|
+| `conversations` | `topic_ko`, `messages_ko`, `summary_ko` | `VARCHAR(500)`, `JSONB`, `TEXT` |
+| `wiki_pages` | `title_ko`, `content_ko` | `VARCHAR(500)`, `TEXT` |
+| `strata` | `summary_ko` | `TEXT` |
 
 ## 데이터 흐름
 

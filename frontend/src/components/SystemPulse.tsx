@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { useLocale } from "next-intl";
 import { useSimulationStore } from "@/stores/simulation";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3301";
 
 export function SystemPulse() {
+  const locale = useLocale();
   const {
     world,
     factions,
@@ -50,7 +52,7 @@ export function SystemPulse() {
 
   // Fetch initial messages from API on mount
   const [initialMessages, setInitialMessages] = useState<
-    Array<{ agent_id: string; agent_name: string; content: string }>
+    Array<{ agent_id: string; agent_name: string; content: string; content_ko?: string }>
   >([]);
 
   useEffect(() => {
@@ -70,6 +72,7 @@ export function SystemPulse() {
       color: string;
       agentId: string;
     }> = [];
+    const pick = (en: string, ko?: string) => (locale === "ko" && ko) ? ko : en;
 
     // First add from live events
     for (let i = events.length - 1; i >= 0 && msgs.length < 5; i--) {
@@ -95,7 +98,7 @@ export function SystemPulse() {
         msgs.push({
           id: `init-${msg.agent_id}-${msg.content.slice(0, 20)}`,
           agentName: msg.agent_name || agentMap.get(msg.agent_id)?.name || "Unknown",
-          content: msg.content,
+          content: pick(msg.content, msg.content_ko),
           color: getFactionColor(msg.agent_id),
           agentId: msg.agent_id,
         });
@@ -103,7 +106,7 @@ export function SystemPulse() {
     }
 
     return msgs;
-  }, [events, agentMap, getFactionColor, initialMessages]);
+  }, [events, agentMap, getFactionColor, initialMessages, locale]);
 
   return (
     <div className="flex flex-col h-full bg-void-light border-l border-hud-border w-[320px] min-w-[320px] overflow-hidden">

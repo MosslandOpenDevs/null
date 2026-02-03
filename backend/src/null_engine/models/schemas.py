@@ -102,6 +102,8 @@ class WikiPageOut(BaseModel):
     world_id: uuid.UUID
     title: str
     content: str
+    title_ko: str | None = None
+    content_ko: str | None = None
     status: str
     version: int
     created_at: datetime
@@ -125,9 +127,12 @@ class ConversationOut(BaseModel):
     epoch: int
     tick: int
     topic: str
+    topic_ko: str | None = None
     participants: list[str]
     messages: list[dict[str, Any]]
+    messages_ko: list[dict[str, Any]] | None = None
     summary: str
+    summary_ko: str | None = None
     created_at: datetime
 
     model_config = {"from_attributes": True}
@@ -298,6 +303,7 @@ class StratumOut(BaseModel):
     world_id: uuid.UUID
     epoch: int
     summary: str
+    summary_ko: str | None = None
     emerged_concepts: list[Any]
     faded_concepts: list[Any]
     dominant_themes: list[Any]

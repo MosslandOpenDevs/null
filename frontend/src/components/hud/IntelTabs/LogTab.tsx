@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useLocale } from "next-intl";
 import { useSimulationStore } from "@/stores/simulation";
 
 const EVENT_TYPES = [
@@ -37,6 +38,7 @@ function useCopy() {
 }
 
 export function LogTab() {
+  const locale = useLocale();
   const { events } = useSimulationStore();
   const [filter, setFilter] = useState<string>("all");
   const { copiedIdx, copy } = useCopy();
@@ -81,7 +83,7 @@ export function LogTab() {
             minute: "2-digit",
             second: "2-digit",
           });
-          const summary = getSummary(event);
+          const summary = getSummary(event, locale);
 
           return (
             <div
@@ -105,11 +107,13 @@ export function LogTab() {
   );
 }
 
-function getSummary(event: { type: string; payload: Record<string, unknown> }): string {
+function getSummary(event: { type: string; payload: Record<string, unknown> }, locale: string = "en"): string {
   const p = event.payload;
   switch (event.type) {
-    case "agent.message":
-      return `${p.agent_name || "Agent"}: ${String(p.content || "").slice(0, 60)}`;
+    case "agent.message": {
+      const content = (locale === "ko" && p.content_ko) ? String(p.content_ko) : String(p.content || "");
+      return `${p.agent_name || "Agent"}: ${content.slice(0, 60)}`;
+    }
     case "agent.state":
       return `${p.agent_name || "Agent"} → ${p.status}`;
     case "epoch.transition":

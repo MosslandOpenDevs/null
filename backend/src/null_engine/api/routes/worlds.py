@@ -103,14 +103,24 @@ async def get_recent_messages(world_id: uuid.UUID, limit: int = 5, db: AsyncSess
 
     messages = []
     for conv in reversed(conversations):
-        for msg in (conv.messages or [])[-2:]:
-            messages.append({
+        msgs_ko = conv.messages_ko or []
+        for idx, msg in enumerate((conv.messages or [])[-2:]):
+            real_idx = len(conv.messages or []) - 2 + idx
+            if real_idx < 0:
+                real_idx = idx
+            ko_msg = msgs_ko[real_idx] if real_idx < len(msgs_ko) else None
+            entry = {
                 "agent_id": msg.get("agent_id", ""),
                 "agent_name": msg.get("agent_name", ""),
                 "content": msg.get("content", ""),
                 "epoch": conv.epoch,
                 "topic": conv.topic,
-            })
+            }
+            if ko_msg:
+                entry["content_ko"] = ko_msg.get("content", "")
+            if conv.topic_ko:
+                entry["topic_ko"] = conv.topic_ko
+            messages.append(entry)
 
     return messages[-10:]
 

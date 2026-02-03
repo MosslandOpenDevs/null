@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useLocale } from "next-intl";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3301";
 
@@ -9,6 +10,7 @@ interface Stratum {
   world_id: string;
   epoch: number;
   summary: string;
+  summary_ko?: string | null;
   emerged_concepts: string[];
   faded_concepts: string[];
   dominant_themes: string[];
@@ -19,6 +21,8 @@ interface StrataTimelineProps {
 }
 
 export function StrataTimeline({ worldId }: StrataTimelineProps) {
+  const locale = useLocale();
+  const ts = (en: string, ko?: string | null) => (locale === "ko" && ko) ? ko : en;
   const [strata, setStrata] = useState<Stratum[]>([]);
   const [selected, setSelected] = useState<Stratum | null>(null);
 
@@ -52,7 +56,7 @@ export function StrataTimeline({ worldId }: StrataTimelineProps) {
             EPOCH {selected.epoch}
           </h3>
           <p className="font-mono text-[10px] text-hud-muted mt-1 leading-relaxed">
-            {selected.summary}
+            {ts(selected.summary, selected.summary_ko)}
           </p>
         </div>
 
@@ -133,7 +137,7 @@ export function StrataTimeline({ worldId }: StrataTimelineProps) {
             </span>
           </div>
           <div className="font-mono text-[9px] text-hud-muted mt-0.5 truncate">
-            {s.summary}
+            {ts(s.summary, s.summary_ko)}
           </div>
           <div className="flex gap-1 mt-1">
             {s.emerged_concepts.slice(0, 3).map((c, i) => (

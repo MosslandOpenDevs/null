@@ -18,6 +18,7 @@ async def lifespan(app: FastAPI):
     from null_engine.services.convergence import convergence_loop
     from null_engine.services.semantic_indexer import semantic_indexer_loop
     from null_engine.services.taxonomy_builder import taxonomy_builder_loop
+    from null_engine.services.translator import translation_worker_loop
 
     logger.info("starting null-engine")
     await create_tables()
@@ -27,6 +28,7 @@ async def lifespan(app: FastAPI):
     convergence_task = asyncio.create_task(convergence_loop())
     indexer_task = asyncio.create_task(semantic_indexer_loop())
     taxonomy_task = asyncio.create_task(taxonomy_builder_loop())
+    translator_task = asyncio.create_task(translation_worker_loop())
 
     yield
 
@@ -34,6 +36,7 @@ async def lifespan(app: FastAPI):
     convergence_task.cancel()
     indexer_task.cancel()
     taxonomy_task.cancel()
+    translator_task.cancel()
     await engine.dispose()
     logger.info("null-engine stopped")
 

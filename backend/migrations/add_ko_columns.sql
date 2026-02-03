@@ -1,0 +1,10 @@
+-- Add Korean translation columns to support background translation worker
+
+ALTER TABLE conversations ADD COLUMN IF NOT EXISTS topic_ko VARCHAR(500) DEFAULT NULL;
+ALTER TABLE conversations ADD COLUMN IF NOT EXISTS messages_ko JSONB DEFAULT NULL;
+ALTER TABLE conversations ADD COLUMN IF NOT EXISTS summary_ko TEXT DEFAULT NULL;
+
+ALTER TABLE wiki_pages ADD COLUMN IF NOT EXISTS title_ko VARCHAR(500) DEFAULT NULL;
+ALTER TABLE wiki_pages ADD COLUMN IF NOT EXISTS content_ko TEXT DEFAULT NULL;
+
+ALTER TABLE strata ADD COLUMN IF NOT EXISTS summary_ko TEXT DEFAULT NULL;

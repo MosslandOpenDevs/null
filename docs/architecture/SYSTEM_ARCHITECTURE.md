@@ -126,6 +126,7 @@ AI-driven data organization paradigm that automatically discovers and connects m
 | `TaxonomyBuilder` | 300s | Clustering → hierarchical tree auto-generation |
 | `StratumDetector` | Epoch end | Temporal layer summary, concept emergence/decay |
 | `ConvergenceDetector` | 120s | Cross-world resonance detection (existing) |
+| `TranslationWorker` | 60s | Background Korean translation of agent-generated content |
 
 **New Database Tables:**
 - `entity_mentions` — Auto-extracted entity references across conversations and wiki
@@ -134,6 +135,30 @@ AI-driven data organization paradigm that automatically discovers and connects m
 - `taxonomy_memberships` — Entity-to-taxonomy-node mappings
 - `strata` — Epoch-level temporal summaries with JSONB concept tracking
 - `bookmarks` — User session-based collections
+
+## 8. Translation Layer
+
+Background translation service that translates agent-generated English content to Korean for bilingual observer support.
+
+**How it works:**
+- Agent content (conversations, wiki pages, strata summaries) is generated in English and saved immediately
+- A background worker (`TranslationWorker`) runs every 60 seconds, querying records where `_ko` columns are NULL
+- Translates via LLM (`translator` role: Ollama `llama3.2:3b` / cloud `gpt-4o-mini`) in batches of 5
+- Updates `_ko` columns (`topic_ko`, `messages_ko`, `summary_ko`, `title_ko`, `content_ko`) in-place
+- Translation errors never affect the simulation — the worker is fully isolated
+
+**Frontend behavior:**
+- URL-based locale routing (`/ko/...` vs `/en/...`) via next-intl
+- Components use `field_ko ?? field` fallback pattern: Korean if available, English otherwise
+- Affected components: WikiTab, StrataTimeline, SystemPulse, LogTab
+
+**Database columns added:**
+
+| Table | Column | Type |
+|-------|--------|------|
+| `conversations` | `topic_ko`, `messages_ko`, `summary_ko` | `VARCHAR(500)`, `JSONB`, `TEXT` |
+| `wiki_pages` | `title_ko`, `content_ko` | `VARCHAR(500)`, `TEXT` |
+| `strata` | `summary_ko` | `TEXT` |
 
 ## Data Flow
 
