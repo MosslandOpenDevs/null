@@ -9,6 +9,7 @@
     "typecheck:frontend": "pnpm --filter null-frontend tsc --noEmit",
     "test:backend": "cd backend && poetry run pytest -q",
     "lint:backend": "cd backend && poetry run ruff check src tests",
-    "loadtest:backend": "cd backend && poetry run python scripts/loadtest.py --base-url http://localhost:3301 --requests 400 --concurrency 20"
+    "loadtest:backend": "cd backend && poetry run python scripts/loadtest.py --base-url http://localhost:3301 --requests 400 --concurrency 20",
+    "loadtest:backend:trend": "cd backend && poetry run python scripts/loadtest.py --base-url http://localhost:3301 --requests 600 --concurrency 30 --history-out ../artifacts/loadtest-history.jsonl --trend-out ../artifacts/loadtest-trend.md --history-window 30"
   }
 }

@@ -1,4 +1,4 @@
-.PHONY: up down build dev-backend dev-frontend lint test db-migrate doctor loadtest
+.PHONY: up down build dev-backend dev-frontend lint test db-migrate doctor loadtest loadtest-trend
 
 up:
 	docker compose up --build -d
@@ -38,3 +38,6 @@ doctor:
 
 loadtest:
 	cd backend && poetry run python scripts/loadtest.py --base-url http://localhost:3301 --requests 400 --concurrency 20
+
+loadtest-trend:
+	cd backend && poetry run python scripts/loadtest.py --base-url http://localhost:3301 --requests 600 --concurrency 30 --history-out ../artifacts/loadtest-history.jsonl --trend-out ../artifacts/loadtest-trend.md --history-window 30

@@ -37,5 +37,10 @@ poetry run python scripts/loadtest.py --base-url http://localhost:3301 --request
 
 CI artifact-only mode (no HTTP traffic):
 ```bash
-poetry run python scripts/loadtest.py --dry-run --out ../artifacts/loadtest-report.json
+poetry run python scripts/loadtest.py --dry-run --out ../artifacts/loadtest-report.json --history-out ../artifacts/loadtest-history.jsonl --trend-out ../artifacts/loadtest-trend.md --history-window 30 --no-fail-on-alert
+```
+
+Generate trend markdown from local benchmark history:
+```bash
+poetry run python scripts/loadtest.py --base-url http://localhost:3301 --requests 600 --concurrency 30 --history-out ../artifacts/loadtest-history.jsonl --trend-out ../artifacts/loadtest-trend.md
 ```

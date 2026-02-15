@@ -14,6 +14,7 @@ import math
 import time
 from collections import defaultdict
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from pathlib import Path
 
 import httpx
@@ -199,7 +200,15 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--timeout-seconds", type=float, default=8.0)
     parser.add_argument("--world-id", default=None)
     parser.add_argument("--out", default=None, help="Optional JSON output path")
+    parser.add_argument("--history-out", default=None, help="Optional JSONL path to append run history")
+    parser.add_argument("--trend-out", default=None, help="Optional markdown output path for trend summary")
+    parser.add_argument("--history-window", type=int, default=30, help="Rows included in trend summary")
     parser.add_argument("--dry-run", action="store_true", help="Do not send HTTP requests; output planned benchmark config")
+    parser.add_argument(
+        "--no-fail-on-alert",
+        action="store_true",
+        help="Exit with code 0 even when alert conditions are detected",
+    )
     return parser.parse_args()
 
 
@@ -210,6 +219,109 @@ def write_summary(summary: dict, out_path: str | None) -> None:
         path = Path(out_path)
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(payload, encoding="utf-8")
+
+
+def build_history_record(summary: dict, *, captured_at: str | None = None) -> dict:
+    captured_at_value = captured_at or datetime.now(UTC).isoformat()
+    return {
+        "captured_at": captured_at_value,
+        "base_url": summary.get("base_url"),
+        "mode": summary.get("mode", "load"),
+        "requests": summary.get("requests"),
+        "concurrency": summary.get("concurrency"),
+        "duration_seconds": summary.get("duration_seconds"),
+        "throughput_rps": summary.get("throughput_rps"),
+        "success_rate": summary.get("overall", {}).get("success_rate"),
+        "p95_ms": summary.get("overall", {}).get("latency_ms", {}).get("p95"),
+        "alerts": summary.get("alerts", []),
+    }
+
+
+def append_history(summary: dict, history_out: str) -> dict:
+    path = Path(history_out)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    record = build_history_record(summary)
+    with path.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps(record, ensure_ascii=True) + "\n")
+    return record
+
+
+def read_history(history_out: str) -> list[dict]:
+    path = Path(history_out)
+    if not path.exists():
+        return []
+
+    rows: list[dict] = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            row = json.loads(line)
+            if isinstance(row, dict):
+                rows.append(row)
+        except json.JSONDecodeError:
+            continue
+    return rows
+
+
+def write_trend_markdown(history_rows: list[dict], trend_out: str, history_window: int) -> None:
+    path = Path(trend_out)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    recent = history_rows[-history_window:] if history_window > 0 else history_rows
+    if not recent:
+        path.write_text("# Loadtest Trend\n\nNo history data available.\n", encoding="utf-8")
+        return
+
+    latest = recent[-1]
+    prev = recent[-2] if len(recent) >= 2 else None
+
+    def fmt_delta(current: float | int | None, previous: float | int | None) -> str:
+        if current is None:
+            return "n/a"
+        if previous is None:
+            return str(current)
+        delta = float(current) - float(previous)
+        sign = "+" if delta >= 0 else ""
+        return f"{current} ({sign}{round(delta, 3)})"
+
+    def fmt_value(value: object) -> object:
+        return "n/a" if value is None else value
+
+    lines = [
+        "# Loadtest Trend",
+        "",
+        f"- Captured Runs: {len(history_rows)}",
+        f"- Window Size: {len(recent)}",
+        f"- Latest Captured At: {latest.get('captured_at', 'n/a')}",
+        "",
+        "## Latest Snapshot",
+        "",
+        f"- Throughput (rps): {fmt_delta(latest.get('throughput_rps'), prev.get('throughput_rps') if prev else None)}",
+        f"- Success Rate: {fmt_delta(latest.get('success_rate'), prev.get('success_rate') if prev else None)}",
+        f"- P95 Latency (ms): {fmt_delta(latest.get('p95_ms'), prev.get('p95_ms') if prev else None)}",
+        f"- Alerts: {len(latest.get('alerts', []))}",
+        "",
+        "## Recent Runs",
+        "",
+        "| captured_at | mode | requests | concurrency | throughput_rps | success_rate | p95_ms | alerts |",
+        "|---|---:|---:|---:|---:|---:|---:|---:|",
+    ]
+
+    for row in reversed(recent):
+        lines.append(
+            "| "
+            f"{row.get('captured_at', 'n/a')} | "
+            f"{fmt_value(row.get('mode', 'n/a'))} | "
+            f"{fmt_value(row.get('requests', 'n/a'))} | "
+            f"{fmt_value(row.get('concurrency', 'n/a'))} | "
+            f"{fmt_value(row.get('throughput_rps', 'n/a'))} | "
+            f"{fmt_value(row.get('success_rate', 'n/a'))} | "
+            f"{fmt_value(row.get('p95_ms', 'n/a'))} | "
+            f"{len(row.get('alerts', []))} |"
+        )
+
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
 async def _main() -> int:
@@ -226,6 +338,15 @@ async def _main() -> int:
             "alerts": [],
         }
         write_summary(summary, args.out)
+        if args.trend_out:
+            if args.history_out:
+                append_history(summary, args.history_out)
+                history_rows = read_history(args.history_out)
+            else:
+                history_rows = [build_history_record(summary)]
+            write_trend_markdown(history_rows, args.trend_out, args.history_window)
+        elif args.history_out:
+            append_history(summary, args.history_out)
         return 0
 
     summary = await run_load(
@@ -236,8 +357,19 @@ async def _main() -> int:
         world_id=args.world_id,
     )
     write_summary(summary, args.out)
+    if args.trend_out:
+        if args.history_out:
+            append_history(summary, args.history_out)
+            history_rows = read_history(args.history_out)
+        else:
+            history_rows = [build_history_record(summary)]
+        write_trend_markdown(history_rows, args.trend_out, args.history_window)
+    elif args.history_out:
+        append_history(summary, args.history_out)
 
     # Fail non-zero when severe alerts exist (useful for CI gates).
+    if args.no_fail_on_alert:
+        return 0
     return 1 if summary["alerts"] else 0
 
 
