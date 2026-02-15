@@ -1,4 +1,3 @@
-import json
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -7,8 +6,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from null_engine.db import get_db
-from null_engine.models.tables import Bookmark, WikiPage, Agent, Conversation
-from null_engine.models.schemas import BookmarkCreate, BookmarkOut
+from null_engine.models.schemas import BookmarkCreate, BookmarkOut, OkResponse
+from null_engine.models.tables import Agent, Bookmark, Conversation, WikiPage
 
 router = APIRouter(tags=["bookmarks"])
 
@@ -46,7 +45,7 @@ async def list_bookmarks(
     return result.scalars().all()
 
 
-@router.delete("/bookmarks/{bookmark_id}")
+@router.delete("/bookmarks/{bookmark_id}", response_model=OkResponse)
 async def delete_bookmark(
     bookmark_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
@@ -62,7 +61,7 @@ async def delete_bookmark(
     return {"ok": True}
 
 
-@router.post("/bookmarks/export")
+@router.post("/bookmarks/export", response_model=list[dict[str, object]])
 async def export_bookmarks(
     session: str = Query(...),
     db: AsyncSession = Depends(get_db),

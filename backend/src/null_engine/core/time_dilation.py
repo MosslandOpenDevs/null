@@ -3,8 +3,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from null_engine.config import settings
-from null_engine.models.tables import World, Agent
 from null_engine.models.schemas import WSEnvelope
+from null_engine.models.tables import Agent, World
 from null_engine.ws.handler import broadcast
 
 logger = structlog.get_logger()

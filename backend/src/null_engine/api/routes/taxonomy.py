@@ -5,8 +5,13 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from null_engine.db import get_db
-from null_engine.models.tables import TaxonomyNode, TaxonomyMembership, World
-from null_engine.models.schemas import TaxonomyNodeOut, TaxonomyNodeDetail, TaxonomyMembershipOut
+from null_engine.models.schemas import (
+    TaxonomyMembershipOut,
+    TaxonomyNodeDetail,
+    TaxonomyNodeOut,
+    TaxonomyWorldOut,
+)
+from null_engine.models.tables import TaxonomyMembership, TaxonomyNode, World
 
 router = APIRouter(tags=["taxonomy"])
 
@@ -57,7 +62,7 @@ async def get_taxonomy_subtree(
     )
 
 
-@router.get("/taxonomy/tree/{node_id}/worlds")
+@router.get("/taxonomy/tree/{node_id}/worlds", response_model=list[TaxonomyWorldOut])
 async def get_taxonomy_worlds(
     node_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),

@@ -55,14 +55,15 @@ export function SystemPulse() {
   const [initialMessages, setInitialMessages] = useState<
     Array<{ agent_id: string; agent_name: string; content: string; content_ko?: string }>
   >([]);
+  const worldId = world?.id;
 
   useEffect(() => {
-    if (!world) return;
-    fetch(`${API_URL}/api/worlds/${world.id}/recent-messages?limit=5`)
+    if (!worldId) return;
+    fetch(`${API_URL}/api/worlds/${worldId}/recent-messages?limit=5`)
       .then((r) => (r.ok ? r.json() : []))
       .then(setInitialMessages)
       .catch(() => {});
-  }, [world?.id]);
+  }, [worldId]);
 
   // Recent messages: merge initial API data + live WebSocket events (last 5)
   const recentMessages = useMemo(() => {

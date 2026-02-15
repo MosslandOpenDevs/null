@@ -7,6 +7,7 @@ import { WikiTab } from "./IntelTabs/WikiTab";
 import { LogTab } from "./IntelTabs/LogTab";
 import { ResonanceTab } from "./IntelTabs/ResonanceTab";
 import { StrataTab } from "./IntelTabs/StrataTab";
+import { OpsTab } from "./IntelTabs/OpsTab";
 
 const TABS = [
   { id: "agent" as const, label: "AGENT" },
@@ -14,6 +15,7 @@ const TABS = [
   { id: "log" as const, label: "LOG" },
   { id: "resonance" as const, label: "RESONANCE" },
   { id: "strata" as const, label: "STRATA" },
+  { id: "ops" as const, label: "OPS" },
 ];
 
 export function IntelPanel() {
@@ -46,6 +48,7 @@ export function IntelPanel() {
         {intelTab === "log" && <LogTab />}
         {intelTab === "resonance" && <ResonanceTab />}
         {intelTab === "strata" && <StrataTab />}
+        {intelTab === "ops" && <OpsTab />}
       </div>
     </div>
   );

@@ -5,14 +5,16 @@ to create bidirectional entity_mentions links.
 """
 
 import uuid
-from datetime import datetime
 
 import structlog
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from null_engine.models.tables import (
-    Agent, WikiPage, Faction, EntityMention, Conversation,
+    Agent,
+    EntityMention,
+    Faction,
+    WikiPage,
 )
 
 logger = structlog.get_logger()

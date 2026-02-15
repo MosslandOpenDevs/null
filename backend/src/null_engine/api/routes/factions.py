@@ -1,17 +1,17 @@
 import uuid
 
 from fastapi import APIRouter, Depends
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from null_engine.db import get_db
-from null_engine.models.tables import Faction, Agent, Relationship
-from null_engine.models.schemas import FactionOut
+from null_engine.models.schemas import FactionWithCountOut, RelationshipOut
+from null_engine.models.tables import Agent, Faction, Relationship
 
 router = APIRouter(tags=["factions"])
 
 
-@router.get("/worlds/{world_id}/factions")
+@router.get("/worlds/{world_id}/factions", response_model=list[FactionWithCountOut])
 async def list_factions(world_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     result = await db.execute(
         select(Faction).where(Faction.world_id == world_id)
@@ -35,7 +35,7 @@ async def list_factions(world_id: uuid.UUID, db: AsyncSession = Depends(get_db))
     return out
 
 
-@router.get("/worlds/{world_id}/relationships")
+@router.get("/worlds/{world_id}/relationships", response_model=list[RelationshipOut])
 async def list_relationships(world_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     result = await db.execute(
         select(Relationship).where(Relationship.world_id == world_id)

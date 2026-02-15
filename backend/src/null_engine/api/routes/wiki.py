@@ -5,8 +5,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from null_engine.db import get_db
-from null_engine.models.tables import WikiPage, KnowledgeEdge
-from null_engine.models.schemas import WikiPageOut, KnowledgeEdgeOut
+from null_engine.models.schemas import KnowledgeEdgeOut, WikiPageOut
+from null_engine.models.tables import KnowledgeEdge, WikiPage
 from null_engine.services.storage import search_wiki_pages
 
 router = APIRouter(tags=["wiki"])

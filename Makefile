@@ -1,4 +1,4 @@
-.PHONY: up down build dev-backend dev-frontend lint test db-migrate
+.PHONY: up down build dev-backend dev-frontend lint test db-migrate doctor loadtest
 
 up:
 	docker compose up --build -d
@@ -28,3 +28,13 @@ db-migrate:
 
 db-revision:
 	cd backend && poetry run alembic revision --autogenerate -m "$(msg)"
+
+doctor:
+	@echo "[root] python: $$(python3 --version 2>&1)"
+	@echo "[backend] poetry: $$(cd backend && poetry --version 2>&1)"
+	@echo "[backend] runtime python: $$(cd backend && poetry run python --version 2>&1)"
+	@echo "[frontend] node: $$(node --version 2>&1)"
+	@echo "[frontend] pnpm: $$(pnpm --version 2>&1)"
+
+loadtest:
+	cd backend && poetry run python scripts/loadtest.py --base-url http://localhost:3301 --requests 400 --concurrency 20

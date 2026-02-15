@@ -1,23 +1,129 @@
 import json
 import uuid
+from typing import Any, Literal
 
 from fastapi import APIRouter, Depends, Query
-from fastapi.responses import PlainTextResponse, JSONResponse
+from fastapi.responses import JSONResponse, PlainTextResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from null_engine.db import get_db
+from null_engine.models.schemas import AgentExportOut
 from null_engine.models.tables import (
-    Agent, Conversation, KnowledgeEdge, WikiPage, World,
+    Agent,
+    Conversation,
+    KnowledgeEdge,
+    WikiPage,
+    World,
 )
 
 router = APIRouter(tags=["export"])
+TrainingFormat = Literal["chatml", "alpaca", "sharegpt"]
 
 
-@router.get("/worlds/{world_id}/export/wiki")
+def _parse_include(include: str) -> set[str]:
+    return {token.strip() for token in include.split(",") if token.strip()}
+
+
+def _conversation_training_sample(conversation: Any, fmt: TrainingFormat) -> dict[str, Any] | None:
+    messages: list[dict[str, Any]] = conversation.messages or []
+    if not messages:
+        return None
+
+    if fmt == "chatml":
+        chatml_messages = [{"role": "system", "content": f"Topic: {conversation.topic}"}]
+        for message in messages:
+            agent_id = message.get("agent_id", "unknown")
+            content = message.get("content", "")
+            chatml_messages.append(
+                {"role": "user", "content": f"[{agent_id}]: {content}"}
+            )
+        if conversation.summary:
+            chatml_messages.append({"role": "assistant", "content": conversation.summary})
+        return {"messages": chatml_messages}
+
+    if fmt == "alpaca":
+        instruction = f"Continue the conversation about '{conversation.topic}'"
+        input_text = "\n".join(
+            f"{message.get('agent_id', '')}: {message.get('content', '')}"
+            for message in messages[:2]
+        )
+        output_text = "\n".join(
+            f"{message.get('agent_id', '')}: {message.get('content', '')}"
+            for message in messages[2:]
+        )
+        return {
+            "instruction": instruction,
+            "input": input_text,
+            "output": output_text or conversation.summary,
+        }
+
+    sharegpt_conversations = [
+        {"from": "human", "value": message.get("content", "")}
+        for message in messages
+    ]
+    if conversation.summary:
+        sharegpt_conversations.append({"from": "gpt", "value": conversation.summary})
+    return {"conversations": sharegpt_conversations}
+
+
+def _wiki_training_sample(page: Any, fmt: TrainingFormat) -> dict[str, Any]:
+    if fmt == "chatml":
+        return {
+            "messages": [
+                {"role": "system", "content": "You are a world-building wiki author."},
+                {"role": "user", "content": f"Write a wiki article about: {page.title}"},
+                {"role": "assistant", "content": page.content},
+            ]
+        }
+    if fmt == "alpaca":
+        return {
+            "instruction": f"Write a wiki article about: {page.title}",
+            "input": "",
+            "output": page.content,
+        }
+    return {
+        "conversations": [
+            {"from": "human", "value": f"Write about {page.title}"},
+            {"from": "gpt", "value": page.content},
+        ]
+    }
+
+
+def _knowledge_graph_training_sample(
+    edges: list[Any], fmt: TrainingFormat
+) -> dict[str, Any] | None:
+    if not edges:
+        return None
+
+    triples = [f"{edge.subject} {edge.predicate} {edge.object}" for edge in edges]
+    triple_text = "\n".join(triples)
+
+    if fmt == "chatml":
+        return {
+            "messages": [
+                {"role": "system", "content": "Extract knowledge triples."},
+                {"role": "assistant", "content": triple_text},
+            ]
+        }
+    if fmt == "alpaca":
+        return {
+            "instruction": "List knowledge graph triples.",
+            "input": "",
+            "output": triple_text,
+        }
+    return {
+        "conversations": [
+            {"from": "human", "value": "What are the key relationships?"},
+            {"from": "gpt", "value": triple_text},
+        ]
+    }
+
+
+@router.get("/worlds/{world_id}/export/wiki", response_model=list[dict[str, Any]])
 async def export_wiki(
     world_id: uuid.UUID,
-    format: str = Query("md", regex="^(md|json)$"),
+    format: str = Query("md", pattern="^(md|json)$"),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(select(WikiPage).where(WikiPage.world_id == world_id))
@@ -46,10 +152,13 @@ async def export_wiki(
     return JSONResponse(data)
 
 
-@router.get("/worlds/{world_id}/export/conversations")
+@router.get(
+    "/worlds/{world_id}/export/conversations",
+    response_model=list[dict[str, Any]],
+)
 async def export_conversations(
     world_id: uuid.UUID,
-    format: str = Query("jsonl", regex="^(jsonl|json)$"),
+    format: str = Query("jsonl", pattern="^(jsonl|json)$"),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
@@ -90,15 +199,15 @@ async def export_conversations(
     return JSONResponse(data)
 
 
-@router.get("/worlds/{world_id}/export/training")
+@router.get("/worlds/{world_id}/export/training", response_model=list[dict[str, Any]])
 async def export_training_data(
     world_id: uuid.UUID,
-    format: str = Query("chatml", regex="^(chatml|alpaca|sharegpt)$"),
+    format: TrainingFormat = Query("chatml", pattern="^(chatml|alpaca|sharegpt)$"),
     include: str = Query("conversations,wiki,kg"),
     db: AsyncSession = Depends(get_db),
 ):
     """Export world data in LLM training formats."""
-    include_set = set(include.split(","))
+    include_set = _parse_include(include)
     samples: list[dict] = []
 
     if "conversations" in include_set:
@@ -108,75 +217,37 @@ async def export_training_data(
             .order_by(Conversation.created_at)
         )
         for c in result.scalars().all():
-            if not c.messages:
-                continue
-            if format == "chatml":
-                msgs = [{"role": "system", "content": f"Topic: {c.topic}"}]
-                for m in c.messages:
-                    msgs.append({"role": "user", "content": f"[{m.get('agent_id', 'unknown')}]: {m.get('content', '')}"})
-                if c.summary:
-                    msgs.append({"role": "assistant", "content": c.summary})
-                samples.append({"messages": msgs})
-            elif format == "alpaca":
-                instruction = f"Continue the conversation about '{c.topic}'"
-                input_text = "\n".join(f"{m.get('agent_id', '')}: {m.get('content', '')}" for m in c.messages[:2])
-                output_text = "\n".join(f"{m.get('agent_id', '')}: {m.get('content', '')}" for m in c.messages[2:])
-                samples.append({"instruction": instruction, "input": input_text, "output": output_text or c.summary})
-            elif format == "sharegpt":
-                convs_out = []
-                for m in c.messages:
-                    convs_out.append({"from": "human", "value": m.get("content", "")})
-                if c.summary:
-                    convs_out.append({"from": "gpt", "value": c.summary})
-                samples.append({"conversations": convs_out})
+            sample = _conversation_training_sample(c, format)
+            if sample:
+                samples.append(sample)
 
     if "wiki" in include_set:
         result = await db.execute(
             select(WikiPage).where(WikiPage.world_id == world_id)
         )
         for p in result.scalars().all():
-            if format == "chatml":
-                samples.append({"messages": [
-                    {"role": "system", "content": "You are a world-building wiki author."},
-                    {"role": "user", "content": f"Write a wiki article about: {p.title}"},
-                    {"role": "assistant", "content": p.content},
-                ]})
-            elif format == "alpaca":
-                samples.append({"instruction": f"Write a wiki article about: {p.title}", "input": "", "output": p.content})
-            elif format == "sharegpt":
-                samples.append({"conversations": [
-                    {"from": "human", "value": f"Write about {p.title}"},
-                    {"from": "gpt", "value": p.content},
-                ]})
+            samples.append(_wiki_training_sample(p, format))
 
     if "kg" in include_set:
         result = await db.execute(
             select(KnowledgeEdge).where(KnowledgeEdge.world_id == world_id)
         )
         edges = result.scalars().all()
-        if edges:
-            triples = [f"{e.subject} {e.predicate} {e.object}" for e in edges]
-            if format == "chatml":
-                samples.append({"messages": [
-                    {"role": "system", "content": "Extract knowledge triples."},
-                    {"role": "assistant", "content": "\n".join(triples)},
-                ]})
-            elif format == "alpaca":
-                samples.append({"instruction": "List knowledge graph triples.", "input": "", "output": "\n".join(triples)})
-            elif format == "sharegpt":
-                samples.append({"conversations": [
-                    {"from": "human", "value": "What are the key relationships?"},
-                    {"from": "gpt", "value": "\n".join(triples)},
-                ]})
+        kg_sample = _knowledge_graph_training_sample(edges, format)
+        if kg_sample:
+            samples.append(kg_sample)
 
     lines = [json.dumps(s, ensure_ascii=False) for s in samples]
     return PlainTextResponse("\n".join(lines), media_type="application/jsonl")
 
 
-@router.get("/worlds/{world_id}/export/knowledge-graph")
+@router.get(
+    "/worlds/{world_id}/export/knowledge-graph",
+    response_model=list[dict[str, Any]],
+)
 async def export_knowledge_graph(
     world_id: uuid.UUID,
-    format: str = Query("json", regex="^(csv|json)$"),
+    format: str = Query("json", pattern="^(csv|json)$"),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
@@ -205,7 +276,7 @@ async def export_knowledge_graph(
     return JSONResponse(data)
 
 
-@router.get("/worlds/{world_id}/export/agents")
+@router.get("/worlds/{world_id}/export/agents", response_model=list[AgentExportOut])
 async def export_agents(
     world_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
@@ -215,6 +286,7 @@ async def export_agents(
     data = [
         {
             "id": str(a.id),
+            "world_id": str(a.world_id),
             "name": a.name,
             "faction_id": str(a.faction_id) if a.faction_id else None,
             "persona": a.persona,
@@ -226,7 +298,7 @@ async def export_agents(
     return JSONResponse(data)
 
 
-@router.get("/worlds/{world_id}/export/all")
+@router.get("/worlds/{world_id}/export/all", response_model=list[dict[str, Any]])
 async def export_all(
     world_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),

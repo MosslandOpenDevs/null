@@ -1,4 +1,3 @@
-import json
 import uuid
 from typing import Any
 
@@ -7,7 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from null_engine.config import settings
-from null_engine.models.tables import World, Faction, Agent, Relationship, WorldTag
+from null_engine.models.tables import Agent, Faction, Relationship, World, WorldTag
 from null_engine.services.llm_router import llm_router
 
 logger = structlog.get_logger()
@@ -78,6 +77,7 @@ async def _update_progress(db: AsyncSession, world_id: uuid.UUID, step: str, ste
     """Update genesis progress in the world's config JSONB using a separate session to avoid expiring objects in the caller."""
     from sqlalchemy import update
     from sqlalchemy.dialects.postgresql import JSONB as JSONB_TYPE
+
     from null_engine.db import async_session as _async_session
 
     progress = {
@@ -89,7 +89,7 @@ async def _update_progress(db: AsyncSession, world_id: uuid.UUID, step: str, ste
             "percent": round(step_num / total_steps * 100),
         }
     }
-    from sqlalchemy import func, cast
+    from sqlalchemy import cast, func
     async with _async_session() as progress_db:
         await progress_db.execute(
             update(World)
@@ -101,7 +101,6 @@ async def _update_progress(db: AsyncSession, world_id: uuid.UUID, step: str, ste
 
 async def populate_world(db: AsyncSession, world_id: uuid.UUID, seed_prompt: str, extra_config: dict[str, Any]) -> None:
     """Generate factions, agents, relationships, and tags for an existing world row."""
-    import asyncio as _asyncio
 
     num_factions = settings.default_factions
     # Total steps: 1 (world config) + 1 (factions) + num_factions (agents) + 1 (relationships) + 1 (tags) = num_factions + 4
@@ -201,11 +200,11 @@ async def populate_world(db: AsyncSession, world_id: uuid.UUID, seed_prompt: str
 
 
 async def _generate_personas(faction_name: str, faction_desc: str, world_desc: str, count: int) -> list[dict]:
-    BATCH_SIZE = 5
+    batch_size = 5
     all_personas: list[dict] = []
 
-    for batch_start in range(0, count, BATCH_SIZE):
-        batch_count = min(BATCH_SIZE, count - batch_start)
+    for batch_start in range(0, count, batch_size):
+        batch_count = min(batch_size, count - batch_start)
 
         for attempt in range(3):
             result = await llm_router.generate_json(

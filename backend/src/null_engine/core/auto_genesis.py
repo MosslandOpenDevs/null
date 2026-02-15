@@ -4,7 +4,7 @@ import asyncio
 import random
 
 import structlog
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 
 from null_engine.core.genesis import create_world
 from null_engine.db import async_session
@@ -97,8 +97,8 @@ async def auto_genesis_loop():
                 logger.info("auto_genesis.created", world_id=str(world_id))
 
                 # Auto-start the simulation
-                from null_engine.core.runner import SimulationRunner
                 from null_engine.api.routes.worlds import _runners
+                from null_engine.core.runner import SimulationRunner
 
                 runner = SimulationRunner(world_id)
                 _runners[world_id] = runner

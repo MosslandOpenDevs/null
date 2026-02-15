@@ -30,7 +30,7 @@ export function FeedTab() {
       fetchFeed(world.id);
       fetchConversations(world.id);
     }
-  }, [world?.id]);
+  }, [world?.id, fetchFeed, fetchConversations]);
 
   // Infinite scroll
   const loadMore = useCallback(() => {

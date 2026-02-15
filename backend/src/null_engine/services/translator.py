@@ -2,12 +2,13 @@
 
 import asyncio
 import copy
+import time
 
 import structlog
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from null_engine.db import async_session
-from null_engine.models.tables import Conversation, WikiPage, Stratum
+from null_engine.models.tables import Conversation, Stratum, WikiPage
 from null_engine.services.llm_router import llm_router
 
 logger = structlog.get_logger()
@@ -147,24 +148,60 @@ async def _translate_strata():
         return len(rows)
 
 
+async def _count_pending() -> dict[str, int]:
+    """Count untranslated rows by entity type for queue observability."""
+    async with async_session() as db:
+        conv_result = await db.execute(
+            select(func.count())
+            .select_from(Conversation)
+            .where(Conversation.topic_ko.is_(None))
+            .where(Conversation.topic != "")
+        )
+        wiki_result = await db.execute(
+            select(func.count())
+            .select_from(WikiPage)
+            .where(WikiPage.title_ko.is_(None))
+            .where(WikiPage.title != "")
+        )
+        strata_result = await db.execute(
+            select(func.count())
+            .select_from(Stratum)
+            .where(Stratum.summary_ko.is_(None))
+            .where(Stratum.summary != "")
+        )
+
+        return {
+            "conversations_pending": conv_result.scalar() or 0,
+            "wiki_pages_pending": wiki_result.scalar() or 0,
+            "strata_pending": strata_result.scalar() or 0,
+        }
+
+
 async def translation_worker_loop():
     """Background loop that periodically translates untranslated content."""
     logger.info("translator.worker_started")
     while True:
         try:
             await asyncio.sleep(INTERVAL_SECONDS)
+            cycle_started = time.monotonic()
+
+            pending = await _count_pending()
+            logger.info("translator.queue", **pending)
 
             conv_count = await _translate_conversations()
             wiki_count = await _translate_wiki_pages()
             strata_count = await _translate_strata()
 
-            if conv_count or wiki_count or strata_count:
-                logger.info(
-                    "translator.batch_done",
-                    conversations=conv_count,
-                    wiki_pages=wiki_count,
-                    strata=strata_count,
-                )
+            duration_ms = int((time.monotonic() - cycle_started) * 1000)
+            logger.info(
+                "translator.batch_done",
+                conversations=conv_count,
+                wiki_pages=wiki_count,
+                strata=strata_count,
+                translated_total=conv_count + wiki_count + strata_count,
+                duration_ms=duration_ms,
+                **pending,
+            )
         except asyncio.CancelledError:
             logger.info("translator.worker_stopped")
             break

@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start --port 3300",
     "lint": "next lint",
-    "test": "echo 'No tests yet' && exit 0",
+    "test": "node --no-warnings --test --experimental-strip-types tests/*.test.ts",
     "tsc": "tsc"
   },
   "dependencies": {

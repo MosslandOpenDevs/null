@@ -2,8 +2,8 @@ import json
 
 import httpx
 import structlog
-from openai import AsyncOpenAI
 from anthropic import AsyncAnthropic
+from openai import AsyncOpenAI
 
 from null_engine.config import settings
 

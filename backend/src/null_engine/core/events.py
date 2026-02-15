@@ -1,11 +1,10 @@
 import random
-import uuid
 
 import structlog
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from null_engine.models.tables import World
 from null_engine.models.schemas import EventCreate, EventOut, WSEnvelope
+from null_engine.models.tables import World
 from null_engine.ws.handler import broadcast
 
 logger = structlog.get_logger()

@@ -4,8 +4,8 @@ import structlog
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from null_engine.models.tables import WikiPage, WikiHistory
 from null_engine.models.schemas import WSEnvelope
+from null_engine.models.tables import WikiHistory, WikiPage
 from null_engine.services.llm_router import llm_router
 from null_engine.ws.handler import broadcast
 

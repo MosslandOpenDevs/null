@@ -5,16 +5,19 @@ using embeddings and LLM-based labeling.
 """
 
 import asyncio
+import time
 import uuid
 from collections import defaultdict
 
 import structlog
-from sqlalchemy import select, func
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from null_engine.db import async_session
 from null_engine.models.tables import (
-    WikiPage, TaxonomyNode, TaxonomyMembership, World,
+    TaxonomyMembership,
+    TaxonomyNode,
+    WikiPage,
 )
 from null_engine.services.llm_router import llm_router
 
@@ -220,16 +223,23 @@ Return JSON: {{"label": "...", "description": "..."}}""",
 
 async def run_taxonomy_cycle():
     """Single taxonomy building cycle."""
+    cycle_started = time.monotonic()
     async with async_session() as db:
         try:
             await _build_leaf_nodes(db)
             await _merge_similar_nodes(db)
             await _label_nodes(db)
             await db.commit()
-            logger.info("taxonomy_builder.cycle_complete")
+            logger.info(
+                "taxonomy_builder.cycle_complete",
+                duration_ms=int((time.monotonic() - cycle_started) * 1000),
+            )
         except Exception:
             await db.rollback()
-            logger.exception("taxonomy_builder.cycle_failed")
+            logger.exception(
+                "taxonomy_builder.cycle_failed",
+                duration_ms=int((time.monotonic() - cycle_started) * 1000),
+            )
 
 
 async def taxonomy_builder_loop():

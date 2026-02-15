@@ -5,8 +5,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from null_engine.db import get_db
+from null_engine.models.schemas import AgentOut, EventCreate, WhisperResponseOut
 from null_engine.models.tables import Agent
-from null_engine.models.schemas import AgentOut, EventCreate
 
 router = APIRouter(tags=["agents"])
 
@@ -28,7 +28,10 @@ async def get_agent(world_id: uuid.UUID, agent_id: uuid.UUID, db: AsyncSession =
     return agent
 
 
-@router.post("/worlds/{world_id}/agents/{agent_id}/whisper")
+@router.post(
+    "/worlds/{world_id}/agents/{agent_id}/whisper",
+    response_model=WhisperResponseOut,
+)
 async def whisper_to_agent(
     world_id: uuid.UUID,
     agent_id: uuid.UUID,

@@ -4,7 +4,6 @@ from collections import defaultdict
 import structlog
 
 from null_engine.models.schemas import AgentMessage
-from null_engine.services.llm_router import llm_router
 
 logger = structlog.get_logger()
 

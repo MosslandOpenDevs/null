@@ -20,7 +20,7 @@ Return a JSON array of strings:
 """
 
 
-@router.get("/seeds")
+@router.get("/seeds", response_model=list[str])
 async def generate_seeds():
     result = await llm_router.generate_json(
         role="reaction_agent",

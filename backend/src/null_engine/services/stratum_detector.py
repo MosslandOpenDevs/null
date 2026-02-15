@@ -6,11 +6,14 @@ When an epoch ends, summarizes what concepts emerged, faded, and dominated.
 import uuid
 
 import structlog
-from sqlalchemy import select, func
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from null_engine.models.tables import (
-    Conversation, WikiPage, KnowledgeEdge, Stratum,
+    Conversation,
+    KnowledgeEdge,
+    Stratum,
+    WikiPage,
 )
 from null_engine.services.llm_router import llm_router
 

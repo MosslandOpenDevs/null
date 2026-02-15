@@ -28,6 +28,12 @@ class Settings(BaseSettings):
     ticks_per_epoch: int = 10
     max_budget_usd: float = 50.0
 
+    # Ops alert thresholds
+    ops_runner_ticks_min_for_alert: int = 10
+    ops_runner_success_rate_threshold: float = 0.9
+    ops_translator_backlog_threshold: int = 50
+    ops_generating_worlds_threshold: int = 5
+
     model_config = {"env_file": ".env", "extra": "ignore"}
 
 

@@ -1,20 +1,35 @@
 import uuid
 
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy import select, func, or_
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from null_engine.db import get_db
-from null_engine.models.tables import (
-    ConceptCluster, ConceptMembership, ResonanceLink,
-    WikiPage, Agent, World,
-)
 from null_engine.models.schemas import (
-    ClusterOut, ClusterDetailOut, ClusterMemberOut,
-    ResonanceLinkOut, GlobalSearchResult,
+    ClusterDetailOut,
+    ClusterMemberOut,
+    ClusterOut,
+    GlobalSearchResult,
+    ResonanceLinkOut,
+    WorldNeighborOut,
+    WorldsSimilarityMapOut,
+)
+from null_engine.models.tables import (
+    Agent,
+    ConceptCluster,
+    ConceptMembership,
+    ResonanceLink,
+    WikiPage,
+    World,
 )
 
 router = APIRouter(prefix="/multiverse", tags=["multiverse"])
+
+
+def _unordered_pair(a: uuid.UUID, b: uuid.UUID) -> tuple[uuid.UUID, uuid.UUID]:
+    """Normalize a world pair key so A-B and B-A are aggregated together."""
+    first, second = sorted((a, b), key=lambda item: str(item))
+    return first, second
 
 
 @router.get("/clusters", response_model=list[ClusterOut])
@@ -114,22 +129,69 @@ async def global_search(
     return results[:20]
 
 
-@router.get("/worlds/map")
-async def worlds_similarity_map(db: AsyncSession = Depends(get_db)):
-    """Return world pairs with resonance strength for visualization."""
+@router.get("/worlds/map", response_model=WorldsSimilarityMapOut)
+async def worlds_similarity_map(
+    min_strength: float = Query(0.0, ge=0.0, le=1.0),
+    min_count: int = Query(1, ge=1, le=1000),
+    link_limit: int = Query(200, ge=1, le=1000),
+    world_limit: int = Query(50, ge=1, le=200),
+    db: AsyncSession = Depends(get_db),
+):
+    """Return deduplicated world pairs with resonance strength for visualization."""
     result = await db.execute(
         select(
             ResonanceLink.world_a,
             ResonanceLink.world_b,
-            func.avg(ResonanceLink.strength).label("avg_strength"),
-            func.count().label("link_count"),
+            ResonanceLink.strength,
         )
-        .group_by(ResonanceLink.world_a, ResonanceLink.world_b)
+        .where(ResonanceLink.strength >= min_strength)
+        .order_by(ResonanceLink.strength.desc())
+        .limit(5000)
     )
     rows = result.all()
 
-    # Also return all worlds for the map
-    worlds_result = await db.execute(select(World).order_by(World.created_at.desc()).limit(50))
+    pair_metrics: dict[tuple[uuid.UUID, uuid.UUID], dict[str, float | int]] = {}
+    for row in rows:
+        pair_key = _unordered_pair(row.world_a, row.world_b)
+        if pair_key not in pair_metrics:
+            pair_metrics[pair_key] = {"strength_sum": 0.0, "count": 0}
+        pair_metrics[pair_key]["strength_sum"] = float(pair_metrics[pair_key]["strength_sum"]) + float(row.strength)
+        pair_metrics[pair_key]["count"] = int(pair_metrics[pair_key]["count"]) + 1
+
+    links = []
+    for (world_a, world_b), metrics in pair_metrics.items():
+        count = int(metrics["count"])
+        avg_strength = float(metrics["strength_sum"]) / count
+        if count < min_count or avg_strength < min_strength:
+            continue
+        links.append(
+            {
+                "world_a": str(world_a),
+                "world_b": str(world_b),
+                "strength": avg_strength,
+                "count": count,
+            }
+        )
+
+    links.sort(key=lambda item: (item["strength"], item["count"]), reverse=True)
+    links = links[:link_limit]
+
+    linked_world_ids = {
+        uuid.UUID(link["world_a"]) for link in links
+    } | {
+        uuid.UUID(link["world_b"]) for link in links
+    }
+
+    if linked_world_ids:
+        worlds_result = await db.execute(
+            select(World)
+            .where(World.id.in_(linked_world_ids))
+            .order_by(World.created_at.desc())
+            .limit(world_limit)
+        )
+    else:
+        worlds_result = await db.execute(select(World).order_by(World.created_at.desc()).limit(world_limit))
+
     worlds = [
         {
             "id": str(w.id),
@@ -140,14 +202,74 @@ async def worlds_similarity_map(db: AsyncSession = Depends(get_db)):
         for w in worlds_result.scalars().all()
     ]
 
-    links = [
-        {
-            "world_a": str(r.world_a),
-            "world_b": str(r.world_b),
-            "strength": float(r.avg_strength),
-            "count": r.link_count,
-        }
-        for r in rows
-    ]
-
     return {"worlds": worlds, "links": links}
+
+
+@router.get("/worlds/{world_id}/neighbors", response_model=list[WorldNeighborOut])
+async def world_neighbors(
+    world_id: uuid.UUID,
+    limit: int = Query(10, ge=1, le=100),
+    min_strength: float = Query(0.0, ge=0.0, le=1.0),
+    db: AsyncSession = Depends(get_db),
+):
+    """Return top neighboring worlds by aggregated resonance strength."""
+    result = await db.execute(
+        select(
+            ResonanceLink.world_a,
+            ResonanceLink.world_b,
+            ResonanceLink.strength,
+        )
+        .where(
+            or_(
+                ResonanceLink.world_a == world_id,
+                ResonanceLink.world_b == world_id,
+            )
+        )
+        .order_by(ResonanceLink.strength.desc())
+        .limit(5000)
+    )
+    rows = result.all()
+
+    neighbor_metrics: dict[uuid.UUID, dict[str, float | int]] = {}
+    for row in rows:
+        neighbor_id = row.world_b if row.world_a == world_id else row.world_a
+        if neighbor_id not in neighbor_metrics:
+            neighbor_metrics[neighbor_id] = {"strength_sum": 0.0, "count": 0}
+        neighbor_metrics[neighbor_id]["strength_sum"] = (
+            float(neighbor_metrics[neighbor_id]["strength_sum"]) + float(row.strength)
+        )
+        neighbor_metrics[neighbor_id]["count"] = int(neighbor_metrics[neighbor_id]["count"]) + 1
+
+    ranked: list[tuple[uuid.UUID, float, int]] = []
+    for neighbor_id, metrics in neighbor_metrics.items():
+        count = int(metrics["count"])
+        avg_strength = float(metrics["strength_sum"]) / count
+        if avg_strength < min_strength:
+            continue
+        ranked.append((neighbor_id, avg_strength, count))
+
+    if not ranked:
+        return []
+
+    ranked.sort(key=lambda item: (item[1], item[2]), reverse=True)
+    ranked = ranked[:limit]
+
+    neighbor_ids = [neighbor_id for neighbor_id, _avg, _count in ranked]
+    worlds_result = await db.execute(select(World).where(World.id.in_(neighbor_ids)))
+    worlds_by_id = {world.id: world for world in worlds_result.scalars().all()}
+
+    out: list[WorldNeighborOut] = []
+    for neighbor_id, avg_strength, count in ranked:
+        world = worlds_by_id.get(neighbor_id)
+        if not world:
+            continue
+        out.append(
+            WorldNeighborOut(
+                world_id=neighbor_id,
+                seed_prompt=world.seed_prompt,
+                status=world.status,
+                strength=avg_strength,
+                resonance_count=count,
+            )
+        )
+    return out

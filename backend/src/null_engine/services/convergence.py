@@ -9,16 +9,18 @@ Periodically:
 """
 
 import asyncio
-import uuid
-from datetime import datetime
+import time
 
 import structlog
-from sqlalchemy import select, func, text
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from null_engine.db import async_session
 from null_engine.models.tables import (
-    WikiPage, ConceptCluster, ConceptMembership, ResonanceLink,
+    ConceptCluster,
+    ConceptMembership,
+    ResonanceLink,
+    WikiPage,
 )
 from null_engine.services.llm_router import llm_router
 
@@ -253,6 +255,7 @@ Return JSON: {{"label": "...", "description": "..."}}""",
 
 async def run_convergence_cycle():
     """Single convergence detection cycle."""
+    cycle_started = time.monotonic()
     async with async_session() as db:
         try:
             await _ensure_embeddings(db)
@@ -260,10 +263,17 @@ async def run_convergence_cycle():
             await _update_clusters(db, pairs)
             await _label_clusters(db)
             await db.commit()
-            logger.info("convergence.cycle_complete", pairs=len(pairs))
+            logger.info(
+                "convergence.cycle_complete",
+                pairs=len(pairs),
+                duration_ms=int((time.monotonic() - cycle_started) * 1000),
+            )
         except Exception:
             await db.rollback()
-            logger.exception("convergence.cycle_failed")
+            logger.exception(
+                "convergence.cycle_failed",
+                duration_ms=int((time.monotonic() - cycle_started) * 1000),
+            )
 
 
 async def convergence_loop():

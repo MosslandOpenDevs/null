@@ -93,7 +93,7 @@ interface SimulationState {
   events: WSEvent[];
   selectedAgent: string | null;
   selectedFaction: string | null;
-  intelTab: "agent" | "wiki" | "log" | "resonance" | "strata" | "export" | "feed";
+  intelTab: "agent" | "wiki" | "log" | "resonance" | "strata" | "ops" | "export" | "feed";
   heraldMessages: Array<{ id: string; text: string; timestamp: number }>;
   conversations: ConversationData[];
   feedItems: FeedItem[];
@@ -117,7 +117,7 @@ interface SimulationState {
   fetchConversations: (worldId: string) => Promise<void>;
   fetchFeed: (worldId: string, before?: string) => Promise<void>;
   setSelectedConversation: (id: string | null) => void;
-  setIntelTab: (tab: "agent" | "wiki" | "log" | "resonance" | "strata" | "export" | "feed") => void;
+  setIntelTab: (tab: "agent" | "wiki" | "log" | "resonance" | "strata" | "ops" | "export" | "feed") => void;
   addHeraldMessage: (text: string) => void;
   dismissHerald: (id: string) => void;
   setTagFilter: (tag: string | null) => void;

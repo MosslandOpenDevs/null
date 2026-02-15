@@ -1,16 +1,23 @@
 import uuid
 
 from fastapi import APIRouter, Depends
-from sqlalchemy import select, or_
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from null_engine.db import get_db
-from null_engine.models.tables import (
-    EntityMention, SemanticNeighbor, Agent, WikiPage, KnowledgeEdge,
-)
 from null_engine.models.schemas import (
-    EntityMentionOut, SemanticNeighborOut, EntityGraphOut,
-    EntityGraphNode, EntityGraphEdge,
+    EntityGraphEdge,
+    EntityGraphNode,
+    EntityGraphOut,
+    EntityMentionOut,
+    SemanticNeighborOut,
+)
+from null_engine.models.tables import (
+    Agent,
+    EntityMention,
+    KnowledgeEdge,
+    SemanticNeighbor,
+    WikiPage,
 )
 
 router = APIRouter(tags=["entities"])

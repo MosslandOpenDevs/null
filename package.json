@@ -2,9 +2,13 @@
   "name": "null-monorepo",
   "private": true,
   "scripts": {
-    "dev:frontend": "pnpm --filter frontend dev",
-    "build:frontend": "pnpm --filter frontend build",
-    "lint:frontend": "pnpm --filter frontend lint",
-    "test:frontend": "pnpm --filter frontend test"
+    "dev:frontend": "pnpm --filter null-frontend dev",
+    "build:frontend": "pnpm --filter null-frontend build",
+    "lint:frontend": "pnpm --filter null-frontend lint",
+    "test:frontend": "pnpm --filter null-frontend test",
+    "typecheck:frontend": "pnpm --filter null-frontend tsc --noEmit",
+    "test:backend": "cd backend && poetry run pytest -q",
+    "lint:backend": "cd backend && poetry run ruff check src tests",
+    "loadtest:backend": "cd backend && poetry run python scripts/loadtest.py --base-url http://localhost:3301 --requests 400 --concurrency 20"
   }
 }

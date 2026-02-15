@@ -30,6 +30,33 @@ export interface ResonanceLink {
   strength: number;
 }
 
+export interface WorldNeighbor {
+  world_id: string;
+  seed_prompt: string;
+  status: string;
+  strength: number;
+  resonance_count: number;
+}
+
+export interface WorldMapNode {
+  id: string;
+  seed_prompt: string;
+  status: string;
+  description: string;
+}
+
+export interface WorldMapLink {
+  world_a: string;
+  world_b: string;
+  strength: number;
+  count: number;
+}
+
+export interface WorldsMapData {
+  worlds: WorldMapNode[];
+  links: WorldMapLink[];
+}
+
 export interface GlobalSearchResult {
   entity_type: string;
   entity_id: string;
@@ -42,17 +69,23 @@ export interface GlobalSearchResult {
 interface MultiverseState {
   clusters: ClusterData[];
   resonanceLinks: ResonanceLink[];
+  worldNeighbors: WorldNeighbor[];
+  worldsMap: WorldsMapData | null;
   searchResults: GlobalSearchResult[];
   searching: boolean;
 
   fetchClusters: () => Promise<void>;
   fetchResonance: (worldId: string) => Promise<void>;
+  fetchWorldNeighbors: (worldId: string, minStrength?: number) => Promise<void>;
+  fetchWorldMap: (minStrength?: number, minCount?: number) => Promise<void>;
   globalSearch: (query: string) => Promise<void>;
 }
 
 export const useMultiverseStore = create<MultiverseState>((set) => ({
   clusters: [],
   resonanceLinks: [],
+  worldNeighbors: [],
+  worldsMap: null,
   searchResults: [],
   searching: false,
 
@@ -77,6 +110,38 @@ export const useMultiverseStore = create<MultiverseState>((set) => ({
       }
     } catch {
       // endpoint may not exist yet
+    }
+  },
+
+  fetchWorldNeighbors: async (worldId: string, minStrength = 0.0) => {
+    try {
+      const resp = await fetch(
+        `${API_URL}/api/multiverse/worlds/${worldId}/neighbors?min_strength=${minStrength}`
+      );
+      if (resp.ok) {
+        const worldNeighbors = await resp.json();
+        set({ worldNeighbors });
+      } else {
+        set({ worldNeighbors: [] });
+      }
+    } catch {
+      set({ worldNeighbors: [] });
+    }
+  },
+
+  fetchWorldMap: async (minStrength = 0.0, minCount = 1) => {
+    try {
+      const resp = await fetch(
+        `${API_URL}/api/multiverse/worlds/map?min_strength=${minStrength}&min_count=${minCount}`
+      );
+      if (resp.ok) {
+        const worldsMap = await resp.json();
+        set({ worldsMap });
+      } else {
+        set({ worldsMap: null });
+      }
+    } catch {
+      set({ worldsMap: null });
     }
   },
 

@@ -51,8 +51,37 @@ class FactionOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class FactionWithCountOut(BaseModel):
+    id: uuid.UUID
+    world_id: uuid.UUID
+    name: str
+    description: str
+    color: str
+    agent_count: int
+
+
+class RelationshipOut(BaseModel):
+    id: uuid.UUID
+    agent_a: uuid.UUID
+    agent_b: uuid.UUID
+    type: str
+    strength: float
+
+
 # --- Agent ---
 class AgentOut(BaseModel):
+    id: uuid.UUID
+    world_id: uuid.UUID
+    faction_id: uuid.UUID | None
+    name: str
+    persona: dict[str, Any]
+    beliefs: list[Any]
+    status: str
+
+    model_config = {"from_attributes": True}
+
+
+class AgentExportOut(BaseModel):
     id: uuid.UUID
     world_id: uuid.UUID
     faction_id: uuid.UUID | None
@@ -94,6 +123,38 @@ class EventOut(BaseModel):
     description: str
     epoch: int
     tick: int
+
+
+class InjectedEventOut(BaseModel):
+    status: str
+    type: str
+    description: str
+    epoch: int
+    tick: int
+
+
+class SimulationControlOut(BaseModel):
+    status: str
+    world_id: uuid.UUID
+
+
+class OkResponse(BaseModel):
+    ok: bool
+
+
+class WhisperResponseOut(BaseModel):
+    status: str
+    agent_id: uuid.UUID
+
+
+class RecentMessageOut(BaseModel):
+    agent_id: str
+    agent_name: str
+    content: str
+    content_ko: str | None = None
+    epoch: int
+    topic: str
+    topic_ko: str | None = None
 
 
 # --- Wiki ---
@@ -320,6 +381,13 @@ class TaxonomyMembershipOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class TaxonomyWorldOut(BaseModel):
+    id: uuid.UUID
+    seed_prompt: str
+    status: str
+    current_epoch: int
+
+
 class TaxonomyNodeDetail(BaseModel):
     node: TaxonomyNodeOut
     children: list[TaxonomyNodeOut] = Field(default_factory=list)
@@ -339,6 +407,21 @@ class StratumOut(BaseModel):
     created_at: datetime | None = None
 
     model_config = {"from_attributes": True}
+
+
+class StrataComparisonOut(BaseModel):
+    world_id: uuid.UUID
+    from_epoch: int
+    to_epoch: int
+    from_summary: str
+    from_summary_ko: str | None = None
+    to_summary: str
+    to_summary_ko: str | None = None
+    added_themes: list[str] = Field(default_factory=list)
+    removed_themes: list[str] = Field(default_factory=list)
+    persisted_themes: list[str] = Field(default_factory=list)
+    newly_emerged_concepts: list[str] = Field(default_factory=list)
+    newly_faded_concepts: list[str] = Field(default_factory=list)
 
 
 # --- Bookmark ---
@@ -395,6 +478,83 @@ class AgentPostOut(BaseModel):
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class WorldMapWorldOut(BaseModel):
+    id: uuid.UUID
+    seed_prompt: str
+    status: str
+    description: str
+
+
+class WorldMapLinkOut(BaseModel):
+    world_a: uuid.UUID
+    world_b: uuid.UUID
+    strength: float
+    count: int
+
+
+class WorldsSimilarityMapOut(BaseModel):
+    worlds: list[WorldMapWorldOut] = Field(default_factory=list)
+    links: list[WorldMapLinkOut] = Field(default_factory=list)
+
+
+class WorldNeighborOut(BaseModel):
+    world_id: uuid.UUID
+    seed_prompt: str
+    status: str
+    strength: float
+    resonance_count: int
+
+
+class OpsWorldStatusOut(BaseModel):
+    status: str
+    count: int
+
+
+class OpsLoopOut(BaseModel):
+    name: str
+    status: str
+    restart_count: int
+    last_started_at: datetime | None = None
+    last_error_at: datetime | None = None
+    last_error: str | None = None
+
+
+class OpsRunnerOut(BaseModel):
+    world_id: uuid.UUID
+    status: str
+    ticks_total: int
+    tick_failures: int
+    success_rate: float
+    last_duration_ms: int | None = None
+    avg_duration_ms: float | None = None
+    last_tick_delay_ms: int | None = None
+    last_seen_at: datetime | None = None
+
+
+class OpsQueueOut(BaseModel):
+    translator_pending_conversations: int
+    translator_pending_wiki_pages: int
+    translator_pending_strata: int
+    generating_worlds: int
+
+
+class OpsAlertOut(BaseModel):
+    code: str
+    severity: str
+    message: str
+    context: dict[str, Any] = Field(default_factory=dict)
+
+
+class OpsMetricsOut(BaseModel):
+    generated_at: datetime
+    worlds: list[OpsWorldStatusOut] = Field(default_factory=list)
+    active_runners: int
+    loops: list[OpsLoopOut] = Field(default_factory=list)
+    runners: list[OpsRunnerOut] = Field(default_factory=list)
+    queues: OpsQueueOut
+    alerts: list[OpsAlertOut] = Field(default_factory=list)
 
 
 # Resolve forward references

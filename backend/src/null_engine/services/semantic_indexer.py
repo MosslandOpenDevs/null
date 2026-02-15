@@ -6,15 +6,18 @@ Periodically:
 """
 
 import asyncio
-import uuid
+import time
 
 import structlog
-from sqlalchemy import select, delete
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from null_engine.db import async_session
 from null_engine.models.tables import (
-    Agent, WikiPage, Conversation, SemanticNeighbor,
+    Agent,
+    Conversation,
+    SemanticNeighbor,
+    WikiPage,
 )
 
 logger = structlog.get_logger()
@@ -132,16 +135,23 @@ async def _update_neighbors(db: AsyncSession):
 
 async def run_indexer_cycle():
     """Single indexer cycle."""
+    cycle_started = time.monotonic()
     async with async_session() as db:
         try:
             await _ensure_agent_embeddings(db)
             await _ensure_conversation_embeddings(db)
             await _update_neighbors(db)
             await db.commit()
-            logger.info("semantic_indexer.cycle_complete")
+            logger.info(
+                "semantic_indexer.cycle_complete",
+                duration_ms=int((time.monotonic() - cycle_started) * 1000),
+            )
         except Exception:
             await db.rollback()
-            logger.exception("semantic_indexer.cycle_failed")
+            logger.exception(
+                "semantic_indexer.cycle_failed",
+                duration_ms=int((time.monotonic() - cycle_started) * 1000),
+            )
 
 
 async def semantic_indexer_loop():

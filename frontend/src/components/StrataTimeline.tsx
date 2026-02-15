@@ -2,19 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useLocale } from "next-intl";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3301";
-
-interface Stratum {
-  id: string;
-  world_id: string;
-  epoch: number;
-  summary: string;
-  summary_ko?: string | null;
-  emerged_concepts: string[];
-  faded_concepts: string[];
-  dominant_themes: string[];
-}
+import { useStrataStore, type StratumData } from "@/stores/strata";
 
 interface StrataTimelineProps {
   worldId: string;
@@ -23,15 +11,29 @@ interface StrataTimelineProps {
 export function StrataTimeline({ worldId }: StrataTimelineProps) {
   const locale = useLocale();
   const ts = (en: string, ko?: string | null) => (locale === "ko" && ko) ? ko : en;
-  const [strata, setStrata] = useState<Stratum[]>([]);
-  const [selected, setSelected] = useState<Stratum | null>(null);
+  const { strata, comparison, comparisonLoading, fetchStrata, fetchComparison, clearComparison } =
+    useStrataStore();
+  const [selected, setSelected] = useState<StratumData | null>(null);
+  const selectedEpoch = selected?.epoch ?? null;
 
   useEffect(() => {
-    fetch(`${API_URL}/api/worlds/${worldId}/strata`)
-      .then((r) => r.json())
-      .then(setStrata)
-      .catch(() => {});
-  }, [worldId]);
+    fetchStrata(worldId);
+    setSelected(null);
+    clearComparison();
+  }, [worldId, fetchStrata, clearComparison]);
+
+  useEffect(() => {
+    if (selectedEpoch === null) {
+      clearComparison();
+      return;
+    }
+    if (selectedEpoch <= 0) {
+      clearComparison();
+      return;
+    }
+
+    fetchComparison(worldId, selectedEpoch - 1, selectedEpoch);
+  }, [worldId, selectedEpoch, fetchComparison, clearComparison]);
 
   if (strata.length === 0) {
     return (
@@ -59,6 +61,51 @@ export function StrataTimeline({ worldId }: StrataTimelineProps) {
             {ts(selected.summary, selected.summary_ko)}
           </p>
         </div>
+
+        {(comparisonLoading || comparison) && (
+          <div className="border border-hud-border rounded p-2 space-y-2">
+            <div className="font-mono text-sm text-hud-label uppercase tracking-wider">
+              EPOCH SHIFT
+              {comparison && (
+                <span className="ml-2 text-hud-muted normal-case">
+                  E{comparison.from_epoch} → E{comparison.to_epoch}
+                </span>
+              )}
+            </div>
+            {comparisonLoading && (
+              <div className="font-mono text-sm text-hud-muted">Comparing strata...</div>
+            )}
+            {comparison && (
+              <div className="space-y-1">
+                {comparison.added_themes.length > 0 && (
+                  <div className="font-mono text-sm text-success">
+                    + Themes: {comparison.added_themes.join(", ")}
+                  </div>
+                )}
+                {comparison.removed_themes.length > 0 && (
+                  <div className="font-mono text-sm text-danger">
+                    - Themes: {comparison.removed_themes.join(", ")}
+                  </div>
+                )}
+                {comparison.persisted_themes.length > 0 && (
+                  <div className="font-mono text-sm text-hud-muted">
+                    = Stable: {comparison.persisted_themes.join(", ")}
+                  </div>
+                )}
+                {comparison.newly_emerged_concepts.length > 0 && (
+                  <div className="font-mono text-sm text-success">
+                    + Emerged: {comparison.newly_emerged_concepts.join(", ")}
+                  </div>
+                )}
+                {comparison.newly_faded_concepts.length > 0 && (
+                  <div className="font-mono text-sm text-danger">
+                    - Faded: {comparison.newly_faded_concepts.join(", ")}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         {selected.emerged_concepts.length > 0 && (
           <div>

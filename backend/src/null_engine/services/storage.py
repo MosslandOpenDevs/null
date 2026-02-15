@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import select, or_
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from null_engine.models.tables import WikiPage

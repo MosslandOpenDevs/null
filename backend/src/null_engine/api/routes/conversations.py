@@ -1,17 +1,18 @@
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy import select, func, desc
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from null_engine.db import get_db
-from null_engine.models.tables import Conversation, WikiPage, Stratum, Agent, Faction, AgentPost
+from null_engine.models.schemas import ConversationDetailOut, FeedItemOut
+from null_engine.models.tables import Agent, AgentPost, Conversation, Faction, Stratum, WikiPage
 
 router = APIRouter(tags=["conversations"])
 
 
-@router.get("/worlds/{world_id}/conversations")
+@router.get("/worlds/{world_id}/conversations", response_model=list[ConversationDetailOut])
 async def list_conversations(
     world_id: uuid.UUID,
     limit: int = Query(20, le=50),
@@ -84,20 +85,24 @@ async def list_conversations(
             "messages_ko": conv.messages_ko,
             "summary": conv.summary or "",
             "summary_ko": conv.summary_ko,
-            "created_at": conv.created_at.isoformat() if conv.created_at else None,
+            "created_at": (
+                conv.created_at.isoformat()
+                if conv.created_at
+                else datetime.now(UTC).isoformat()
+            ),
         })
 
     return out
 
 
-@router.get("/worlds/{world_id}/feed")
+@router.get("/worlds/{world_id}/feed", response_model=list[FeedItemOut])
 async def get_feed(
     world_id: uuid.UUID,
     limit: int = Query(20, le=50),
     before: str | None = Query(None),
     db: AsyncSession = Depends(get_db),
 ):
-    before_dt = datetime.fromisoformat(before) if before else datetime.utcnow()
+    before_dt = datetime.fromisoformat(before) if before else datetime.now(UTC)
 
     # Fetch conversations
     conv_result = await db.execute(

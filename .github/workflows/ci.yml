@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install poetry
+      - run: poetry install --no-interaction
+      - run: poetry run ruff check src tests
+      - run: poetry run pytest --tb=short
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm tsc --noEmit
+      - run: pnpm test
+
+  loadtest-report:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install poetry
+      - run: poetry install --no-interaction
+      - run: poetry run python scripts/loadtest.py --dry-run --base-url http://localhost:3301 --requests 600 --concurrency 30 --out ../artifacts/loadtest-report.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: loadtest-report
+          path: artifacts/loadtest-report.json

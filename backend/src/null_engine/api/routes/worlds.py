@@ -2,14 +2,20 @@ import asyncio
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from null_engine.core.genesis import create_world
 from null_engine.core.runner import SimulationRunner
-from null_engine.db import get_db, async_session
-from null_engine.models.tables import World, WorldTag, Agent, Conversation, WikiPage
-from null_engine.models.schemas import WorldCreate, WorldOut, WorldTagOut, WorldWithTagsOut, WorldCardOut
+from null_engine.db import async_session, get_db
+from null_engine.models.schemas import (
+    RecentMessageOut,
+    SimulationControlOut,
+    WorldCardOut,
+    WorldCreate,
+    WorldOut,
+    WorldTagOut,
+)
+from null_engine.models.tables import Agent, Conversation, WikiPage, World, WorldTag
 
 router = APIRouter(tags=["worlds"])
 
@@ -106,7 +112,7 @@ async def list_worlds(
     return out
 
 
-@router.get("/worlds/{world_id}/recent-messages")
+@router.get("/worlds/{world_id}/recent-messages", response_model=list[RecentMessageOut])
 async def get_recent_messages(world_id: uuid.UUID, limit: int = 5, db: AsyncSession = Depends(get_db)):
     """Return recent conversation messages for the SystemPulse mini-feed."""
     result = await db.execute(
@@ -202,7 +208,7 @@ async def get_world(world_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     return world
 
 
-@router.post("/worlds/{world_id}/start")
+@router.post("/worlds/{world_id}/start", response_model=SimulationControlOut)
 async def start_simulation(world_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(World).where(World.id == world_id))
     world = result.scalar_one_or_none()
@@ -221,7 +227,7 @@ async def start_simulation(world_id: uuid.UUID, db: AsyncSession = Depends(get_d
     return {"status": "started", "world_id": str(world_id)}
 
 
-@router.post("/worlds/{world_id}/stop")
+@router.post("/worlds/{world_id}/stop", response_model=SimulationControlOut)
 async def stop_simulation(world_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     runner = _runners.get(world_id)
     if not runner or not runner.running:
