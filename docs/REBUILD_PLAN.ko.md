@@ -115,7 +115,7 @@
 - 알람 임계치 설정 외부화 완료
 - 실제 런타임 부하 벤치마크 자동화 1차 완료(히스토리 JSONL + 트렌드 Markdown)
 - CI 스케줄 트리거 및 임계치 파라미터화 완료
-  - `ci.yml`에 주간 스케줄(`cron`) + 수동 실행 트리거 추가
+  - `loadtest-live.yml`에 주간 스케줄(`cron`) + 수동 실행 트리거 추가
   - `loadtest.py` 임계치 옵션(`--target-success-rate`, `--target-p95-ms`) 추가
 - 실서버 부하 런 임계치 기반 자동 실패 게이트 완료
   - `loadtest-live.yml` 전용 워크플로우 추가(주간/수동)
