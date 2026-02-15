@@ -117,7 +117,11 @@
 - CI 스케줄 트리거 및 임계치 파라미터화 완료
   - `ci.yml`에 주간 스케줄(`cron`) + 수동 실행 트리거 추가
   - `loadtest.py` 임계치 옵션(`--target-success-rate`, `--target-p95-ms`) 추가
-- 다음 단계: 실서버 부하 런에서 임계치 기반 자동 실패 게이트 도입
+- 실서버 부하 런 임계치 기반 자동 실패 게이트 완료
+  - `loadtest-live.yml` 전용 워크플로우 추가(주간/수동)
+  - `NULL_LOADTEST_BASE_URL` 설정 시 실서버 벤치마크 모드, 미설정 시 드라이런 폴백
+  - 히스토리 JSONL을 Actions cache로 누적 저장
+- 다음 단계: 트렌드 리포트를 외부 대시보드/알림 채널로 자동 전송
 
 ## 완료 기준 (Definition of Done)
 - 루트에서 아래 명령이 모두 성공

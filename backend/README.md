@@ -49,3 +49,9 @@ Generate trend markdown from local benchmark history:
 ```bash
 poetry run python scripts/loadtest.py --base-url http://localhost:3301 --requests 600 --concurrency 30 --history-out ../artifacts/loadtest-history.jsonl --trend-out ../artifacts/loadtest-trend.md
 ```
+
+## Live Loadtest CI
+- Workflow: `.github/workflows/loadtest-live.yml`
+- Trigger: weekly schedule (`Monday 03:00 UTC`) or manual `workflow_dispatch`
+- Secret: set `NULL_LOADTEST_BASE_URL` to enable real HTTP benchmark mode
+- Failure gate: in live mode, the workflow fails when alert thresholds are breached

@@ -1,0 +1,159 @@
+name: Loadtest Live
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: "Optional override base URL (fallback: secret NULL_LOADTEST_BASE_URL)"
+        required: false
+        type: string
+      dry_run:
+        description: "Force dry-run mode"
+        required: false
+        type: boolean
+        default: false
+      requests:
+        description: "Total requests"
+        required: false
+        type: string
+        default: "600"
+      concurrency:
+        description: "Concurrent workers"
+        required: false
+        type: string
+        default: "30"
+      history_window:
+        description: "Trend table window size"
+        required: false
+        type: string
+        default: "30"
+      target_success_rate:
+        description: "Alert threshold: success rate"
+        required: false
+        type: string
+        default: "0.98"
+      target_p95_ms:
+        description: "Alert threshold: p95 latency (ms)"
+        required: false
+        type: string
+        default: "1000"
+  schedule:
+    - cron: "0 3 * * 1"
+
+jobs:
+  loadtest-live:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare artifacts dir
+        run: mkdir -p ../artifacts
+
+      - uses: actions/cache/restore@v4
+        id: history_cache
+        with:
+          path: artifacts/loadtest-history.jsonl
+          key: loadtest-history-${{ github.ref_name }}-${{ github.run_id }}
+          restore-keys: |
+            loadtest-history-${{ github.ref_name }}-
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install poetry
+
+      - run: poetry install --no-interaction
+
+      - name: Run live-or-dry benchmark
+        id: benchmark
+        env:
+          INPUT_BASE_URL: ${{ github.event.inputs.base_url }}
+          INPUT_DRY_RUN: ${{ github.event.inputs.dry_run }}
+          INPUT_REQUESTS: ${{ github.event.inputs.requests }}
+          INPUT_CONCURRENCY: ${{ github.event.inputs.concurrency }}
+          INPUT_HISTORY_WINDOW: ${{ github.event.inputs.history_window }}
+          INPUT_TARGET_SUCCESS_RATE: ${{ github.event.inputs.target_success_rate }}
+          INPUT_TARGET_P95_MS: ${{ github.event.inputs.target_p95_ms }}
+          SECRET_BASE_URL: ${{ secrets.NULL_LOADTEST_BASE_URL }}
+        run: |
+          set -euo pipefail
+
+          requests="${INPUT_REQUESTS:-600}"
+          concurrency="${INPUT_CONCURRENCY:-30}"
+          history_window="${INPUT_HISTORY_WINDOW:-30}"
+          target_success_rate="${INPUT_TARGET_SUCCESS_RATE:-0.98}"
+          target_p95_ms="${INPUT_TARGET_P95_MS:-1000}"
+          force_dry_run="${INPUT_DRY_RUN:-false}"
+          base_url="${INPUT_BASE_URL:-$SECRET_BASE_URL}"
+          base_url_status="n/a"
+          if [ -n "$base_url" ]; then
+            base_url_status="configured"
+          fi
+
+          args=(
+            --requests "$requests"
+            --concurrency "$concurrency"
+            --out ../artifacts/loadtest-report.json
+            --history-out ../artifacts/loadtest-history.jsonl
+            --trend-out ../artifacts/loadtest-trend.md
+            --history-window "$history_window"
+            --target-success-rate "$target_success_rate"
+            --target-p95-ms "$target_p95_ms"
+          )
+
+          run_mode="live"
+          if [ -z "$base_url" ] || [ "$force_dry_run" = "true" ]; then
+            run_mode="dry-run"
+            args+=(--dry-run --base-url "${base_url:-http://localhost:3301}" --no-fail-on-alert)
+          else
+            args+=(--base-url "$base_url")
+          fi
+
+          echo "run_mode=$run_mode" >> "$GITHUB_OUTPUT"
+          echo "base_url_status=$base_url_status" >> "$GITHUB_OUTPUT"
+          echo "requests=$requests" >> "$GITHUB_OUTPUT"
+          echo "concurrency=$concurrency" >> "$GITHUB_OUTPUT"
+          echo "target_success_rate=$target_success_rate" >> "$GITHUB_OUTPUT"
+          echo "target_p95_ms=$target_p95_ms" >> "$GITHUB_OUTPUT"
+
+          poetry run python scripts/loadtest.py "${args[@]}"
+
+      - name: Publish run summary
+        if: always()
+        run: |
+          {
+            echo "## Loadtest Live Summary"
+            echo ""
+            echo "- Mode: ${{ steps.benchmark.outputs.run_mode }}"
+            echo "- Base URL: ${{ steps.benchmark.outputs.base_url_status }}"
+            echo "- Requests: ${{ steps.benchmark.outputs.requests }}"
+            echo "- Concurrency: ${{ steps.benchmark.outputs.concurrency }}"
+            echo "- Target Success Rate: ${{ steps.benchmark.outputs.target_success_rate }}"
+            echo "- Target P95 (ms): ${{ steps.benchmark.outputs.target_p95_ms }}"
+            echo ""
+            if [ -f ../artifacts/loadtest-trend.md ]; then
+              cat ../artifacts/loadtest-trend.md
+            else
+              echo "No trend output generated."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: loadtest-live-report
+          path: |
+            artifacts/loadtest-report.json
+            artifacts/loadtest-history.jsonl
+            artifacts/loadtest-trend.md
+          if-no-files-found: warn
+
+      - uses: actions/cache/save@v4
+        if: always() && steps.history_cache.outputs.cache-primary-key != ''
+        with:
+          path: artifacts/loadtest-history.jsonl
+          key: ${{ steps.history_cache.outputs.cache-primary-key }}
