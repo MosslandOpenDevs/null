@@ -37,7 +37,7 @@ doctor:
 	@echo "[frontend] pnpm: $$(pnpm --version 2>&1)"
 
 loadtest:
-	cd backend && poetry run python scripts/loadtest.py --base-url http://localhost:3301 --requests 400 --concurrency 20
+	cd backend && poetry run python scripts/loadtest.py --base-url http://localhost:3301 --requests 400 --concurrency 20 --target-success-rate 0.98 --target-p95-ms 1000
 
 loadtest-trend:
-	cd backend && poetry run python scripts/loadtest.py --base-url http://localhost:3301 --requests 600 --concurrency 30 --history-out ../artifacts/loadtest-history.jsonl --trend-out ../artifacts/loadtest-trend.md --history-window 30
+	cd backend && poetry run python scripts/loadtest.py --base-url http://localhost:3301 --requests 600 --concurrency 30 --history-out ../artifacts/loadtest-history.jsonl --trend-out ../artifacts/loadtest-trend.md --history-window 30 --target-success-rate 0.98 --target-p95-ms 1000

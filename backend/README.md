@@ -35,6 +35,11 @@ Alert thresholds are configurable via `.env`:
 poetry run python scripts/loadtest.py --base-url http://localhost:3301 --requests 400 --concurrency 20
 ```
 
+Tune alert thresholds when needed:
+```bash
+poetry run python scripts/loadtest.py --base-url http://localhost:3301 --requests 400 --concurrency 20 --target-success-rate 0.99 --target-p95-ms 800
+```
+
 CI artifact-only mode (no HTTP traffic):
 ```bash
 poetry run python scripts/loadtest.py --dry-run --out ../artifacts/loadtest-report.json --history-out ../artifacts/loadtest-history.jsonl --trend-out ../artifacts/loadtest-trend.md --history-window 30 --no-fail-on-alert

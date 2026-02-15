@@ -97,6 +97,8 @@ async def run_load(
     concurrency: int,
     timeout_seconds: float,
     world_id: str | None,
+    target_success_rate: float,
+    target_p95_ms: float,
 ) -> dict:
     endpoint_stats: dict[str, EndpointStats] = {}
 
@@ -164,9 +166,9 @@ async def run_load(
 
     overall_success_rate = (total_ok / total_done) if total_done else 0.0
     alerts: list[str] = []
-    if overall_success_rate < 0.98:
+    if overall_success_rate < target_success_rate:
         alerts.append(f"overall_success_rate_below_target:{overall_success_rate:.3f}")
-    if all_latencies_sorted and percentile(all_latencies_sorted, 0.95) > 1000:
+    if all_latencies_sorted and percentile(all_latencies_sorted, 0.95) > target_p95_ms:
         alerts.append(f"overall_p95_latency_high:{percentile(all_latencies_sorted, 0.95):.2f}ms")
 
     return {
@@ -187,6 +189,10 @@ async def run_load(
                 "max": round(max(all_latencies_sorted), 2) if all_latencies_sorted else 0.0,
             },
         },
+        "targets": {
+            "success_rate": target_success_rate,
+            "p95_latency_ms": target_p95_ms,
+        },
         "endpoints": endpoint_summary,
         "alerts": alerts,
     }
@@ -203,6 +209,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--history-out", default=None, help="Optional JSONL path to append run history")
     parser.add_argument("--trend-out", default=None, help="Optional markdown output path for trend summary")
     parser.add_argument("--history-window", type=int, default=30, help="Rows included in trend summary")
+    parser.add_argument("--target-success-rate", type=float, default=0.98, help="Alert threshold for overall success rate")
+    parser.add_argument("--target-p95-ms", type=float, default=1000.0, help="Alert threshold for overall p95 latency (ms)")
     parser.add_argument("--dry-run", action="store_true", help="Do not send HTTP requests; output planned benchmark config")
     parser.add_argument(
         "--no-fail-on-alert",
@@ -233,6 +241,8 @@ def build_history_record(summary: dict, *, captured_at: str | None = None) -> di
         "throughput_rps": summary.get("throughput_rps"),
         "success_rate": summary.get("overall", {}).get("success_rate"),
         "p95_ms": summary.get("overall", {}).get("latency_ms", {}).get("p95"),
+        "target_success_rate": summary.get("targets", {}).get("success_rate"),
+        "target_p95_ms": summary.get("targets", {}).get("p95_latency_ms"),
         "alerts": summary.get("alerts", []),
     }
 
@@ -300,12 +310,14 @@ def write_trend_markdown(history_rows: list[dict], trend_out: str, history_windo
         f"- Throughput (rps): {fmt_delta(latest.get('throughput_rps'), prev.get('throughput_rps') if prev else None)}",
         f"- Success Rate: {fmt_delta(latest.get('success_rate'), prev.get('success_rate') if prev else None)}",
         f"- P95 Latency (ms): {fmt_delta(latest.get('p95_ms'), prev.get('p95_ms') if prev else None)}",
+        f"- Target Success Rate: {fmt_value(latest.get('target_success_rate'))}",
+        f"- Target P95 Latency (ms): {fmt_value(latest.get('target_p95_ms'))}",
         f"- Alerts: {len(latest.get('alerts', []))}",
         "",
         "## Recent Runs",
         "",
-        "| captured_at | mode | requests | concurrency | throughput_rps | success_rate | p95_ms | alerts |",
-        "|---|---:|---:|---:|---:|---:|---:|---:|",
+        "| captured_at | mode | requests | concurrency | throughput_rps | success_rate | p95_ms | target_success_rate | target_p95_ms | alerts |",
+        "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
     ]
 
     for row in reversed(recent):
@@ -318,6 +330,8 @@ def write_trend_markdown(history_rows: list[dict], trend_out: str, history_windo
             f"{fmt_value(row.get('throughput_rps', 'n/a'))} | "
             f"{fmt_value(row.get('success_rate', 'n/a'))} | "
             f"{fmt_value(row.get('p95_ms', 'n/a'))} | "
+            f"{fmt_value(row.get('target_success_rate', 'n/a'))} | "
+            f"{fmt_value(row.get('target_p95_ms', 'n/a'))} | "
             f"{len(row.get('alerts', []))} |"
         )
 
@@ -335,6 +349,10 @@ async def _main() -> int:
             "concurrency": args.concurrency,
             "world_id": args.world_id,
             "planned_endpoints": build_endpoints(args.world_id),
+            "targets": {
+                "success_rate": args.target_success_rate,
+                "p95_latency_ms": args.target_p95_ms,
+            },
             "alerts": [],
         }
         write_summary(summary, args.out)
@@ -355,6 +373,8 @@ async def _main() -> int:
         concurrency=args.concurrency,
         timeout_seconds=args.timeout_seconds,
         world_id=args.world_id,
+        target_success_rate=args.target_success_rate,
+        target_p95_ms=args.target_p95_ms,
     )
     write_summary(summary, args.out)
     if args.trend_out:

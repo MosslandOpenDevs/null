@@ -90,3 +90,30 @@ def test_dry_run_trend_history_window_limits_table_rows(tmp_path: Path) -> None:
     assert "- Captured Runs: 3" in trend_text
     assert "- Window Size: 2" in trend_text
     assert trend_text.count("| dry-run |") == 2
+
+
+def test_dry_run_writes_custom_alert_targets_to_outputs(tmp_path: Path) -> None:
+    summary_path = tmp_path / "summary.json"
+    history_path = tmp_path / "history.jsonl"
+
+    result = _run_loadtest(
+        "--target-success-rate",
+        "0.995",
+        "--target-p95-ms",
+        "800",
+        "--out",
+        str(summary_path),
+        "--history-out",
+        str(history_path),
+    )
+
+    assert result.returncode == 0, result.stderr
+
+    summary = json.loads(summary_path.read_text(encoding="utf-8"))
+    assert summary["targets"] == {"success_rate": 0.995, "p95_latency_ms": 800.0}
+
+    history_rows = [line for line in history_path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    assert len(history_rows) == 1
+    history_record = json.loads(history_rows[0])
+    assert history_record["target_success_rate"] == 0.995
+    assert history_record["target_p95_ms"] == 800.0
