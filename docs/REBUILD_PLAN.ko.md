@@ -65,6 +65,16 @@
   - 알람 임계치 설정 외부화
     - `config.py`에 운영 알람 임계치 추가
     - `ops` 라우트가 설정값 기준으로 경보 판정
+  - 부하 테스트 트렌드 리포트 외부 전송 자동화
+    - `loadtest-live.yml`에서 `NULL_LOADTEST_REPORT_WEBHOOK_URL` 설정 시 웹훅 전송
+    - payload에 run URL, 임계치/실측 지표, 알람 목록, 트렌드 Markdown 포함
+  - 풀스택 UX 스모크 자동화
+    - `scripts/ux_smoke.py` 추가(홈 진입, 월드 생성/시작, 월드 페이지, ops 지표 API 확인)
+    - 루트 실행 경로 추가(`make ux-smoke`, `pnpm run test:ux-smoke`)
+    - CI `ux-smoke` 잡 추가(`.github/workflows/ci.yml`, Postgres/Redis 서비스 컨테이너 포함)
+    - CI 아티팩트 `ux-smoke-report` 업로드 추가(`artifacts/ux-smoke-report.json`)
+    - CI job summary에 소요시간 + 단계별 PASS/FAIL + 실패 단계 하이라이트 자동 출력 추가
+    - PR에서 UX 스모크 결과 코멘트 자동 upsert 추가(최신 run 링크/결과 갱신)
 
 ## 목표
 - 문서 중심 상태에서 실행 가능한 제품 기준선으로 전환
@@ -121,7 +131,7 @@
   - `loadtest-live.yml` 전용 워크플로우 추가(주간/수동)
   - `NULL_LOADTEST_BASE_URL` 설정 시 실서버 벤치마크 모드, 미설정 시 드라이런 폴백
   - 히스토리 JSONL을 Actions cache로 누적 저장
-- 다음 단계: 트렌드 리포트를 외부 대시보드/알림 채널로 자동 전송
+- 다음 단계: 브라우저 자동화(Playwright) 기반의 시각/인터랙션 E2E로 확대
 
 ## 완료 기준 (Definition of Done)
 - 루트에서 아래 명령이 모두 성공

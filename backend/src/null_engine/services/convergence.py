@@ -15,7 +15,7 @@ import structlog
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from null_engine.db import async_session
+from null_engine.db import async_session, pgvector_enabled
 from null_engine.models.tables import (
     ConceptCluster,
     ConceptMembership,
@@ -85,6 +85,10 @@ async def _get_embedding(text: str) -> list[float] | None:
 
 async def _find_cross_world_neighbors(db: AsyncSession):
     """Use pgvector to find similar wiki pages across different worlds."""
+    if not pgvector_enabled():
+        logger.info("convergence.pgvector_disabled_skip_neighbor_search")
+        return []
+
     # Get all pages with embeddings
     result = await db.execute(
         select(WikiPage)

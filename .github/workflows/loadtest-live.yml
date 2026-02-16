@@ -142,6 +142,114 @@ jobs:
             fi
           } >> "$GITHUB_STEP_SUMMARY"
 
+      - name: Send trend report to external webhook
+        if: always()
+        env:
+          WEBHOOK_URL: ${{ secrets.NULL_LOADTEST_REPORT_WEBHOOK_URL }}
+          RUN_MODE: ${{ steps.benchmark.outputs.run_mode }}
+          BASE_URL_STATUS: ${{ steps.benchmark.outputs.base_url_status }}
+          REQUESTS: ${{ steps.benchmark.outputs.requests }}
+          CONCURRENCY: ${{ steps.benchmark.outputs.concurrency }}
+          TARGET_SUCCESS_RATE: ${{ steps.benchmark.outputs.target_success_rate }}
+          TARGET_P95_MS: ${{ steps.benchmark.outputs.target_p95_ms }}
+          REPOSITORY: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+          RUN_NUMBER: ${{ github.run_number }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+          SERVER_URL: ${{ github.server_url }}
+        run: |
+          set -euo pipefail
+          if [ -z "${WEBHOOK_URL:-}" ]; then
+            echo "NULL_LOADTEST_REPORT_WEBHOOK_URL is not set; skipping webhook publish."
+            exit 0
+          fi
+
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          from urllib.request import Request, urlopen
+
+          report_path = Path("../artifacts/loadtest-report.json")
+          trend_path = Path("../artifacts/loadtest-trend.md")
+
+          report: dict[str, object] = {}
+          if report_path.exists():
+              report = json.loads(report_path.read_text(encoding="utf-8"))
+
+          trend_text = "No trend output generated."
+          if trend_path.exists():
+              trend_text = trend_path.read_text(encoding="utf-8")
+              if len(trend_text) > 12000:
+                  trend_text = trend_text[:12000] + "\n...(truncated)"
+
+          overall = report.get("overall", {})
+          latency = {}
+          if isinstance(overall, dict):
+              latency = overall.get("latency_ms", {})
+          alerts = report.get("alerts", [])
+          if not isinstance(alerts, list):
+              alerts = []
+
+          run_url = f"{os.environ['SERVER_URL']}/{os.environ['REPOSITORY']}/actions/runs/{os.environ['RUN_ID']}"
+          success_rate = overall.get("success_rate", "n/a") if isinstance(overall, dict) else "n/a"
+          p95_ms = latency.get("p95", "n/a") if isinstance(latency, dict) else "n/a"
+          throughput_rps = report.get("throughput_rps", "n/a")
+
+          text = "\n".join(
+              [
+                  "Loadtest Live Report",
+                  f"Repository: {os.environ['REPOSITORY']}",
+                  f"Run: #{os.environ['RUN_NUMBER']} attempt {os.environ['RUN_ATTEMPT']} ({run_url})",
+                  f"Mode: {os.environ['RUN_MODE']} | Base URL: {os.environ['BASE_URL_STATUS']}",
+                  f"Requests/Concurrency: {os.environ['REQUESTS']}/{os.environ['CONCURRENCY']}",
+                  f"Overall success_rate={success_rate}, p95_ms={p95_ms}, throughput_rps={throughput_rps}",
+                  f"Alerts: {len(alerts)}",
+              ]
+          )
+
+          payload = {
+              "text": text,
+              "loadtest": {
+                  "repository": os.environ["REPOSITORY"],
+                  "run_id": os.environ["RUN_ID"],
+                  "run_number": os.environ["RUN_NUMBER"],
+                  "run_attempt": os.environ["RUN_ATTEMPT"],
+                  "run_url": run_url,
+                  "mode": os.environ["RUN_MODE"],
+                  "base_url_status": os.environ["BASE_URL_STATUS"],
+                  "requests": os.environ["REQUESTS"],
+                  "concurrency": os.environ["CONCURRENCY"],
+                  "targets": {
+                      "success_rate": os.environ["TARGET_SUCCESS_RATE"],
+                      "p95_ms": os.environ["TARGET_P95_MS"],
+                  },
+                  "overall": {
+                      "ok": overall.get("ok") if isinstance(overall, dict) else None,
+                      "failed": overall.get("failed") if isinstance(overall, dict) else None,
+                      "success_rate": success_rate,
+                      "p95_ms": p95_ms,
+                      "throughput_rps": throughput_rps,
+                  },
+                  "alerts": alerts,
+                  "trend_markdown": trend_text,
+              },
+          }
+
+          req = Request(
+              os.environ["WEBHOOK_URL"],
+              data=json.dumps(payload, ensure_ascii=True).encode("utf-8"),
+              headers={"Content-Type": "application/json"},
+              method="POST",
+          )
+          with urlopen(req, timeout=20) as resp:
+              status = getattr(resp, "status", resp.getcode())
+
+          if status >= 300:
+              raise RuntimeError(f"Webhook returned non-success status: {status}")
+          print(f"Sent loadtest webhook payload (status={status}).")
+          PY
+
       - uses: actions/upload-artifact@v4
         if: always()
         with:

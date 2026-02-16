@@ -34,6 +34,10 @@ class Settings(BaseSettings):
     ops_translator_backlog_threshold: int = 50
     ops_generating_worlds_threshold: int = 5
 
+    # Vector DB behavior
+    # When false, app falls back to JSON columns if pgvector extension is unavailable.
+    pgvector_required: bool = False
+
     model_config = {"env_file": ".env", "extra": "ignore"}
 
 

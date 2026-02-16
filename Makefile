@@ -1,4 +1,4 @@
-.PHONY: up down build dev-backend dev-frontend lint test db-migrate doctor loadtest loadtest-trend
+.PHONY: up down build dev-backend dev-frontend lint test db-migrate doctor loadtest loadtest-trend ux-smoke
 
 up:
 	docker compose up --build -d
@@ -41,3 +41,6 @@ loadtest:
 
 loadtest-trend:
 	cd backend && poetry run python scripts/loadtest.py --base-url http://localhost:3301 --requests 600 --concurrency 30 --history-out ../artifacts/loadtest-history.jsonl --trend-out ../artifacts/loadtest-trend.md --history-window 30 --target-success-rate 0.98 --target-p95-ms 1000
+
+ux-smoke:
+	python3 scripts/ux_smoke.py --start-servers

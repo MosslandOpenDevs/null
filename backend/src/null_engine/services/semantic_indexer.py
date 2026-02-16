@@ -12,7 +12,7 @@ import structlog
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from null_engine.db import async_session
+from null_engine.db import async_session, pgvector_enabled
 from null_engine.models.tables import (
     Agent,
     Conversation,
@@ -67,6 +67,10 @@ async def _ensure_conversation_embeddings(db: AsyncSession):
 
 async def _update_neighbors(db: AsyncSession):
     """Find semantic neighbors among wiki pages within each world."""
+    if not pgvector_enabled():
+        logger.info("semantic_indexer.pgvector_disabled_skip_neighbor_update")
+        return
+
     result = await db.execute(
         select(WikiPage)
         .where(WikiPage.embedding.isnot(None))

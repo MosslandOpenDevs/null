@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
   backend:
     runs-on: ubuntu-latest
@@ -41,6 +45,222 @@ jobs:
       - run: pnpm lint
       - run: pnpm tsc --noEmit
       - run: pnpm test
+
+  ux-smoke:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: null_user
+          POSTGRES_PASSWORD: null_pass
+          POSTGRES_DB: null_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U null_user -d null_db"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install poetry
+      - run: cd backend && poetry install --no-interaction
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - name: Run full-stack UX smoke
+        env:
+          DATABASE_URL: postgresql+asyncpg://null_user:null_pass@127.0.0.1:5432/null_db
+          REDIS_URL: redis://127.0.0.1:6379/0
+          NEXT_PUBLIC_API_URL: http://localhost:3301
+          NEXT_PUBLIC_WS_URL: ws://localhost:3301
+          PGVECTOR_REQUIRED: "false"
+        run: python3 scripts/ux_smoke.py --start-servers --timeout-seconds 180 --out artifacts/ux-smoke-report.json
+      - name: Publish UX smoke summary
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          report_path = Path("artifacts/ux-smoke-report.json")
+          lines: list[str] = [
+              "## UX Smoke Summary",
+              "",
+          ]
+
+          if not report_path.exists():
+              lines.extend(
+                  [
+                      "- Report: not generated",
+                      "- Result: failed before summary output",
+                  ]
+              )
+          else:
+              data = json.loads(report_path.read_text(encoding="utf-8"))
+              ok = bool(data.get("ok"))
+              world_id = data.get("world_id") or "n/a"
+              duration_seconds = data.get("duration_seconds", "n/a")
+              steps = data.get("steps", [])
+              pass_count = sum(1 for step in steps if step.get("ok"))
+              fail_count = len(steps) - pass_count
+              failed_steps: list[tuple[str, str]] = []
+              lines.extend(
+                  [
+                      f"- Result: {'PASS' if ok else 'FAIL'}",
+                      f"- World ID: `{world_id}`",
+                      f"- Duration (s): `{duration_seconds}`",
+                      f"- Steps: `{len(steps)}` total / `{pass_count}` pass / `{fail_count}` fail",
+                      "",
+                      "| Step | Status | Detail |",
+                      "|---|---|---|",
+                  ]
+              )
+              for step in steps:
+                  name = str(step.get("name", "unknown"))
+                  is_ok = bool(step.get("ok"))
+                  status = "PASS" if is_ok else "FAIL"
+                  detail = str(step.get("detail", "")).replace("|", "\\|")
+                  lines.append(f"| `{name}` | {status} | {detail} |")
+                  if not is_ok:
+                      failed_steps.append((name, detail))
+
+              if failed_steps:
+                  lines.extend(
+                      [
+                          "",
+                          "### Failed Steps",
+                          "",
+                      ]
+                  )
+                  for name, detail in failed_steps:
+                      lines.append(f"- `{name}`: {detail}")
+
+          summary_path = Path(".github-ux-smoke-summary.md")
+          summary_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+          PY
+          cat .github-ux-smoke-summary.md >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ux-smoke-report
+          path: |
+            artifacts/ux-smoke-report.json
+            .github-ux-smoke-summary.md
+          if-no-files-found: warn
+      - name: Upsert UX smoke PR comment
+        if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        uses: actions/github-script@v7
+        env:
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        with:
+          script: |
+            const fs = require("fs");
+            const marker = "<!-- ux-smoke-report -->";
+            const summaryPath = ".github-ux-smoke-summary.md";
+            const reportPath = "artifacts/ux-smoke-report.json";
+
+            let summary = "## UX Smoke Summary\n\nNo summary generated.";
+            if (fs.existsSync(summaryPath)) {
+              summary = fs.readFileSync(summaryPath, "utf8").trim();
+            }
+
+            let result = "unknown";
+            let worldId = "n/a";
+            let durationSeconds = "n/a";
+            let failedSteps = [];
+            if (fs.existsSync(reportPath)) {
+              try {
+                const data = JSON.parse(fs.readFileSync(reportPath, "utf8"));
+                result = data.ok ? "PASS" : "FAIL";
+                worldId = data.world_id || "n/a";
+                durationSeconds = data.duration_seconds ?? "n/a";
+                const steps = Array.isArray(data.steps) ? data.steps : [];
+                failedSteps = steps
+                  .filter((step) => !step?.ok)
+                  .map((step) => ({
+                    name: String(step?.name ?? "unknown"),
+                    detail: String(step?.detail ?? "").replace(/\n+/g, " ").trim(),
+                  }));
+              } catch (err) {
+                result = "invalid-report";
+              }
+            }
+
+            const failedSection =
+              failedSteps.length === 0
+                ? ["- Failed steps: none"]
+                : [
+                    "### Failed Steps",
+                    "",
+                    ...failedSteps.map((step) => `- \`${step.name}\`: ${step.detail}`),
+                  ];
+
+            const body = [
+              marker,
+              "## UX Smoke (CI)",
+              "",
+              `- Result: **${result}**`,
+              `- World ID: \`${worldId}\``,
+              `- Duration (s): \`${durationSeconds}\``,
+              `- Failed steps: **${failedSteps.length}**`,
+              `- Run: ${process.env.RUN_URL}`,
+              "",
+              ...failedSection,
+              "",
+              summary,
+            ].join("\n");
+
+            const { owner, repo } = context.repo;
+            const issue_number = context.payload.pull_request.number;
+
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner,
+              repo,
+              issue_number,
+              per_page: 100,
+            });
+
+            const existing = comments.find(
+              (c) => c.user?.type === "Bot" && c.body?.includes(marker)
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner,
+                repo,
+                comment_id: existing.id,
+                body,
+              });
+              core.info(`Updated existing UX smoke comment: ${existing.id}`);
+            } else {
+              const created = await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number,
+                body,
+              });
+              core.info(`Created UX smoke comment: ${created.data.id}`);
+            }
 
   loadtest-report:
     runs-on: ubuntu-latest

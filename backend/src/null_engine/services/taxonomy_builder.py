@@ -13,7 +13,7 @@ import structlog
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from null_engine.db import async_session
+from null_engine.db import async_session, pgvector_enabled
 from null_engine.models.tables import (
     TaxonomyMembership,
     TaxonomyNode,
@@ -223,6 +223,10 @@ Return JSON: {{"label": "...", "description": "..."}}""",
 
 async def run_taxonomy_cycle():
     """Single taxonomy building cycle."""
+    if not pgvector_enabled():
+        logger.info("taxonomy_builder.pgvector_disabled_skip_cycle")
+        return
+
     cycle_started = time.monotonic()
     async with async_session() as db:
         try:

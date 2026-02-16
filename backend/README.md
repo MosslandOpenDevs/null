@@ -54,4 +54,25 @@ poetry run python scripts/loadtest.py --base-url http://localhost:3301 --request
 - Workflow: `.github/workflows/loadtest-live.yml`
 - Trigger: weekly schedule (`Monday 03:00 UTC`) or manual `workflow_dispatch`
 - Secret: set `NULL_LOADTEST_BASE_URL` to enable real HTTP benchmark mode
+- Optional Secret: set `NULL_LOADTEST_REPORT_WEBHOOK_URL` to push each run summary/trend to an external webhook
+- Webhook payload: JSON with top-level `text` plus `loadtest` object (`run_url`, targets, overall metrics, alerts, trend markdown)
 - Failure gate: in live mode, the workflow fails when alert thresholds are breached
+
+## UX Smoke (Full Stack)
+Run a practical smoke check that starts backend/frontend, creates a world, opens world route, and validates ops API:
+
+```bash
+cd ..
+python3 scripts/ux_smoke.py --start-servers
+```
+
+Equivalent shortcuts:
+- `make ux-smoke`
+- `pnpm run test:ux-smoke`
+
+CI integration:
+- Workflow: `.github/workflows/ci.yml` (`ux-smoke` job)
+- Backing services: PostgreSQL + Redis service containers
+- Artifact: `ux-smoke-report` (`artifacts/ux-smoke-report.json`)
+- GitHub job summary: duration + step-level PASS/FAIL table + failed-step highlights rendered to `GITHUB_STEP_SUMMARY`
+- Pull request comment: CI bot upserts a single `UX Smoke (CI)` comment with latest run link/result
