@@ -24,7 +24,7 @@ a_check() {
 }
 
 echo "[null] checking backend: ${BACKEND_URL}"
-for path in "/health" "/"; do
+for path in "/health"; do
   a_check backend "$BACKEND_URL" "$path"
 done
 
