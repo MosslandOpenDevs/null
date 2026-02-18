@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-BACKEND_URL="${NULL_BACKEND_URL:-http://localhost:3301}"
-FRONTEND_URL="${NULL_FRONTEND_URL:-http://localhost:3300}"
+BACKEND_URL="${NULL_BACKEND_URL:-http://localhost:6301}"
+FRONTEND_URL="${NULL_FRONTEND_URL:-http://localhost:6001}"
 
 a_check() {
   local label="$1"
