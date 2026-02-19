@@ -3,9 +3,11 @@ set -euo pipefail
 
 BACKEND_URL="${NULL_BACKEND_URL:-http://localhost:6301}"
 FRONTEND_URL="${NULL_FRONTEND_URL:-http://localhost:6001}"
+BACKEND_RETRIES="${NULL_BACKEND_RETRIES:-3}"
+BACKEND_RETRY_DELAY_SEC="${NULL_BACKEND_RETRY_DELAY_SEC:-2}"
 FAILURES=0
 
-a_check() {
+run_check() {
   local label="$1"
   local target="$2"
   local path="$3"
@@ -18,21 +20,59 @@ a_check() {
     len=$(wc -c < "$tmp")
   fi
   printf "  %s %s => %s (%s bytes)\n" "$label" "$path" "$code" "$len"
-  if [[ "$code" != 2* && "$code" != 3* ]]; then
+  rm -f "$tmp"
+
+  [[ "$code" == 2* || "$code" == 3* ]]
+}
+
+check_once() {
+  local label="$1"
+  local target="$2"
+  local path="$3"
+
+  if ! run_check "$label" "$target" "$path"; then
     echo "  !! non-2xx/3xx detected"
     FAILURES=$((FAILURES + 1))
+    return 1
   fi
-  rm -f "$tmp"
+
+  return 0
+}
+
+check_with_retry() {
+  local label="$1"
+  local target="$2"
+  local path="$3"
+  local retries="$4"
+  local delay_sec="$5"
+
+  local attempt=1
+  while (( attempt <= retries )); do
+    if run_check "$label" "$target" "$path"; then
+      return 0
+    fi
+
+    echo "  !! non-2xx/3xx detected"
+    if (( attempt < retries )); then
+      echo "  .. retry ${attempt}/${retries} after ${delay_sec}s"
+      sleep "$delay_sec"
+    fi
+
+    attempt=$((attempt + 1))
+  done
+
+  FAILURES=$((FAILURES + 1))
+  return 1
 }
 
 echo "[null] checking backend: ${BACKEND_URL}"
 for path in "/health"; do
-  a_check backend "$BACKEND_URL" "$path"
+  check_with_retry backend "$BACKEND_URL" "$path" "$BACKEND_RETRIES" "$BACKEND_RETRY_DELAY_SEC" || true
 done
 
 echo "[null] checking frontend: ${FRONTEND_URL}"
 for path in "/" "/en"; do
-  a_check frontend "$FRONTEND_URL" "$path"
+  check_once frontend "$FRONTEND_URL" "$path" || true
 done
 
 if [[ "$FAILURES" -gt 0 ]]; then
