@@ -5,6 +5,7 @@ BACKEND_URL="${NULL_BACKEND_URL:-http://localhost:6301}"
 FRONTEND_URL="${NULL_FRONTEND_URL:-http://localhost:6001}"
 BACKEND_RETRIES="${NULL_BACKEND_RETRIES:-3}"
 BACKEND_RETRY_DELAY_SEC="${NULL_BACKEND_RETRY_DELAY_SEC:-2}"
+ENABLE_BACKEND_SMOKE="${NULL_ENABLE_BACKEND_SMOKE:-1}"
 FAILURES=0
 
 run_check() {
@@ -69,6 +70,13 @@ echo "[null] checking backend: ${BACKEND_URL}"
 for path in "/health"; do
   check_with_retry backend "$BACKEND_URL" "$path" "$BACKEND_RETRIES" "$BACKEND_RETRY_DELAY_SEC" || true
 done
+
+if [[ "$ENABLE_BACKEND_SMOKE" == "1" ]]; then
+  echo "[null] backend functional smoke checks"
+  for path in "/openapi.json" "/api/worlds"; do
+    check_with_retry backend-smoke "$BACKEND_URL" "$path" "$BACKEND_RETRIES" "$BACKEND_RETRY_DELAY_SEC" || true
+  done
+fi
 
 echo "[null] checking frontend: ${FRONTEND_URL}"
 for path in "/" "/en"; do
