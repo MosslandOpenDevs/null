@@ -6,6 +6,8 @@ FRONTEND_URL="${NULL_FRONTEND_URL:-http://localhost:6001}"
 BACKEND_RETRIES="${NULL_BACKEND_RETRIES:-3}"
 BACKEND_RETRY_DELAY_SEC="${NULL_BACKEND_RETRY_DELAY_SEC:-2}"
 ENABLE_BACKEND_SMOKE="${NULL_ENABLE_BACKEND_SMOKE:-1}"
+REPORT_FILE="${NULL_OPS_REPORT_FILE:-}"
+HISTORY_FILE="${NULL_OPS_HISTORY_FILE:-}"
 FAILURES=0
 
 run_check() {
@@ -84,8 +86,25 @@ for path in "/" "/en"; do
 done
 
 if [[ "$FAILURES" -gt 0 ]]; then
+  status="fail"
   echo "[null] FAILED checks: $FAILURES"
-  exit 1
+  code=1
+else
+  status="ok"
+  echo "[null] all checks passed"
+  code=0
 fi
 
-echo "[null] all checks passed"
+summary="{\"service\":\"null\",\"status\":\"${status}\",\"failures\":${FAILURES},\"backend\":\"${BACKEND_URL}\",\"frontend\":\"${FRONTEND_URL}\",\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}"
+
+if [[ -n "$REPORT_FILE" ]]; then
+  printf '%s\n' "$summary" > "$REPORT_FILE"
+  echo "[null] wrote ops report: ${REPORT_FILE}"
+fi
+
+if [[ -n "$HISTORY_FILE" ]]; then
+  printf '%s\n' "$summary" >> "$HISTORY_FILE"
+  echo "[null] appended ops history: ${HISTORY_FILE}"
+fi
+
+exit "$code"
