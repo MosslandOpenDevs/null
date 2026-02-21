@@ -1,63 +1,77 @@
 # NULL
 
 <p align="center">
-  <img src="./docs/assets/readme/hero.svg" alt="NULL cover" width="100%" />
+  <strong>No Humans. Just Logic.</strong><br/>
+  Autonomous society simulation + reverse inference engine.
 </p>
 
 <p align="center">
-  <strong>Forward + Inverse Society Simulation</strong><br/>
-  Synthetic social simulation and reverse-inference engine for emergent outcomes.
-</p>
-
-<p align="center">
-  <img alt="maintained" src="https://img.shields.io/badge/maintained-yes-16a34a"/>
-  <img alt="docs" src="https://img.shields.io/badge/docs-updated-0ea5e9"/>
+  <img alt="status" src="https://img.shields.io/badge/status-active%20planning-black"/>
+  <img alt="stack" src="https://img.shields.io/badge/stack-python%20%2B%20next.js-111827"/>
+  <img alt="license" src="https://img.shields.io/badge/license-MIT-black"/>
 </p>
 
 ---
 
-## Table of Contents
+## What is NULL?
 
-- [Overview](#overview)
-- [Why This Project](#why-this-project)
-- [Core Capabilities](#core-capabilities)
-- [Tech Stack](#tech-stack)
-- [Quick Start](#quick-start)
-- [Operations](#operations)
-- [Roadmap](#roadmap)
-- [Security & Privacy](#security--privacy)
-- [Contributing](#contributing)
-- [License](#license)
+`NULL` is a synthetic society simulation platform where AI agents:
+- form communities,
+- debate and evolve positions,
+- produce structured knowledge artifacts,
+- and can be analyzed in both forward and reverse simulation modes.
+
+Humans observe and analyze; agents run the world.
 
 ---
-
-## Overview
-
-Synthetic social simulation and reverse-inference engine for emergent outcomes.
-
-Focuses on explainable candidate scenarios rather than single deterministic answers.
-
-## Why This Project
-
-This repository exists to provide a practical, production-oriented foundation with clear operational visibility and repeatable workflows.
 
 ## Core Capabilities
 
-- Structured runtime behavior with deterministic checks
-- Ops-oriented scripts for health verification and reporting
-- Clean handoff between development, validation, and reporting
-- Incremental enhancements designed for continuous operation loops
+- **Forward simulation**: initial conditions → emergent outcomes
+- **Reverse simulation**: observed outcomes → plausible origins
+- **Knowledge extraction**: timeline + wiki-like structure + export formats
+- **Ops checks** for backend/frontend service health
 
-## Tech Stack
+---
 
-`Python, Next.js, Docker, PostgreSQL (planned)`
+## Architecture
+
+```mermaid
+flowchart LR
+  G[Genesis Config] --> O[Orchestrator]
+  O --> A[Agent Swarm]
+  A --> E[Event Stream]
+  E --> K[Knowledge Layer]
+  E --> F[Frontend Observatory]
+  K --> X[Export JSON/CSV/Training Formats]
+```
+
+---
+
+## Repository Layout
+
+```text
+null/
+├─ backend/            # simulation and engine runtime
+├─ frontend/           # visualization and interaction layer
+├─ docs/               # architecture, roadmap, scenarios
+├─ scripts/ops-check.sh
+└─ docker-compose.yml
+```
+
+---
 
 ## Quick Start
 
 ```bash
+# from repo root
 npm install
 docker compose up -d
 ```
+
+Backend/Frontend commands may vary by local setup; check each subproject README/config.
+
+---
 
 ## Operations
 
@@ -65,21 +79,26 @@ docker compose up -d
 bash scripts/ops-check.sh
 ```
 
-## Roadmap
+Useful env vars:
+- `NULL_OPS_REPORT_FILE`
+- `NULL_OPS_HISTORY_FILE`
 
-- Improve monitoring depth and trend-based diagnostics
-- Expand automation and report schema consistency
-- Strengthen failure-mode handling and recovery behavior
+---
+
+## Project Status
+
+- Foundation and planning documents: available
+- Engine and inverse reasoning: in active buildout
+- Production hardening: ongoing
+
+---
 
 ## Security & Privacy
 
-- Do not commit secrets, tokens, or private infrastructure details.
-- Keep screenshots sanitized (no personal identifiers, no credential surfaces).
-- Generated README images in this repo are synthetic and privacy-safe.
+- Use synthetic data in examples and screenshots.
+- Never publish credentials, hostnames, or private infra mappings.
 
-## Contributing
-
-Issues and PRs are welcome. Please keep changes focused, tested, and operationally verifiable.
+---
 
 ## License
 
