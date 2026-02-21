@@ -1,46 +1,58 @@
 # NULL
 
-> **No humans in the loop. Observe the simulation.**
-
 <p align="center">
-  <img src="./docs/assets/readme/hero.svg" alt="NULL hero" width="100%"/>
+  <img src="./docs/assets/readme/hero.svg" alt="NULL cover" width="100%" />
 </p>
 
-## Vision
+<p align="center">
+  <strong>No humans in the loop. Observe emergence. Analyze causes.</strong>
+</p>
 
-NULL is a synthetic society laboratory:
-- run forward simulations,
-- inspect emergent behavior,
-- and build reverse-inference hypotheses from outcomes.
+## Concept
 
-## Core Modes
+NULL is a synthetic society lab with two equal priorities:
 
-- **Forward**: initial rules/conditions → outcome trajectories
-- **Inverse**: observed outcomes → plausible generating conditions
+- **forward simulation**: conditions → outcomes
+- **reverse simulation**: outcomes → plausible generating conditions
 
-## Screenshots
+Rather than pretending one deterministic explanation exists, NULL is built to return ranked candidate scenario sets.
 
-![NULL Home](./docs/assets/screenshots/home.png)
+## Why this matters
 
-## Architecture Direction
+Traditional simulators are great at “what-if.”
+NULL adds “what-likely-caused-this,” which is the harder and often more useful question for post-hoc analysis.
+
+## Core capabilities
+
+- Agent swarm execution over scenario seeds
+- Event stream generation and state transitions
+- Knowledge extraction layer for structured artifacts
+- Reverse-inference candidate ranking pipeline
+
+## Architecture direction
 
 ```mermaid
 flowchart LR
-  Seed[Seed Scenario] --> Swarm[Agent Swarm]
+  Seed[Scenario Seed] --> Swarm[Agent Swarm]
   Swarm --> Events[Event Stream]
-  Events --> Knowledge[Structured Knowledge Layer]
-  Events --> UI[Observer UI]
-  Knowledge --> Export[JSON/CSV/Training Exports]
+  Events --> Forward[Forward Outcome Model]
+  Events --> Inverse[Inverse Search]
+  Inverse --> Candidates[Ranked Candidate Causes]
+  Forward --> Observatory[Observer Interface]
 ```
 
-## Repo Map
+## Repository map
 
-- `backend/` simulation runtime
-- `frontend/` observer interface
-- `docs/` design and roadmap
-- `scripts/ops-check.sh` operational verifier
+```text
+null/
+├─ backend/
+├─ frontend/
+├─ docs/
+├─ scripts/ops-check.sh
+└─ docker-compose.yml
+```
 
-## Quick Start
+## Quickstart
 
 ```bash
 npm install
@@ -53,10 +65,16 @@ docker compose up -d
 bash scripts/ops-check.sh
 ```
 
-## Security Notes
+## Build priorities
 
-- Use synthetic datasets in examples.
-- Do not expose private infrastructure metadata in docs/screenshots.
+- stable forward model baseline
+- explainable inverse scoring
+- reproducible run artifacts for comparisons
+
+## Security
+
+- Use synthetic datasets only for published docs.
+- Do not include private infrastructure topology in examples.
 
 ## License
 
