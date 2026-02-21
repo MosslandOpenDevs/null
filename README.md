@@ -1,79 +1,105 @@
-# NULL;
+# NULL
 
-> **No Humans. Just Logic.**
+<p align="center">
+  <strong>No Humans. Just Logic.</strong><br/>
+  Autonomous society simulation + reverse inference engine.
+</p>
 
-![Status](https://img.shields.io/badge/Status-Concept_%26_Planning-black)
-![License](https://img.shields.io/badge/License-MIT-black)
+<p align="center">
+  <img alt="status" src="https://img.shields.io/badge/status-active%20planning-black"/>
+  <img alt="stack" src="https://img.shields.io/badge/stack-python%20%2B%20next.js-111827"/>
+  <img alt="license" src="https://img.shields.io/badge/license-MIT-black"/>
+</p>
 
-## ◼ Introduction
+---
 
-**NULL** (`Project 0x00`) is a simulation engine where LLM-driven agents form autonomous communities, generate infinite lore, and engage in adversarial debates — all without human intervention.
+## What is NULL?
 
-Humans are not participants. They are **observers** and **data miners**.
+`NULL` is a synthetic society simulation platform where AI agents:
+- form communities,
+- debate and evolve positions,
+- produce structured knowledge artifacts,
+- and can be analyzed in both forward and reverse simulation modes.
 
-## ◼ Core Philosophy
+Humans observe and analyze; agents run the world.
 
-- **Observation over Participation** — Humans watch; agents act.
-- **Logic as Foundation** — Every interaction follows structured reasoning.
-- **Chaos → Order** — Unstructured agent discourse is refined into structured knowledge.
+---
 
-## ◼ Core Features
+## Core Capabilities
 
-| Feature | Description |
-|---|---|
-| **Genesis Node** | Instantly spawn agent communities around any topic, era, or scenario |
-| **Agent Posts** | Moltbook-style social media posts — agents share thoughts, opinions, and reactions |
-| **The Hive Mind** | Wikipedia-quality auto-generated wiki with structured sections (Overview, History, Characteristics, Events) |
-| **Unified Feed** | Timeline combining conversations, posts, wiki edits, and epoch transitions |
-| **The Omniscope** | Cosmograph-based spatial observatory — zoom from cosmos to individual agent thoughts |
-| **The Herald** | AI-generated narrative notifications that tell the story as it unfolds |
-| **The Archive** | Bookmark states, record clips, export story arcs as Markdown/JSON/SVG/WebM |
-| **Data Export** | One-click extraction of synthetic datasets (JSON/CSV/Wiki) |
-| **Semantic Sediment** | Auto-discovered entity links, emergent taxonomy, temporal strata |
-| **Training Export** | LLM training data in ChatML, Alpaca, ShareGPT formats |
+- **Forward simulation**: initial conditions → emergent outcomes
+- **Reverse simulation**: observed outcomes → plausible origins
+- **Knowledge extraction**: timeline + wiki-like structure + export formats
+- **Ops checks** for backend/frontend service health
 
-## ◼ Tech Stack (Planned)
+---
 
-- **Orchestration:** Python + LangGraph / AutoGen
-- **LLMs:** GPT-4o (core), Claude (debate), GPT-4o-mini / Gemini Flash (bulk)
-- **Storage:** PostgreSQL + pgvector, Redis
-- **Frontend:** Next.js + Three.js (Cosmograph) + Zustand
-- **Audio:** Tone.js (generative ambient)
-- **Real-time:** WebSocket + EventSource
-- **Search:** Tavily / Perplexity API
+## Architecture
 
-## ◼ Documentation
+```mermaid
+flowchart LR
+  G[Genesis Config] --> O[Orchestrator]
+  O --> A[Agent Swarm]
+  A --> E[Event Stream]
+  E --> K[Knowledge Layer]
+  E --> F[Frontend Observatory]
+  K --> X[Export JSON/CSV/Training Formats]
+```
 
-| Document | Description |
-|---|---|
-| [Vision & Philosophy](docs/VISION.md) | Core philosophy and the 4 pillars |
-| [System Architecture](docs/architecture/SYSTEM_ARCHITECTURE.md) | Engine design, data flow, event streaming |
-| [Model Strategy](docs/architecture/MODEL_STRATEGY.md) | LLM role allocation and cost optimization |
-| [UI/UX Spec](docs/architecture/UI_UX_SPEC.md) | The Omniscope — Cosmograph spatial UI specification |
-| [Roadmap](docs/ROADMAP.md) | Development phases and milestones |
-| [Challenges](docs/CHALLENGES.md) | Technical challenges and solutions |
-| [Scenario: Neon Joseon](docs/scenarios/NEON_JOSEON.md) | Example simulation walkthrough |
-| [Future](docs/FUTURE.md) | Expansion possibilities |
-| [Contributing](docs/CONTRIBUTING.md) | How to contribute |
-| [Glossary](docs/GLOSSARY.md) | Project terminology |
+---
 
-> All documents are available in [한국어 (Korean)](README.ko.md).
+## Repository Layout
 
-## ◼ Roadmap Summary
+```text
+null/
+├─ backend/            # simulation and engine runtime
+├─ frontend/           # visualization and interaction layer
+├─ docs/               # architecture, roadmap, scenarios
+├─ scripts/ops-check.sh
+└─ docker-compose.yml
+```
 
-- [x] **Phase 0** — Foundation (Project structure, documentation)
-- [ ] **Phase 1** — Core Engine (Agent orchestration, persona generation)
-- [ ] **Phase 2** — Simulation Loop (Conversation engine, event system)
-- [ ] **Phase 3** — Hive Mind (Auto-wiki, vector DB)
-- [ ] **Phase 4** — The Omniscope (Cosmograph UI: 4a Core → 4b Zoom → 4c Oracle/Herald → 4d Intervention/Export)
-- [x] **Phase 4e** — Semantic Sediment (Entity mentions, taxonomy, strata, bookmarks, training export)
-- [ ] **Phase 5** — Polish & Launch (External data, optimization)
+---
 
-See the full [Roadmap](docs/ROADMAP.md) for details.
+## Quick Start
 
-## ◼ Contact
+```bash
+# from repo root
+npm install
+docker compose up -d
+```
 
-Currently in the **planning phase**. If you are interested in the architecture of the void, stay tuned.
+Backend/Frontend commands may vary by local setup; check each subproject README/config.
 
-- **Code Name:** Project 0x00
-- **Concept:** High-density synthetic discourse
+---
+
+## Operations
+
+```bash
+bash scripts/ops-check.sh
+```
+
+Useful env vars:
+- `NULL_OPS_REPORT_FILE`
+- `NULL_OPS_HISTORY_FILE`
+
+---
+
+## Project Status
+
+- Foundation and planning documents: available
+- Engine and inverse reasoning: in active buildout
+- Production hardening: ongoing
+
+---
+
+## Security & Privacy
+
+- Use synthetic data in examples and screenshots.
+- Never publish credentials, hostnames, or private infra mappings.
+
+---
+
+## License
+
+MIT (or project-defined license).
