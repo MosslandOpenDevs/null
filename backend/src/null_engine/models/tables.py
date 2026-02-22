@@ -254,6 +254,41 @@ class Bookmark(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
+class AgentMemory(Base):
+    __tablename__ = "agent_memories"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=new_uuid)
+    agent_id = Column(UUID(as_uuid=True), ForeignKey("agents.id", ondelete="CASCADE"), nullable=False)
+    world_id = Column(UUID(as_uuid=True), ForeignKey("worlds.id", ondelete="CASCADE"), nullable=False)
+    tier = Column(String(10), nullable=False)  # "short", "mid", "long"
+    content = Column(JSONB, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class Claim(Base):
+    __tablename__ = "claims"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=new_uuid)
+    world_id = Column(UUID(as_uuid=True), ForeignKey("worlds.id", ondelete="CASCADE"), nullable=False)
+    claim_text = Column(Text, nullable=False)
+    category = Column(String(50), default="general")
+    confidence = Column(Float, default=0.5)
+    status = Column(String(20), default="proposed")  # proposed, canon, legend, rejected
+    proposer_id = Column(UUID(as_uuid=True), ForeignKey("agents.id", ondelete="SET NULL"), nullable=True)
+    faction_id = Column(UUID(as_uuid=True), ForeignKey("factions.id", ondelete="SET NULL"), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class ClaimVote(Base):
+    __tablename__ = "claim_votes"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=new_uuid)
+    claim_id = Column(UUID(as_uuid=True), ForeignKey("claims.id", ondelete="CASCADE"), nullable=False)
+    agent_id = Column(UUID(as_uuid=True), ForeignKey("agents.id", ondelete="CASCADE"), nullable=False)
+    faction_id = Column(UUID(as_uuid=True), ForeignKey("factions.id", ondelete="SET NULL"), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
 class AgentPost(Base):
     __tablename__ = "agent_posts"
 

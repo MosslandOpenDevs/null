@@ -47,7 +47,25 @@ async def run_conversation(
     if len(participants) < 2:
         return ConversationTurn(world_id=world_id, epoch=epoch, participants=[])
 
-    topic = await _generate_topic(participants)
+    # Build world context for topic generation
+    world_context = ""
+    try:
+        from null_engine.models.tables import Conversation as ConvTable
+        recent = await db.execute(
+            select(ConvTable)
+            .where(ConvTable.world_id == world_id)
+            .order_by(ConvTable.created_at.desc())
+            .limit(3)
+        )
+        recent_convs = recent.scalars().all()
+        if recent_convs:
+            world_context = "Recent discussions: " + "; ".join(
+                c.summary[:100] for c in recent_convs if c.summary
+            )
+    except Exception:
+        pass
+
+    topic = await _generate_topic(participants, world_context)
 
     turn = ConversationTurn(
         world_id=world_id,
@@ -110,8 +128,8 @@ async def run_conversation(
         await memory.add_short_term(p.id, turn.messages)
         await memory.add_mid_term(p.id, summary)
 
-    # Update relationships based on conversation
-    await _update_relationships(db, world_id, participants)
+    # Update relationships based on conversation (with sentiment analysis)
+    await _update_relationships(db, world_id, participants, turn.messages)
 
     # Persist conversation to DB
     conv_id = await _save_conversation(db, turn, tick, summary)
@@ -165,17 +183,64 @@ async def _select_participants(db: AsyncSession, world_id: uuid.UUID, count: int
     return random.sample(all_agents, count)
 
 
-async def _generate_topic(participants: list[Agent]) -> str:
-    topics = [
-        "resource distribution", "territorial boundaries", "trade agreements",
-        "recent mysterious events", "leadership disputes", "ancient prophecies",
-        "technological discoveries", "cultural traditions", "military strategy",
-        "diplomatic relations", "spiritual beliefs", "economic reforms",
-    ]
-    return random.choice(topics)
+TOPIC_GENERATION_PROMPT = """Generate a single conversation topic for a group of agents in a simulated civilization.
+
+Participants: {participant_names}
+Their factions: {faction_info}
+World context: {world_context}
+
+The topic should be:
+- Relevant to current world events or tensions
+- Likely to provoke interesting debate or negotiation
+- Specific enough to drive meaningful discussion
+
+Respond with ONLY the topic (a short phrase, 3-8 words). No explanation."""
+
+FALLBACK_TOPICS = [
+    "resource distribution", "territorial boundaries", "trade agreements",
+    "recent mysterious events", "leadership disputes", "ancient prophecies",
+    "technological discoveries", "cultural traditions", "military strategy",
+    "diplomatic relations", "spiritual beliefs", "economic reforms",
+]
 
 
-async def _update_relationships(db: AsyncSession, world_id: uuid.UUID, participants: list[Agent]):
+async def _generate_topic(participants: list[Agent], world_context: str = "") -> str:
+    try:
+        participant_names = ", ".join(p.name for p in participants)
+        faction_info = ", ".join(
+            f"{p.name} ({p.persona.get('role', 'member')})"
+            for p in participants
+        )
+
+        prompt = TOPIC_GENERATION_PROMPT.format(
+            participant_names=participant_names,
+            faction_info=faction_info,
+            world_context=world_context or "A diverse civilization with competing factions",
+        )
+
+        topic = await llm_router.generate_text(role="reaction_agent", prompt=prompt)
+        topic = topic.strip().strip('"').strip("'")
+
+        if topic and len(topic) < 200:
+            return topic
+    except Exception:
+        logger.exception("topic_generation.llm_failed")
+
+    return random.choice(FALLBACK_TOPICS)
+
+
+SENTIMENT_PROMPT = """Analyze the relationship dynamics from this conversation between {agent_a} and {agent_b}.
+
+Conversation excerpt:
+{conversation}
+
+Rate the overall sentiment on a scale from -1.0 (very hostile) to +1.0 (very friendly).
+Consider: agreement/disagreement, cooperation/conflict, respect/disrespect, trust/distrust.
+
+Respond with ONLY a number between -1.0 and 1.0. Nothing else."""
+
+
+async def _update_relationships(db: AsyncSession, world_id: uuid.UUID, participants: list[Agent], messages: list[AgentMessage] | None = None):
     for i, a in enumerate(participants):
         for b in participants[i + 1:]:
             result = await db.execute(
@@ -186,7 +251,43 @@ async def _update_relationships(db: AsyncSession, world_id: uuid.UUID, participa
                 )
             )
             rel = result.scalar_one_or_none()
-            if rel:
-                # Slight random drift
-                drift = random.uniform(-0.05, 0.05)
-                rel.strength = max(0.0, min(1.0, rel.strength + drift))
+            if not rel:
+                continue
+
+            drift = random.uniform(-0.02, 0.02)  # Base random drift (smaller)
+
+            # Same faction bias: slight positive tendency
+            if a.faction_id and a.faction_id == b.faction_id:
+                drift += 0.01
+            # Different factions: slight negative tendency
+            elif a.faction_id and b.faction_id and a.faction_id != b.faction_id:
+                drift -= 0.005
+
+            # LLM sentiment analysis if messages are available
+            if messages:
+                try:
+                    # Filter messages involving these two agents
+                    relevant = [
+                        m for m in messages
+                        if m.agent_id in (a.id, b.id)
+                    ]
+                    if relevant:
+                        conversation_text = "\n".join(
+                            f"{m.agent_id}: {m.content[:100]}" for m in relevant[:6]
+                        )
+                        sentiment_str = await llm_router.generate_text(
+                            role="reaction_agent",
+                            prompt=SENTIMENT_PROMPT.format(
+                                agent_a=a.name,
+                                agent_b=b.name,
+                                conversation=conversation_text,
+                            ),
+                        )
+                        sentiment = float(sentiment_str.strip())
+                        sentiment = max(-1.0, min(1.0, sentiment))
+                        # Scale sentiment to drift range
+                        drift += sentiment * 0.08
+                except (ValueError, Exception):
+                    pass  # Fall back to random drift
+
+            rel.strength = max(0.0, min(1.0, rel.strength + drift))

@@ -241,3 +241,172 @@ async def stop_simulation(world_id: uuid.UUID, db: AsyncSession = Depends(get_db
         world.status = "paused"
         await db.commit()
     return {"status": "stopped", "world_id": str(world_id)}
+
+
+# --- Seed Bomb ---
+from pydantic import BaseModel
+
+
+class SeedBombRequest(BaseModel):
+    topic: str
+
+
+@router.post("/worlds/{world_id}/seed-bomb")
+async def seed_bomb(world_id: uuid.UUID, body: SeedBombRequest, db: AsyncSession = Depends(get_db)):
+    """Inject a topic into the next conversation round."""
+    result = await db.execute(select(World).where(World.id == world_id))
+    world = result.scalar_one_or_none()
+    if not world:
+        raise HTTPException(404, "World not found")
+
+    # Store injected topic in world config
+    config = dict(world.config or {})
+    injected = config.get("_injected_topics", [])
+    injected.append(body.topic)
+    config["_injected_topics"] = injected
+    world.config = config
+    await db.commit()
+
+    from null_engine.ws.handler import broadcast
+    from null_engine.models.schemas import WSEnvelope
+
+    await broadcast(world_id, WSEnvelope(
+        type="event.triggered",
+        epoch=world.current_epoch,
+        payload={
+            "description": f"A new idea ripples through the world: '{body.topic}'",
+            "text": f"Seed bomb: {body.topic}",
+            "source": "divine_intervention",
+            "tick": world.current_tick,
+        },
+    ))
+
+    return {"status": "injected", "topic": body.topic}
+
+
+# --- Catch Up ---
+@router.get("/worlds/{world_id}/catch-up")
+async def catch_up(world_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    """LLM-generated summary of recent events."""
+    result = await db.execute(select(World).where(World.id == world_id))
+    world = result.scalar_one_or_none()
+    if not world:
+        raise HTTPException(404, "World not found")
+
+    # Get recent conversations
+    conv_result = await db.execute(
+        select(Conversation)
+        .where(Conversation.world_id == world_id)
+        .order_by(Conversation.created_at.desc())
+        .limit(5)
+    )
+    recent_convs = conv_result.scalars().all()
+
+    if not recent_convs:
+        return {"summary": "Nothing of note has occurred yet in this world."}
+
+    context = "\n".join(
+        f"- Topic: {c.topic}. Summary: {c.summary[:200]}"
+        for c in recent_convs if c.summary
+    )
+
+    try:
+        from null_engine.services.llm_router import llm_router
+
+        prompt = f"""Summarize the recent events in this simulated world in 3-5 sentences.
+Write in a dramatic, cosmic narrator style.
+
+Recent events:
+{context}
+
+Summary:"""
+
+        summary = await llm_router.generate_text(role="reaction_agent", prompt=prompt)
+        return {"summary": summary.strip()}
+    except Exception:
+        summaries = [c.summary[:100] for c in recent_convs if c.summary]
+        return {"summary": " ".join(summaries) if summaries else "The void stirs, but details are unclear."}
+
+
+# --- Analytics: Faction Power ---
+@router.get("/worlds/{world_id}/analytics/faction-power")
+async def faction_power_analytics(world_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    """Faction power over epochs."""
+    from null_engine.models.tables import Faction, Relationship
+    from sqlalchemy import and_
+
+    result = await db.execute(select(World).where(World.id == world_id))
+    world = result.scalar_one_or_none()
+    if not world:
+        raise HTTPException(404, "World not found")
+
+    # Get factions
+    factions_result = await db.execute(select(Faction).where(Faction.world_id == world_id))
+    factions = factions_result.scalars().all()
+
+    # Simple: return current power per faction (agent count × avg relationship strength)
+    data = []
+    for f in factions:
+        agent_count_result = await db.execute(
+            select(func.count()).where(Agent.faction_id == f.id)
+        )
+        count = agent_count_result.scalar() or 0
+
+        data.append({
+            "faction_id": str(f.id),
+            "faction_name": f.name,
+            "color": f.color,
+            "agent_count": count,
+            "power": count,  # Simplified; could factor in relationships
+        })
+
+    return {"epoch": world.current_epoch, "factions": data}
+
+
+# --- Analytics: Agent Influence ---
+@router.get("/worlds/{world_id}/analytics/agent-influence")
+async def agent_influence_analytics(
+    world_id: uuid.UUID,
+    agent_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    """Agent influence radar data."""
+    from null_engine.models.tables import Relationship
+
+    agent_result = await db.execute(select(Agent).where(Agent.id == agent_id))
+    agent = agent_result.scalar_one_or_none()
+    if not agent:
+        raise HTTPException(404, "Agent not found")
+
+    # Get relationships
+    rels_result = await db.execute(
+        select(Relationship).where(
+            Relationship.world_id == world_id,
+            (Relationship.agent_a == agent_id) | (Relationship.agent_b == agent_id),
+        )
+    )
+    rels = rels_result.scalars().all()
+
+    # Get conversation count
+    conv_count_result = await db.execute(
+        select(func.count())
+        .select_from(Conversation)
+        .where(Conversation.world_id == world_id)
+    )
+    conv_count = conv_count_result.scalar() or 0
+
+    avg_strength = sum(r.strength for r in rels) / len(rels) if rels else 0.5
+    allies = sum(1 for r in rels if r.strength > 0.6)
+    rivals = sum(1 for r in rels if r.strength < 0.3)
+
+    return {
+        "agent_id": str(agent_id),
+        "agent_name": agent.name,
+        "axes": [
+            {"axis": "Relationships", "value": len(rels)},
+            {"axis": "Avg Strength", "value": round(avg_strength * 10, 1)},
+            {"axis": "Allies", "value": allies},
+            {"axis": "Rivals", "value": rivals},
+            {"axis": "Conversations", "value": min(conv_count, 10)},
+        ],
+    }

@@ -1,18 +1,18 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { useSimulationStore } from "@/stores/simulation";
 import { useWSClient } from "@/lib/wsClient";
 import { StatusBar } from "@/components/hud/StatusBar";
-import { KnowledgeHub } from "@/components/KnowledgeHub";
-import { SystemPulse } from "@/components/SystemPulse";
+import { ChronicleView } from "@/components/chronicle/ChronicleView";
+import { MinimapSidebar } from "@/components/minimap/MinimapSidebar";
 import { TimelineRibbon } from "@/components/TimelineRibbon";
 import { CommandPalette } from "@/components/CommandPalette";
-import { BreadcrumbBar } from "@/components/BreadcrumbBar";
-import { BookmarkDrawer } from "@/components/BookmarkDrawer";
+import { OraclePanel } from "@/components/OraclePanel";
+import { HeraldToast } from "@/components/HeraldToast";
 import { Scanline } from "@/components/hud/Scanline";
-import { useBookmarkStore } from "@/stores/bookmarks";
+import { InterventionBar } from "@/components/divine/InterventionBar";
 
 const GENERATING_MESSAGES = [
   "Forging the fabric of reality...",
@@ -26,8 +26,14 @@ const GENERATING_MESSAGES = [
 export default function WorldPage() {
   const { id, locale } = useParams<{ id: string; locale: string }>();
   const { connect, disconnect } = useWSClient();
-  const { fetchWorld, world } = useSimulationStore();
-  const { setDrawerOpen } = useBookmarkStore();
+  const {
+    fetchWorld,
+    world,
+    activeAgentIds,
+    openOracle,
+    setFocusFilter,
+    focusFilter,
+  } = useSimulationStore();
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
@@ -48,12 +54,50 @@ export default function WorldPage() {
         if (pollRef.current) clearInterval(pollRef.current);
       };
     }
-    // Stop polling once no longer generating
     if (pollRef.current && world?.status !== "generating") {
       clearInterval(pollRef.current);
       pollRef.current = null;
     }
   }, [world?.status, id, fetchWorld]);
+
+  const handleAgentClick = useCallback(
+    (agentId: string) => {
+      openOracle({ type: "agent", id: agentId });
+    },
+    [openOracle]
+  );
+
+  const handleWikiClick = useCallback(
+    (wikiId: string) => {
+      openOracle({ type: "wiki", id: wikiId });
+    },
+    [openOracle]
+  );
+
+  const handleFactionClick = useCallback(
+    (factionId: string) => {
+      // Toggle faction focus
+      if (focusFilter.type === "faction" && focusFilter.id === factionId) {
+        setFocusFilter({ type: "all" });
+      } else {
+        setFocusFilter({ type: "faction", id: factionId });
+      }
+    },
+    [focusFilter, setFocusFilter]
+  );
+
+  const handleMinimapAgentClick = useCallback(
+    (agentId: string) => {
+      // Toggle agent focus
+      if (focusFilter.type === "agent" && focusFilter.id === agentId) {
+        setFocusFilter({ type: "all" });
+      } else {
+        setFocusFilter({ type: "agent", id: agentId });
+      }
+      openOracle({ type: "agent", id: agentId });
+    },
+    [focusFilter, setFocusFilter, openOracle]
+  );
 
   if (!world) {
     return (
@@ -85,7 +129,6 @@ export default function WorldPage() {
           <div className="font-mono text-base text-accent animate-pulse">
             GENESIS IN PROGRESS
           </div>
-          {/* Progress bar */}
           <div className="w-full h-1.5 bg-hud-border rounded-full overflow-hidden">
             <div
               className="h-full bg-accent transition-all duration-700 ease-out"
@@ -128,24 +171,27 @@ export default function WorldPage() {
   return (
     <div className="relative flex flex-col w-screen h-screen overflow-hidden bg-void">
       <Scanline />
-
-      {/* Breadcrumb */}
-      <BreadcrumbBar
-        items={[
-          { label: "Observatory", href: `/${locale}` },
-          { label: world.seed_prompt.slice(0, 40) + (world.seed_prompt.length > 40 ? "..." : "") },
-        ]}
-      />
+      <HeraldToast />
 
       {/* Status bar */}
       <StatusBar />
 
-      {/* Main content: 2-column layout — KnowledgeHub (left ~70%) + SystemPulse (right ~30%) */}
+      {/* Divine Intervention bar */}
+      <InterventionBar />
+
+      {/* Main content: Chronicle (left) + Minimap (right) */}
       <div className="flex flex-1 min-h-0">
-        <div className="flex-1 min-w-0">
-          <KnowledgeHub />
-        </div>
-        <SystemPulse />
+        <ChronicleView
+          className="flex-1"
+          onAgentClick={handleAgentClick}
+          onWikiClick={handleWikiClick}
+        />
+        <MinimapSidebar
+          className="w-64 hidden lg:flex"
+          activeAgentIds={activeAgentIds}
+          onAgentClick={handleMinimapAgentClick}
+          onFactionClick={handleFactionClick}
+        />
       </div>
 
       {/* Timeline */}
@@ -153,15 +199,7 @@ export default function WorldPage() {
 
       {/* Overlays */}
       <CommandPalette />
-      <BookmarkDrawer />
-
-      {/* Bookmark toggle */}
-      <button
-        onClick={() => setDrawerOpen(true)}
-        className="fixed right-4 bottom-12 z-40 px-3 py-2 bg-void-light border border-hud-border hover:border-accent font-mono text-sm text-hud-muted hover:text-accent uppercase tracking-wider transition-colors"
-      >
-        BOOKMARKS
-      </button>
+      <OraclePanel />
     </div>
   );
 }

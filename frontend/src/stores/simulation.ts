@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import type { ChronicleItem } from "@/components/chronicle/types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3301";
 
@@ -84,6 +85,16 @@ export type FeedItem = {
   created_at: string | null;
 };
 
+export interface FocusFilter {
+  type: "all" | "agent" | "faction";
+  id?: string;
+}
+
+export interface OracleTarget {
+  type: "agent" | "wiki" | "faction" | "event";
+  id: string;
+}
+
 interface SimulationState {
   world: WorldData | null;
   agents: AgentData[];
@@ -101,6 +112,15 @@ interface SimulationState {
   autoWorlds: WorldData[];
   worldTags: Record<string, Array<{ tag: string; weight: number }>>;
   tagFilter: string | null;
+
+  // Chronicle state
+  chronicleItems: ChronicleItem[];
+  focusFilter: FocusFilter;
+  activeAgentIds: Set<string>;
+
+  // Oracle panel state
+  oracleTarget: OracleTarget | null;
+  oracleOpen: boolean;
 
   createWorld: (seedPrompt: string) => Promise<void>;
   fetchWorld: (id: string) => Promise<void>;
@@ -122,6 +142,19 @@ interface SimulationState {
   dismissHerald: (id: string) => void;
   setTagFilter: (tag: string | null) => void;
   exportWorld: (worldId: string, type: string, format: string) => Promise<void>;
+  setFocusFilter: (filter: FocusFilter) => void;
+  openOracle: (target: OracleTarget) => void;
+  closeOracle: () => void;
+  addChronicleItem: (item: ChronicleItem) => void;
+}
+
+function classifyEventType(payload: Record<string, unknown>): "crisis" | "discovery" | "plague" | "leadership" | "general" {
+  const desc = ((payload.description as string) || (payload.text as string) || "").toLowerCase();
+  if (desc.includes("crisis") || desc.includes("conflict") || desc.includes("war")) return "crisis";
+  if (desc.includes("discover") || desc.includes("found") || desc.includes("breakthrough")) return "discovery";
+  if (desc.includes("plague") || desc.includes("disease") || desc.includes("death")) return "plague";
+  if (desc.includes("leader") || desc.includes("elect") || desc.includes("crown")) return "leadership";
+  return "general";
 }
 
 export const useSimulationStore = create<SimulationState>((set, get) => ({
@@ -141,6 +174,11 @@ export const useSimulationStore = create<SimulationState>((set, get) => ({
   autoWorlds: [],
   worldTags: {},
   tagFilter: null,
+  chronicleItems: [],
+  focusFilter: { type: "all" },
+  activeAgentIds: new Set<string>(),
+  oracleTarget: null,
+  oracleOpen: false,
 
   createWorld: async (seedPrompt: string) => {
     const resp = await fetch(`${API_URL}/api/worlds`, {
@@ -149,8 +187,6 @@ export const useSimulationStore = create<SimulationState>((set, get) => ({
       body: JSON.stringify({ seed_prompt: seedPrompt }),
     });
     const world = await resp.json();
-    // No redirect — stay on home page, world appears in Incubator
-    // Refresh the world list so the new world shows up
     get().fetchAutoWorlds();
   },
 
@@ -215,7 +251,6 @@ export const useSimulationStore = create<SimulationState>((set, get) => ({
       const resp = await fetch(url);
       if (resp.ok) {
         const worlds = await resp.json();
-        // Extract tags from response
         const worldTags: Record<string, Array<{ tag: string; weight: number }>> = {};
         for (const w of worlds) {
           if (w.tags) {
@@ -253,17 +288,138 @@ export const useSimulationStore = create<SimulationState>((set, get) => ({
         : null,
     }));
 
+    // Route events to Chronicle
+    const ts = event.timestamp;
+    const epoch = event.epoch;
+    const tick = (event.payload.tick as number) ?? 0;
+
     if (event.type === "herald.announcement") {
       get().addHeraldMessage(event.payload.text as string);
+      get().addChronicleItem({
+        type: "herald",
+        id: `herald-${ts}`,
+        epoch,
+        tick,
+        timestamp: ts,
+        text: event.payload.text as string,
+      });
     }
 
-    // Refresh data on key events
-    const world = get().world;
-    if (world && (event.type === "wiki.edit" || event.type === "epoch.transition")) {
-      get().fetchWikiPages(world.id);
+    if (event.type === "agent.message") {
+      const agentId = event.payload.agent_id as string;
+      // Track active agent
+      set((s) => {
+        const newActive = new Set(s.activeAgentIds);
+        newActive.add(agentId);
+        return { activeAgentIds: newActive };
+      });
+      // Clear active status after 10s
+      setTimeout(() => {
+        set((s) => {
+          const newActive = new Set(s.activeAgentIds);
+          newActive.delete(agentId);
+          return { activeAgentIds: newActive };
+        });
+      }, 10000);
+
+      // Build conversation block from accumulated messages
+      const convId = (event.payload.conversation_id as string) || `conv-${epoch}-${tick}`;
+      const agents = get().agents;
+      const factions = get().factions;
+      const factionMap = new Map(factions.map((f) => [f.id, f]));
+      const agent = agents.find((a) => a.id === agentId);
+      const faction = agent?.faction_id ? factionMap.get(agent.faction_id) : null;
+
+      set((s) => {
+        const existingIdx = s.chronicleItems.findIndex(
+          (item) => item.type === "conversation" && item.id === convId
+        );
+
+        const newMsg = {
+          agent_id: agentId,
+          agent_name: agent?.name || (event.payload.agent_name as string) || "Unknown",
+          content: event.payload.content as string,
+          faction_color: faction?.color || "#6366f1",
+        };
+
+        if (existingIdx >= 0) {
+          const existing = s.chronicleItems[existingIdx];
+          if (existing.type === "conversation") {
+            const updated = {
+              ...existing,
+              messages: [...existing.messages, newMsg],
+            };
+            const items = [...s.chronicleItems];
+            items[existingIdx] = updated;
+            return { chronicleItems: items };
+          }
+        }
+
+        // Create new conversation block
+        const newConv: ChronicleItem = {
+          type: "conversation",
+          id: convId,
+          epoch,
+          tick,
+          timestamp: ts,
+          topic: (event.payload.topic as string) || "Discussion",
+          participants: [
+            {
+              id: agentId,
+              name: agent?.name || "Unknown",
+              faction_id: agent?.faction_id || null,
+              faction_color: faction?.color || "#6366f1",
+            },
+          ],
+          messages: [newMsg],
+        };
+
+        return { chronicleItems: [newConv, ...s.chronicleItems].slice(0, 500) };
+      });
     }
-    if (world && event.type === "relation.update") {
-      get().fetchRelationships(world.id);
+
+    if (event.type === "event.triggered") {
+      get().addChronicleItem({
+        type: "event",
+        id: `event-${ts}`,
+        epoch,
+        tick,
+        timestamp: ts,
+        eventType: classifyEventType(event.payload),
+        description: (event.payload.description as string) || (event.payload.text as string) || "Event occurred",
+        affectedAgents: event.payload.affected_agents as string[] | undefined,
+      });
+    }
+
+    if (event.type === "wiki.edit" || event.type === "wiki.created") {
+      get().addChronicleItem({
+        type: "wiki",
+        id: `wiki-${ts}-${event.payload.page_id || "new"}`,
+        epoch,
+        tick,
+        timestamp: ts,
+        title: (event.payload.title as string) || "New Knowledge",
+        content: (event.payload.content as string) || (event.payload.summary as string) || "",
+        version: (event.payload.version as number) || 1,
+      });
+      const world = get().world;
+      if (world) get().fetchWikiPages(world.id);
+    }
+
+    if (event.type === "epoch.transition" || event.type === "epoch.end") {
+      get().addChronicleItem({
+        type: "epoch",
+        id: `epoch-${epoch}`,
+        epoch,
+        timestamp: ts,
+        summary: event.payload.summary as string | undefined,
+        dominantTheme: event.payload.dominant_theme as "prosperity" | "conflict" | "discovery" | "transition" | undefined,
+      });
+    }
+
+    if (event.type === "relation.update") {
+      const world = get().world;
+      if (world) get().fetchRelationships(world.id);
     }
   },
 
@@ -330,6 +486,20 @@ export const useSimulationStore = create<SimulationState>((set, get) => ({
   dismissHerald: (id: string) => {
     set((s) => ({
       heraldMessages: s.heraldMessages.filter((m) => m.id !== id),
+    }));
+  },
+
+  setFocusFilter: (filter: FocusFilter) => set({ focusFilter: filter }),
+
+  openOracle: (target: OracleTarget) =>
+    set({ oracleTarget: target, oracleOpen: true }),
+
+  closeOracle: () =>
+    set({ oracleOpen: false }),
+
+  addChronicleItem: (item: ChronicleItem) => {
+    set((s) => ({
+      chronicleItems: [item, ...s.chronicleItems].slice(0, 500),
     }));
   },
 }));
