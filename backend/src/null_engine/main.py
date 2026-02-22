@@ -93,6 +93,30 @@ def _build_error_payload(
     }
 
 
+async def _recover_running_worlds() -> None:
+    """Re-create SimulationRunners for worlds left in 'running' status."""
+    from sqlalchemy import select
+
+    from null_engine.api.routes.worlds import _runners
+    from null_engine.core.runner import SimulationRunner
+    from null_engine.db import async_session
+    from null_engine.models.tables import World
+
+    async with async_session() as db:
+        result = await db.execute(select(World).where(World.status == "running"))
+        running_worlds = result.scalars().all()
+
+    for world in running_worlds:
+        if world.id not in _runners or not _runners[world.id].running:
+            runner = SimulationRunner(world.id)
+            _runners[world.id] = runner
+            runner.start()
+            logger.info("runner.recovered", world_id=str(world.id), epoch=world.current_epoch)
+
+    if running_worlds:
+        logger.info("runner.recovery_complete", count=len(running_worlds))
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     import asyncio
@@ -105,6 +129,9 @@ async def lifespan(app: FastAPI):
 
     logger.info("starting null-engine")
     await create_tables()
+
+    # Recover runners for worlds that were "running" before restart.
+    await _recover_running_worlds()
 
     # Start resilient background tasks with auto-restart on unexpected failure.
     background_tasks = [

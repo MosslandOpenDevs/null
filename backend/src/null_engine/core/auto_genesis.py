@@ -41,7 +41,7 @@ AUTO_SEEDS = [
 ]
 
 # Only auto-generate if fewer than this many ready/running worlds exist
-MAX_AUTO_WORLDS = 3
+MAX_AUTO_WORLDS = 1
 # Wait between generation attempts
 AUTO_GENESIS_INTERVAL = 300
 

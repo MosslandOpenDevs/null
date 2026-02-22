@@ -25,18 +25,18 @@ ROLE_MODEL_MAP: dict[str, tuple[str, str]] = {
 
 # Ollama role → model mapping (local dev)
 OLLAMA_ROLE_MODEL_MAP: dict[str, str] = {
-    "genesis_architect": "qwen2.5:14b",
-    "main_debater": "llama3.2:3b",
-    "reaction_agent": "llama3.2:3b",
-    "chaos_joker": "llama3.2:3b",
-    "searcher": "llama3.2:3b",
-    "librarian": "llama3.2:3b",
-    "translator": "llama3.2:3b",
-    "post_writer": "llama3.2:3b",
-    "wiki_writer": "qwen2.5:14b",
+    "genesis_architect": "qwen3:30b",
+    "main_debater": "qwen3:30b",
+    "reaction_agent": "qwen3:30b",
+    "chaos_joker": "qwen3:30b",
+    "searcher": "qwen3:30b",
+    "librarian": "qwen3:30b",
+    "translator": "qwen3:30b",
+    "post_writer": "qwen3:30b",
+    "wiki_writer": "qwen3:30b",
 }
 
-OLLAMA_DEFAULT_MODEL = "llama3.2:3b"
+OLLAMA_DEFAULT_MODEL = "qwen3:30b"
 
 
 class LLMRouter:
@@ -71,20 +71,30 @@ class LLMRouter:
         return OLLAMA_ROLE_MODEL_MAP.get(role, OLLAMA_DEFAULT_MODEL)
 
     async def _ollama_generate(self, model: str, prompt: str, temperature: float, max_tokens: int) -> str:
+        import re
+
         url = f"{settings.ollama_base_url}/api/chat"
         payload = {
             "model": model,
-            "messages": [{"role": "user", "content": prompt}],
+            "messages": [{"role": "user", "content": prompt + "\n\n/no_think"}],
             "stream": False,
             "options": {
                 "temperature": temperature,
-                "num_predict": max_tokens,
+                "num_predict": max(max_tokens, 4096),
+                "num_ctx": 16384,
             },
         }
         resp = await self.http.post(url, json=payload)
         resp.raise_for_status()
         data = resp.json()
-        return data.get("message", {}).get("content", "")
+        msg = data.get("message", {})
+        content = msg.get("content", "")
+        # Strip <think>...</think> blocks from content
+        content = re.sub(r'<think>.*?</think>', '', content, flags=re.DOTALL).strip()
+        # If content is empty, use the thinking field
+        if not content and msg.get("thinking"):
+            content = msg["thinking"]
+        return content
 
     async def generate_text(self, role: str, prompt: str, temperature: float = 0.8, max_tokens: int = 2048) -> str:
         # Use Ollama if configured
@@ -133,18 +143,28 @@ class LLMRouter:
             logger.exception("llm.error", provider=provider, model=model, role=role)
             return "(LLM error — no response generated)"
 
-    async def generate_json(self, role: str, prompt: str, max_tokens: int = 4096) -> dict | list:
-        text = await self.generate_text(role, prompt, temperature=0.3, max_tokens=max_tokens)
+    @staticmethod
+    def _clean_json_text(text: str) -> str:
+        """Strip markdown fences, JS-style comments, and trailing commas."""
+        import re
 
-        # Try to extract JSON from the response
         text = text.strip()
-        # Handle markdown code blocks
+        # Remove markdown code fences
         if text.startswith("```"):
             lines = text.split("\n")
             text = "\n".join(lines[1:])
             if text.endswith("```"):
                 text = text[:-3]
             text = text.strip()
+        # Remove single-line comments (// ...)
+        text = re.sub(r'//[^\n]*', '', text)
+        # Remove trailing commas before } or ]
+        text = re.sub(r',\s*([}\]])', r'\1', text)
+        return text
+
+    async def generate_json(self, role: str, prompt: str, max_tokens: int = 4096) -> dict | list:
+        text = await self.generate_text(role, prompt, temperature=0.3, max_tokens=max_tokens)
+        text = self._clean_json_text(text)
 
         try:
             return json.loads(text)
@@ -154,8 +174,10 @@ class LLMRouter:
                 start = text.find(start_char)
                 end = text.rfind(end_char)
                 if start != -1 and end != -1 and end > start:
+                    candidate = text[start : end + 1]
+                    candidate = self._clean_json_text(candidate)
                     try:
-                        return json.loads(text[start : end + 1])
+                        return json.loads(candidate)
                     except json.JSONDecodeError:
                         continue
             logger.warning("llm.json_parse_failed", text=text[:200])

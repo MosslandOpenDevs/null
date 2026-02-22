@@ -17,7 +17,7 @@ from null_engine.models.tables import World
 from null_engine.services.runtime_metrics import note_runner_status, note_runner_tick
 
 logger = structlog.get_logger()
-RUNNER_TICK_INTERVAL_SECONDS = 5
+RUNNER_TICK_INTERVAL_SECONDS = 10
 
 
 class SimulationRunner:
@@ -141,7 +141,7 @@ class SimulationRunner:
             for claim in claims:
                 if turn.participants:
                     await consensus_engine.propose_claim(
-                        self.world_id, claim, turn.participants[0], turn.participants[0]
+                        db, self.world_id, claim, turn.participants[0], turn.participants[0]
                     )
 
         # 2. Check random events
