@@ -146,6 +146,7 @@ interface SimulationState {
   openOracle: (target: OracleTarget) => void;
   closeOracle: () => void;
   addChronicleItem: (item: ChronicleItem) => void;
+  loadChronicleFromDB: (worldId: string) => Promise<void>;
 }
 
 function classifyEventType(payload: Record<string, unknown>): "crisis" | "discovery" | "plague" | "leadership" | "general" {
@@ -198,6 +199,8 @@ export const useSimulationStore = create<SimulationState>((set, get) => ({
     get().fetchFactions(id);
     get().fetchRelationships(id);
     get().fetchWikiPages(id);
+    // Await chronicle loading to ensure it completes
+    await get().loadChronicleFromDB(id);
   },
 
   fetchAgents: async (worldId: string) => {
@@ -501,5 +504,83 @@ export const useSimulationStore = create<SimulationState>((set, get) => ({
     set((s) => ({
       chronicleItems: [item, ...s.chronicleItems].slice(0, 500),
     }));
+  },
+
+  loadChronicleFromDB: async (worldId: string) => {
+    try {
+      // Fetch conversations and wiki pages in parallel
+      const [convResp, wikiResp] = await Promise.all([
+        fetch(`${API_URL}/api/worlds/${worldId}/conversations?limit=50`),
+        fetch(`${API_URL}/api/worlds/${worldId}/wiki`),
+      ]);
+
+      const items: ChronicleItem[] = [];
+
+      if (convResp.ok) {
+        const conversations: ConversationData[] = await convResp.json();
+        for (const conv of conversations) {
+          items.push({
+            type: "conversation",
+            id: conv.id,
+            epoch: conv.epoch,
+            tick: conv.tick,
+            timestamp: conv.created_at,
+            topic: conv.topic_ko || conv.topic,
+            participants: conv.participants.map((p) => ({
+              id: p.id,
+              name: p.name,
+              faction_id: null,
+              faction_color: p.faction_color || "#6366f1",
+            })),
+            messages: (conv.messages_ko || conv.messages).map((m) => ({
+              agent_id: (m.agent_id as string) || "",
+              agent_name:
+                conv.participants.find((p) => p.id === m.agent_id)?.name || "Unknown",
+              content: (m.content as string) || "",
+              faction_color:
+                conv.participants.find((p) => p.id === m.agent_id)?.faction_color || "#6366f1",
+            })),
+          });
+        }
+      }
+
+      if (wikiResp.ok) {
+        const wikiPages: WikiPageData[] = await wikiResp.json();
+        for (const page of wikiPages) {
+          items.push({
+            type: "wiki",
+            id: `wiki-${page.id}`,
+            epoch: 0,
+            tick: 0,
+            timestamp: page.created_at,
+            title: page.title_ko || page.title,
+            content: (page.content_ko || page.content).slice(0, 300),
+            version: page.version,
+          });
+        }
+      }
+
+      // Merge with any existing WS items (avoid duplicates)
+      const existing = get().chronicleItems;
+      const existingIds = new Set(existing.map((i) => i.id));
+      const merged = [...existing];
+      for (const item of items) {
+        if (!existingIds.has(item.id)) {
+          merged.push(item);
+        }
+      }
+
+      // Sort by timestamp descending (newest first)
+      merged.sort((a, b) => {
+        const ta = a.timestamp || "";
+        const tb = b.timestamp || "";
+        return tb.localeCompare(ta);
+      });
+
+      console.log("[Chronicle] Loaded from DB:", items.length, "items, merged total:", merged.length);
+      set({ chronicleItems: merged.slice(0, 500) });
+    } catch (err) {
+      console.error("[Chronicle] loadChronicleFromDB failed:", err);
+    }
   },
 }));

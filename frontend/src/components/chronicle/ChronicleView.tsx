@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import { AnimatePresence } from "framer-motion";
 import { useSimulationStore } from "@/stores/simulation";
 import { HeraldBlock } from "./HeraldBlock";
 import { ConversationBlock } from "./ConversationBlock";
@@ -129,9 +128,7 @@ export function ChronicleView({ className, onAgentClick, onWikiClick }: Chronicl
           </div>
         )}
 
-        <AnimatePresence mode="popLayout">
-          {chronicleItems.map(renderItem)}
-        </AnimatePresence>
+        {chronicleItems.map(renderItem)}
       </div>
     </div>
   );

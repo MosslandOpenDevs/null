@@ -40,7 +40,7 @@ export function InterventionBar() {
       await fetch(`${API_URL}/api/worlds/${world.id}/agents/${whisperTarget}/whisper`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: whisperText }),
+        body: JSON.stringify({ type: "whisper", description: whisperText }),
       });
       setWhisperText("");
       setShowWhisper(false);
