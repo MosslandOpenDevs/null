@@ -6,10 +6,10 @@ import { useSimulationStore } from "@/stores/simulation";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3301";
 
 const EVENT_TYPES = [
-  { icon: "⚡", label: "CRISIS", type: "crisis" },
-  { icon: "📜", label: "DISCOVERY", type: "discovery" },
-  { icon: "💀", label: "PLAGUE", type: "plague" },
-  { icon: "👑", label: "LEADERSHIP", type: "leadership" },
+  { icon: "⚡", label: "CRISIS", type: "crisis", description: "A sudden crisis shakes the world" },
+  { icon: "📜", label: "DISCOVERY", type: "discovery", description: "A groundbreaking discovery is made" },
+  { icon: "💀", label: "PLAGUE", type: "plague", description: "A mysterious plague spreads through the region" },
+  { icon: "👑", label: "LEADERSHIP", type: "leadership", description: "A leadership challenge erupts" },
 ] as const;
 
 export function InterventionBar() {
@@ -22,12 +22,12 @@ export function InterventionBar() {
 
   if (!world || world.status !== "running") return null;
 
-  const triggerEvent = async (eventType: string) => {
+  const triggerEvent = async (eventType: string, description: string) => {
     try {
       await fetch(`${API_URL}/api/worlds/${world.id}/events`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ event_type: eventType }),
+        body: JSON.stringify({ type: eventType, description }),
       });
     } catch {
       // Event endpoint may not exist yet
@@ -75,7 +75,7 @@ export function InterventionBar() {
         {EVENT_TYPES.map((evt) => (
           <button
             key={evt.type}
-            onClick={() => triggerEvent(evt.type)}
+            onClick={() => triggerEvent(evt.type, evt.description)}
             className="font-mono text-[10px] px-2 py-1 border border-hud-border/50 text-hud-muted hover:text-hud-text hover:border-hud-border transition-colors uppercase tracking-wider"
             title={`Inject ${evt.label} event`}
           >

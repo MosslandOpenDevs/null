@@ -138,11 +138,21 @@ class SimulationRunner:
             text = "\n".join(f"{m.content}" for m in turn.messages)
             claims = await consensus_engine.extract_claims(text)
             claims_count = len(claims)
-            for claim in claims:
-                if turn.participants:
-                    await consensus_engine.propose_claim(
-                        db, self.world_id, claim, turn.participants[0], turn.participants[0]
-                    )
+            if claims and turn.participants:
+                # Look up the proposer agent's faction_id
+                from null_engine.models.tables import Agent
+                proposer_id = turn.participants[0]
+                agent_result = await db.execute(
+                    select(Agent).where(Agent.id == proposer_id)
+                )
+                proposer_agent = agent_result.scalar_one_or_none()
+                faction_id = proposer_agent.faction_id if proposer_agent else None
+
+                for claim in claims:
+                    if faction_id:
+                        await consensus_engine.propose_claim(
+                            db, self.world_id, claim, proposer_id, faction_id
+                        )
 
         # 2. Check random events
         events = await check_random_events(db, world, tick)
