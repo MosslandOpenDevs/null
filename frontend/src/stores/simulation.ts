@@ -182,31 +182,50 @@ export const useSimulationStore = create<SimulationState>((set, get) => ({
   oracleOpen: false,
 
   createWorld: async (seedPrompt: string) => {
-    const resp = await fetch(`${API_URL}/api/worlds`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ seed_prompt: seedPrompt }),
-    });
-    const world = await resp.json();
-    get().fetchAutoWorlds();
+    try {
+      const resp = await fetch(`${API_URL}/api/worlds`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ seed_prompt: seedPrompt }),
+      });
+      if (!resp.ok) console.error("[Store] createWorld failed:", resp.status);
+      get().fetchAutoWorlds();
+    } catch (err) {
+      console.error("[Store] createWorld error:", err);
+    }
   },
 
   fetchWorld: async (id: string) => {
-    const resp = await fetch(`${API_URL}/api/worlds/${id}`);
-    const world = await resp.json();
-    set({ world });
-    get().fetchAgents(id);
-    get().fetchFactions(id);
-    get().fetchRelationships(id);
-    get().fetchWikiPages(id);
-    // Await chronicle loading to ensure it completes
-    await get().loadChronicleFromDB(id);
+    try {
+      const resp = await fetch(`${API_URL}/api/worlds/${id}`);
+      if (!resp.ok) {
+        console.error("[Store] fetchWorld failed:", resp.status);
+        return;
+      }
+      const world = await resp.json();
+      set({ world });
+      get().fetchAgents(id);
+      get().fetchFactions(id);
+      get().fetchRelationships(id);
+      get().fetchWikiPages(id);
+      await get().loadChronicleFromDB(id);
+    } catch (err) {
+      console.error("[Store] fetchWorld error:", err);
+    }
   },
 
   fetchAgents: async (worldId: string) => {
-    const resp = await fetch(`${API_URL}/api/worlds/${worldId}/agents`);
-    const agents = await resp.json();
-    set({ agents });
+    try {
+      const resp = await fetch(`${API_URL}/api/worlds/${worldId}/agents`);
+      if (resp.ok) {
+        const agents = await resp.json();
+        set({ agents });
+      } else {
+        console.warn("[Store] fetchAgents:", resp.status);
+      }
+    } catch (err) {
+      console.error("[Store] fetchAgents error:", err);
+    }
   },
 
   fetchFactions: async (worldId: string) => {
@@ -216,8 +235,8 @@ export const useSimulationStore = create<SimulationState>((set, get) => ({
         const factions = await resp.json();
         set({ factions });
       }
-    } catch {
-      // endpoint may not exist yet
+    } catch (err) {
+      console.warn("[Store] fetchFactions:", err);
     }
   },
 
@@ -228,8 +247,8 @@ export const useSimulationStore = create<SimulationState>((set, get) => ({
         const relationships = await resp.json();
         set({ relationships });
       }
-    } catch {
-      // endpoint may not exist yet
+    } catch (err) {
+      console.warn("[Store] fetchRelationships:", err);
     }
   },
 
@@ -240,8 +259,8 @@ export const useSimulationStore = create<SimulationState>((set, get) => ({
         const wikiPages = await resp.json();
         set({ wikiPages });
       }
-    } catch {
-      // endpoint may not exist yet
+    } catch (err) {
+      console.warn("[Store] fetchWikiPages:", err);
     }
   },
 
@@ -261,20 +280,32 @@ export const useSimulationStore = create<SimulationState>((set, get) => ({
           }
         }
         set({ autoWorlds: worlds, worldTags });
+      } else {
+        console.warn("[Store] fetchAutoWorlds:", resp.status);
       }
-    } catch {
-      // backend may not be ready yet
+    } catch (err) {
+      console.warn("[Store] fetchAutoWorlds:", err);
     }
   },
 
   startSimulation: async (worldId: string) => {
-    await fetch(`${API_URL}/api/worlds/${worldId}/start`, { method: "POST" });
-    set((s) => ({ world: s.world ? { ...s.world, status: "running" } : null }));
+    try {
+      const resp = await fetch(`${API_URL}/api/worlds/${worldId}/start`, { method: "POST" });
+      if (!resp.ok) console.error("[Store] startSimulation failed:", resp.status);
+      set((s) => ({ world: s.world ? { ...s.world, status: "running" } : null }));
+    } catch (err) {
+      console.error("[Store] startSimulation error:", err);
+    }
   },
 
   stopSimulation: async (worldId: string) => {
-    await fetch(`${API_URL}/api/worlds/${worldId}/stop`, { method: "POST" });
-    set((s) => ({ world: s.world ? { ...s.world, status: "paused" } : null }));
+    try {
+      const resp = await fetch(`${API_URL}/api/worlds/${worldId}/stop`, { method: "POST" });
+      if (!resp.ok) console.error("[Store] stopSimulation failed:", resp.status);
+      set((s) => ({ world: s.world ? { ...s.world, status: "paused" } : null }));
+    } catch (err) {
+      console.error("[Store] stopSimulation error:", err);
+    }
   },
 
   addEvent: (event: WSEvent) => {
@@ -433,8 +464,8 @@ export const useSimulationStore = create<SimulationState>((set, get) => ({
         const conversations = await resp.json();
         set({ conversations });
       }
-    } catch {
-      // endpoint may not be ready
+    } catch (err) {
+      console.warn("[Store] fetchConversations:", err);
     }
   },
 
@@ -452,8 +483,8 @@ export const useSimulationStore = create<SimulationState>((set, get) => ({
           set({ feedItems: items });
         }
       }
-    } catch {
-      // endpoint may not be ready
+    } catch (err) {
+      console.warn("[Store] fetchFeed:", err);
     }
   },
 
@@ -468,14 +499,22 @@ export const useSimulationStore = create<SimulationState>((set, get) => ({
   },
 
   exportWorld: async (worldId: string, type: string, format: string) => {
-    const url = `${API_URL}/api/worlds/${worldId}/export/${type}?format=${format}`;
-    const resp = await fetch(url);
-    const blob = await resp.blob();
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = `${type}.${format === "jsonl" ? "jsonl" : format === "csv" ? "csv" : format === "md" ? "md" : "json"}`;
-    a.click();
-    URL.revokeObjectURL(a.href);
+    try {
+      const url = `${API_URL}/api/worlds/${worldId}/export/${type}?format=${format}`;
+      const resp = await fetch(url);
+      if (!resp.ok) {
+        console.error("[Store] exportWorld failed:", resp.status);
+        return;
+      }
+      const blob = await resp.blob();
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `${type}.${format === "jsonl" ? "jsonl" : format === "csv" ? "csv" : format === "md" ? "md" : "json"}`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    } catch (err) {
+      console.error("[Store] exportWorld error:", err);
+    }
   },
 
   addHeraldMessage: (text: string) => {

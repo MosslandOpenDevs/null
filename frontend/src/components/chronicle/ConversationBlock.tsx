@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, memo } from "react";
 import { motion } from "framer-motion";
 import type { ConversationItem } from "./types";
 
@@ -21,7 +21,7 @@ function renderContent(raw: string) {
   });
 }
 
-export function ConversationBlock({ item, onAgentClick, dimmed }: ConversationBlockProps) {
+export const ConversationBlock = memo(function ConversationBlock({ item, onAgentClick, dimmed }: ConversationBlockProps) {
   const [expanded, setExpanded] = useState(false);
   const visibleMessages = expanded ? item.messages : item.messages.slice(0, 3);
   const hasMore = item.messages.length > 3;
@@ -92,4 +92,4 @@ export function ConversationBlock({ item, onAgentClick, dimmed }: ConversationBl
       </div>
     </motion.div>
   );
-}
+});

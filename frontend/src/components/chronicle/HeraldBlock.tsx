@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { motion } from "framer-motion";
 import type { HeraldItem } from "./types";
 
@@ -7,7 +8,7 @@ interface HeraldBlockProps {
   item: HeraldItem;
 }
 
-export function HeraldBlock({ item }: HeraldBlockProps) {
+export const HeraldBlock = memo(function HeraldBlock({ item }: HeraldBlockProps) {
   return (
     <motion.div
       initial={{ opacity: 0, y: -20, scale: 0.98 }}
@@ -28,4 +29,4 @@ export function HeraldBlock({ item }: HeraldBlockProps) {
       </p>
     </motion.div>
   );
-}
+});

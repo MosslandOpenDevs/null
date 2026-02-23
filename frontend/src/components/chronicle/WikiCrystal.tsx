@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, memo } from "react";
 import { motion } from "framer-motion";
 import { CornerMark } from "@/components/hud/CornerMark";
 import type { WikiItem } from "./types";
@@ -11,7 +11,7 @@ interface WikiCrystalProps {
   dimmed?: boolean;
 }
 
-export function WikiCrystal({ item, onWikiClick, dimmed }: WikiCrystalProps) {
+export const WikiCrystal = memo(function WikiCrystal({ item, onWikiClick, dimmed }: WikiCrystalProps) {
   const [expanded, setExpanded] = useState(false);
 
   return (
@@ -60,4 +60,4 @@ export function WikiCrystal({ item, onWikiClick, dimmed }: WikiCrystalProps) {
       </div>
     </motion.div>
   );
-}
+});

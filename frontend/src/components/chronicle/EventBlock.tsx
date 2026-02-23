@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { motion } from "framer-motion";
 import type { EventItem } from "./types";
 
@@ -24,7 +25,7 @@ interface EventBlockProps {
   dimmed?: boolean;
 }
 
-export function EventBlock({ item, dimmed }: EventBlockProps) {
+export const EventBlock = memo(function EventBlock({ item, dimmed }: EventBlockProps) {
   const icon = EVENT_ICONS[item.eventType];
   const colorClass = EVENT_COLORS[item.eventType];
 
@@ -47,4 +48,4 @@ export function EventBlock({ item, dimmed }: EventBlockProps) {
       )}
     </motion.div>
   );
-}
+});
