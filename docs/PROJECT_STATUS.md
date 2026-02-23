@@ -311,26 +311,218 @@
 
 ## 9. Recent Changes (최근 변경 사항)
 
-### 2026-02-23: Chronicle ConversationBlock 가독성 개선
+### 2026-02-23 세션 작업 로그
 
-**파일:** `frontend/src/components/chronicle/ConversationBlock.tsx`
+이 섹션은 2026-02-23 세션에서 수행한 모든 작업을 시간순으로 상세 기록한다.
+
+---
+
+#### 작업 1: Chronicle ConversationBlock 가독성 개선
+
+**커밋:** `78b8348` — `feat: improve Chronicle ConversationBlock readability and add project status doc`
+
+**문제 분석:**
+- 에이전트 이름과 대화 내용이 한 줄에 `flex items-start`로 나열 → 시각적 밀도가 높아 읽기 어려움
+- 메시지 간 간격 `space-y-1.5`이 너무 좁아 경계가 불분명
+- 팩션 색상 좌측 보더 불투명도 `30` → 거의 안 보임
+- LLM 생성 장문 텍스트(줄바꿈, `*이탤릭*` 등)가 한 줄짜리 `<span>`에 담겨 서식 무시
+
+**변경 파일 및 내용:**
+
+| 파일 | 변경 |
+|------|------|
+| `frontend/src/components/chronicle/ConversationBlock.tsx` | 채팅 버블 레이아웃으로 전면 개편 |
+| `frontend/src/stores/simulation.ts` | `loadChronicleFromDB()` 함수 추가 |
+| `frontend/src/components/chronicle/ChronicleView.tsx` | `AnimatePresence` 래퍼 제거 |
+| `frontend/src/components/divine/InterventionBar.tsx` | Whisper API 바디 필드명 수정 |
+| `docs/PROJECT_STATUS.md` | 프로젝트 현황 종합 문서 신규 작성 |
+
+**ConversationBlock 상세 변경:**
+
+```
+Before                              After
+─────────────────────────────       ─────────────────────────────
+flex items-start (한 줄)            → 에이전트 이름 별도 줄 (상단)
+                                      메시지 내용 블록 (하단)
+border opacity 30                   → border opacity 80
+<span> (서식 무시)                  → <p whitespace-pre-wrap> + *italic* → <em>
+space-y-1.5                         → space-y-4
+text-[11px] font-mono (토픽)       → text-sm font-serif
+slice(0, 2) (기본 2개 표시)        → slice(0, 3) (기본 3개 표시)
+bg 없음                            → bg-void/50 블록 배경
+```
+
+**`renderContent()` 함수 추가:**
+- `*text*` 패턴을 `<em>text</em>`으로 변환
+- LLM이 자주 사용하는 이탤릭 마크다운을 실제 HTML로 렌더링
+
+**`loadChronicleFromDB()` 함수 추가:**
+- 월드 진입 시 DB에서 기존 대화 50개 + 위키 페이지를 Chronicle로 로드
+- `conversations` API와 `wiki` API를 `Promise.all`로 병렬 호출
+- WebSocket으로 수신한 기존 아이템과 ID 기반 중복 제거 후 병합
+- 타임스탬프 역순 정렬 (최신 항목 상단)
+
+**검증:** `npm run build` 성공
+
+---
+
+#### 작업 2: CSS 400 Bad Request 이슈 대응
+
+**증상:**
+- `https://null.moss.land/en` 접속 시 `_next/static/css/cb96dbb2f870df51.css` → 400 Bad Request
+- JS 파일도 동일하게 400 에러 발생
+
+**원인 분석:**
+- 빌드 출력의 CSS 해시: `9ecfc2f30213e6fa`
+- 브라우저가 요청하는 CSS 해시: `cb96dbb2f870df51` (이전 빌드)
+- HTML이 브라우저/CDN에 캐시되어 있어 이전 빌드의 해시를 참조
+- 서버에는 새 빌드 파일만 존재 → 404/400 반환
+
+**해결:**
+1. `npm run build` 실행 → 새 CSS 해시 생성
+2. `pm2 restart null-frontend` → 새 빌드 파일 서빙 시작
+3. 브라우저 강제 새로고침 (`Cmd+Shift+R`) 안내
+
+**검증:** `curl -s -o /dev/null -w "%{http_code}" https://null.moss.land/_next/static/css/9ecfc2f30213e6fa.css` → 200 OK
+
+**참고:** 향후 Nginx에서 HTML의 `Cache-Control: no-cache` 설정 권장 (정적 에셋은 해시 기반이므로 장기 캐시 가능)
+
+---
+
+#### 작업 3: WebSocket 재연결 강화
+
+**커밋:** `4436387` — `fix: add exponential backoff and retry limit to WebSocket reconnection`
+
+**문제 분석 (`frontend/src/lib/wsClient.ts`):**
+
+| 문제 | 위험도 |
+|------|--------|
+| 3초 고정 재연결 간격 | 서버 다운 시 3초마다 무한 폭격 |
+| 최대 재시도 제한 없음 | 클라이언트 리소스 무한 소모 |
+| `onerror`에서 에러 상세 무시 | 디버깅 불가능 |
+| `onmessage` parse 에러 무시 | 프로토콜 오류 탐지 불가 |
+| `onclose` 시 `wsRef` 미초기화 | stale reference 위험 |
+| `disconnect` 시 retry 카운터 미리셋 | 재접속 시 즉시 한도 도달 |
 
 **변경 내용:**
 
-1. **채팅 버블 레이아웃** — 에이전트 이름을 별도 줄로 분리하고, 메시지를 `bg-void/50` 블록으로 감싸 시각적 분리
-2. **보더 가시성 강화** — 팩션 색상 좌측 보더 불투명도 `30` → `80`
-3. **서식 렌더링** — `whitespace-pre-wrap`으로 줄바꿈 지원, `*text*` → `<em>` 이탤릭 변환
-4. **간격 확대** — 메시지 간 간격 `space-y-1.5` → `space-y-4`
-5. **토픽 헤더** — `text-[11px] font-mono` → `text-sm font-serif`로 확대
-6. **기본 메시지 수** — 접힌 상태에서 2개 → 3개 표시
+```typescript
+// Before
+ws.onclose = () => {
+  reconnectTimer.current = setTimeout(() => connect(worldId), 3000);
+};
 
-### 2026-02-23: Chronicle DB 로딩 + 기타 수정
+// After
+const MAX_RETRIES = 10;
+const BASE_DELAY_MS = 2_000;
+const MAX_DELAY_MS = 30_000;
 
-**파일들:**
+ws.onopen = () => { retryCount.current = 0; };
 
-- `frontend/src/stores/simulation.ts` — `loadChronicleFromDB()` 추가: 월드 진입 시 DB에서 기존 대화/위키를 Chronicle로 로드, WebSocket 아이템과 중복 제거 후 병합
-- `frontend/src/components/chronicle/ChronicleView.tsx` — `AnimatePresence` 래퍼 제거 (불필요한 레이아웃 애니메이션 오버헤드 제거)
-- `frontend/src/components/divine/InterventionBar.tsx` — Whisper API 바디 필드명 수정 (`message` → `type` + `description`)
+ws.onclose = (event) => {
+  wsRef.current = null;
+  if (retryCount.current >= MAX_RETRIES) {
+    console.error(`[WS] Gave up after ${MAX_RETRIES} attempts`);
+    return;
+  }
+  const delay = Math.min(BASE_DELAY_MS * Math.pow(2, retryCount.current), MAX_DELAY_MS);
+  retryCount.current += 1;
+  console.log(`[WS] Reconnecting in ${delay}ms (${retryCount.current}/${MAX_RETRIES})`);
+  reconnectTimer.current = setTimeout(() => connect(worldId), delay);
+};
+```
+
+**재연결 지연 시퀀스:** 2s → 4s → 8s → 16s → 30s → 30s → ... (최대 10회)
+
+**검증:** `npm run build` 성공, `git push` 성공
+
+---
+
+#### 작업 4: Chronicle 블록 React.memo 적용 (성능 최적화)
+
+**커밋:** `f5e0fa0` — `perf: memoize chronicle blocks and add error logging to store fetches`
+
+**문제 분석:**
+- Chronicle은 최대 500개 아이템을 렌더링
+- 4개 블록 컴포넌트(`ConversationBlock`, `HeraldBlock`, `EventBlock`, `WikiCrystal`)가 모두 일반 함수 컴포넌트
+- 부모(`ChronicleView`) state 변경 시 모든 자식이 re-render → props 미변경인 아이템도 불필요하게 렌더링
+
+**변경 내용:**
+
+| 파일 | Before | After |
+|------|--------|-------|
+| `ConversationBlock.tsx` | `export function ConversationBlock(...)` | `export const ConversationBlock = memo(function ConversationBlock(...))` |
+| `HeraldBlock.tsx` | `export function HeraldBlock(...)` | `export const HeraldBlock = memo(function HeraldBlock(...))` |
+| `EventBlock.tsx` | `export function EventBlock(...)` | `export const EventBlock = memo(function EventBlock(...))` |
+| `WikiCrystal.tsx` | `export function WikiCrystal(...)` | `export const WikiCrystal = memo(function WikiCrystal(...))` |
+
+**효과:**
+- props(item, dimmed, onAgentClick)가 동일한 아이템은 re-render 스킵
+- 500개 목록에서 1개 아이템 추가 시: Before → 500개 전체 렌더, After → 신규 1개만 렌더
+- `WikiCrystal`은 내부 `useState(expanded)`가 있지만 memo가 외부 props 변경만 체크하므로 유효
+
+---
+
+#### 작업 5: Store Fetch 에러 처리 개선
+
+**커밋:** `f5e0fa0` (작업 4와 동일 커밋)
+
+**문제 분석:**
+- `simulation.ts` 내 12개 fetch 함수에서 에러를 무시하는 패턴이 반복:
+  ```typescript
+  catch {
+    // endpoint may not exist yet  ← 모든 에러를 무시
+  }
+  ```
+- `createWorld`, `fetchWorld`, `fetchAgents` 등 핵심 함수에 try/catch 자체가 없음
+- 네트워크 장애, 서버 500 에러, JSON 파싱 실패 등이 모두 무시됨
+- 프로덕션에서 문제 발생 시 디버깅 불가능
+
+**변경 내용:**
+
+| 함수 | Before | After |
+|------|--------|-------|
+| `createWorld` | try/catch 없음 | `try/catch` + `console.error("[Store] createWorld error:", err)` |
+| `fetchWorld` | try/catch 없음 | `try/catch` + `resp.ok` 체크 + `console.error` |
+| `fetchAgents` | try/catch 없음 | `try/catch` + `resp.ok` 체크 + `console.warn` |
+| `fetchFactions` | `catch { }` (무시) | `catch (err) { console.warn("[Store] fetchFactions:", err) }` |
+| `fetchRelationships` | `catch { }` (무시) | `catch (err) { console.warn("[Store] fetchRelationships:", err) }` |
+| `fetchWikiPages` | `catch { }` (무시) | `catch (err) { console.warn("[Store] fetchWikiPages:", err) }` |
+| `fetchAutoWorlds` | `catch { }` (무시) | `catch (err) { console.warn(...) }` + `resp.ok` 체크 |
+| `startSimulation` | try/catch 없음 | `try/catch` + `resp.ok` 체크 |
+| `stopSimulation` | try/catch 없음 | `try/catch` + `resp.ok` 체크 |
+| `fetchConversations` | `catch { }` (무시) | `catch (err) { console.warn(...) }` |
+| `fetchFeed` | `catch { }` (무시) | `catch (err) { console.warn(...) }` |
+| `exportWorld` | try/catch 없음 | `try/catch` + `resp.ok` 체크 + early return |
+
+**로깅 규칙:**
+- `console.error` — 사용자 액션이 실패한 경우 (createWorld, startSimulation, stopSimulation, exportWorld, fetchWorld)
+- `console.warn` — 백그라운드/보조 데이터 로드 실패 (factions, relationships, wiki 등)
+- 모든 로그에 `[Store] functionName:` 프리픽스 → 브라우저 콘솔에서 빠른 필터링
+
+---
+
+#### 작업 6: 프로덕션 배포 검증
+
+**검증 항목 및 결과:**
+
+| 항목 | 방법 | 결과 |
+|------|------|------|
+| PM2 프로세스 상태 | `pm2 list` | null-backend: online (5h), null-frontend: online (2h) |
+| 프론트엔드 헬스 | `curl localhost:6001/en` | 200 OK |
+| 백엔드 헬스 | `curl localhost:6301/health` | `{"status":"ok"}` |
+| 도메인 프론트엔드 | `curl https://null.moss.land/en` | 200 OK |
+| 도메인 API | `curl https://null.moss.land/api/worlds` | 200 OK (9개 월드, 5개 running) |
+| CSS 파일 정상 로드 | `curl https://null.moss.land/_next/static/css/9ecfc2f30213e6fa.css` | 200 OK |
+| 백엔드 서비스 로그 | `pm2 logs null-backend` | semantic_indexer, convergence 정상 주기 실행 |
+| WebSocket 연결 | 백엔드 로그 확인 | WS open/close 정상 사이클 |
+
+**발견 사항:**
+- 백엔드 실제 포트는 `6301` (start-null-backend.sh의 `NULL_BACKEND_PORT` 기본값)
+- Docker Compose 설정의 `3301`은 컨테이너 내부 포트, PM2 직접 실행 시 `6301` 사용
+- 리버스 프록시(Nginx/Caddy)가 `null.moss.land` → `localhost:6301` 프록시 중
+
+---
 
 ### 이전 주요 커밋
 
@@ -340,6 +532,23 @@
 | `717155f` | 시뮬레이션 러너 + Ollama 로컬 LLM 하드닝 (러너 복구, `<think>` 태그 제거, JSON 파싱 강화) |
 | `f31142a` | **Omniscope 기능 대규모 업그레이드** (Phase 0-5 전체 구현) |
 | `5d9393f` | Ops 관측성, 부하 테스트, Multiverse/Strata 워크플로우 확장 |
+
+---
+
+### 향후 개선 과제 (분석 완료, 미착수)
+
+아래 항목들은 코드 분석 과정에서 식별된 개선 사항으로, 다음 작업 세션에서 우선순위에 따라 진행 예정:
+
+| # | 과제 | 카테고리 | 예상 시간 |
+|---|------|----------|-----------|
+| 1 | 홈페이지 `/api/seeds` fetch에 에러 핸들링 추가 | 에러 처리 | 10분 |
+| 2 | `OraclePanel` index-based key → timestamp key | 성능 | 5분 |
+| 3 | `ChronicleView.isDimmed` 메모이제이션 | 성능 | 20분 |
+| 4 | `OraclePanel`, `ExportPanel`, `BookmarkDrawer` lazy loading (`dynamic()`) | 번들 최적화 | 30분 |
+| 5 | 주요 버튼에 `aria-label` 추가 (접근성) | 접근성 | 15분 |
+| 6 | `addChronicleItem`의 배열 spread + slice → circular buffer | 성능 | 30분 |
+| 7 | `TimelineRibbon`의 `getEpochColor` O(n) 검색 → Map 인덱싱 | 성능 | 15분 |
+| 8 | 네트워크 연결 상태 감지 UI (`navigator.onLine`) | UX | 30분 |
 
 ---
 
