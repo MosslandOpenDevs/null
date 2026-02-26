@@ -3,6 +3,7 @@ import time
 import uuid
 
 import structlog
+from sqlalchemy import select
 
 from null_engine.agents.memory import MemoryManager
 from null_engine.core.consensus import consensus_engine
@@ -56,8 +57,6 @@ class SimulationRunner:
                 self._last_tick_started_at = loop_now
 
                 async with async_session() as db:
-                    from sqlalchemy import select
-
                     result = await db.execute(select(World).where(World.id == self.world_id))
                     world = result.scalar_one_or_none()
                     if not world:
