@@ -22,6 +22,7 @@ def test_parse_include_supports_all_and_wildcard_alias() -> None:
     assert _parse_include("all") == {"conversations", "wiki", "kg"}
     assert _parse_include("*") == {"conversations", "wiki", "kg"}
     assert _parse_include("default") == {"conversations", "wiki", "kg"}
+    assert _parse_include("full") == {"conversations", "wiki", "kg"}
 
 
 def test_parse_include_supports_none_aliases() -> None:
