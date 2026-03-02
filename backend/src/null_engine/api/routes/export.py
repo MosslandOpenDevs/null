@@ -37,7 +37,7 @@ def _parse_include(include: str) -> set[str]:
         normalized = token.strip().lower()
         if not normalized:
             continue
-        if normalized in {"all", "*"}:
+        if normalized in {"all", "*", "default"}:
             return {"conversations", "wiki", "kg"}
         if normalized in {"none", "null", "off"}:
             return set()
