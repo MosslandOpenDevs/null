@@ -39,6 +39,8 @@ def _parse_include(include: str) -> set[str]:
             continue
         if normalized in {"all", "*"}:
             return {"conversations", "wiki", "kg"}
+        if normalized in {"none", "null", "off"}:
+            return set()
         canonical = aliases.get(normalized)
         if canonical:
             include_set.add(canonical)

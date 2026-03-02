@@ -23,6 +23,12 @@ def test_parse_include_supports_all_and_wildcard_alias() -> None:
     assert _parse_include("*") == {"conversations", "wiki", "kg"}
 
 
+def test_parse_include_supports_none_aliases() -> None:
+    assert _parse_include("none") == set()
+    assert _parse_include("null") == set()
+    assert _parse_include("off") == set()
+
+
 def test_conversation_chatml_sample() -> None:
     conversation = SimpleNamespace(
         topic="Faction diplomacy",
