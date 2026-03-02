@@ -13,6 +13,16 @@ def test_parse_include_trims_and_deduplicates() -> None:
     assert include_set == {"conversations", "wiki", "kg"}
 
 
+def test_parse_include_normalizes_case_and_aliases() -> None:
+    include_set = _parse_include("Conversations, WIKIS, knowledge_graph, knowledge-graph")
+    assert include_set == {"conversations", "wiki", "kg"}
+
+
+def test_parse_include_supports_all_and_wildcard_alias() -> None:
+    assert _parse_include("all") == {"conversations", "wiki", "kg"}
+    assert _parse_include("*") == {"conversations", "wiki", "kg"}
+
+
 def test_conversation_chatml_sample() -> None:
     conversation = SimpleNamespace(
         topic="Faction diplomacy",
