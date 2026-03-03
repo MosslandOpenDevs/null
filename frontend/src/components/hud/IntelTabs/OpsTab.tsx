@@ -56,6 +56,10 @@ export function OpsTab() {
         </span>
       </div>
 
+      <div className="font-mono text-[11px] text-hud-label uppercase">
+        Health detail: critical={healthSummary.criticalAlerts} warning={healthSummary.warningAlerts} loops={healthSummary.unhealthyLoops} runners={healthSummary.failingRunners} backlog={healthSummary.backlogSize}
+      </div>
+
       <div className="grid grid-cols-2 gap-2">
         <MetricBox label="ACTIVE RUNNERS" value={String(metrics.active_runners)} />
         <MetricBox label="ALERTS" value={String(metrics.alerts.length)} />
