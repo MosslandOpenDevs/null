@@ -52,6 +52,54 @@ export interface OpsMetrics {
   alerts: OpsAlert[];
 }
 
+export interface OpsHealthSummary {
+  criticalAlerts: number;
+  warningAlerts: number;
+  unhealthyLoops: number;
+  failingRunners: number;
+  backlogSize: number;
+  level: "healthy" | "degraded" | "critical";
+}
+
+export function summarizeOpsHealth(metrics: OpsMetrics | null): OpsHealthSummary {
+  if (!metrics) {
+    return {
+      criticalAlerts: 0,
+      warningAlerts: 0,
+      unhealthyLoops: 0,
+      failingRunners: 0,
+      backlogSize: 0,
+      level: "healthy",
+    };
+  }
+
+  const criticalAlerts = metrics.alerts.filter((alert) => alert.severity === "critical").length;
+  const warningAlerts = metrics.alerts.filter((alert) => alert.severity === "warning").length;
+  const unhealthyLoops = metrics.loops.filter((loop) => loop.status !== "running").length;
+  const failingRunners = metrics.runners.filter((runner) => runner.tick_failures > 0).length;
+  const backlogSize =
+    metrics.queues.translator_pending_conversations +
+    metrics.queues.translator_pending_wiki_pages +
+    metrics.queues.translator_pending_strata +
+    metrics.queues.generating_worlds;
+
+  const level: OpsHealthSummary["level"] =
+    criticalAlerts > 0 || failingRunners > 0
+      ? "critical"
+      : warningAlerts > 0 || unhealthyLoops > 0 || backlogSize >= 20
+        ? "degraded"
+        : "healthy";
+
+  return {
+    criticalAlerts,
+    warningAlerts,
+    unhealthyLoops,
+    failingRunners,
+    backlogSize,
+    level,
+  };
+}
+
 interface OpsState {
   metrics: OpsMetrics | null;
   loading: boolean;
