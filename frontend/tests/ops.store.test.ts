@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { summarizeOpsHealth, useOpsStore } from "../src/stores/ops.ts";
+import { summarizeOpsHealth, toOpsHealthBadge, useOpsStore } from "../src/stores/ops.ts";
 
 function resetOpsStore() {
   useOpsStore.setState({
@@ -83,4 +83,42 @@ test("summarizeOpsHealth classifies degraded and critical states", () => {
   assert.equal(critical.level, "critical");
   assert.equal(critical.criticalAlerts, 1);
   assert.equal(critical.failingRunners, 1);
+});
+
+test("toOpsHealthBadge maps summary levels to UI badge metadata", () => {
+  assert.deepEqual(
+    toOpsHealthBadge({
+      criticalAlerts: 0,
+      warningAlerts: 0,
+      unhealthyLoops: 0,
+      failingRunners: 0,
+      backlogSize: 0,
+      level: "healthy",
+    }),
+    { label: "Healthy", tone: "success" }
+  );
+
+  assert.deepEqual(
+    toOpsHealthBadge({
+      criticalAlerts: 0,
+      warningAlerts: 1,
+      unhealthyLoops: 1,
+      failingRunners: 0,
+      backlogSize: 22,
+      level: "degraded",
+    }),
+    { label: "Degraded", tone: "warning" }
+  );
+
+  assert.deepEqual(
+    toOpsHealthBadge({
+      criticalAlerts: 1,
+      warningAlerts: 0,
+      unhealthyLoops: 0,
+      failingRunners: 1,
+      backlogSize: 2,
+      level: "critical",
+    }),
+    { label: "Critical", tone: "danger" }
+  );
 });

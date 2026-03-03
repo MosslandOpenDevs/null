@@ -61,6 +61,11 @@ export interface OpsHealthSummary {
   level: "healthy" | "degraded" | "critical";
 }
 
+export interface OpsHealthBadge {
+  label: "Healthy" | "Degraded" | "Critical";
+  tone: "success" | "warning" | "danger";
+}
+
 export function summarizeOpsHealth(metrics: OpsMetrics | null): OpsHealthSummary {
   if (!metrics) {
     return {
@@ -98,6 +103,18 @@ export function summarizeOpsHealth(metrics: OpsMetrics | null): OpsHealthSummary
     backlogSize,
     level,
   };
+}
+
+export function toOpsHealthBadge(summary: OpsHealthSummary): OpsHealthBadge {
+  if (summary.level === "critical") {
+    return { label: "Critical", tone: "danger" };
+  }
+
+  if (summary.level === "degraded") {
+    return { label: "Degraded", tone: "warning" };
+  }
+
+  return { label: "Healthy", tone: "success" };
 }
 
 interface OpsState {
