@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useOpsStore } from "@/stores/ops";
+import { summarizeOpsHealth, toOpsHealthBadge, useOpsStore } from "@/stores/ops";
 
 const ALERT_COLOR: Record<string, string> = {
   critical: "text-danger border-danger/40",
@@ -34,10 +34,26 @@ export function OpsTab() {
     );
   }
 
+  const healthSummary = summarizeOpsHealth(metrics);
+  const healthBadge = toOpsHealthBadge(healthSummary);
+
   return (
     <div className="p-3 space-y-3">
-      <div className="font-mono text-sm uppercase tracking-[0.15em] text-hud-label">
-        OPS SNAPSHOT
+      <div className="flex items-center justify-between">
+        <div className="font-mono text-sm uppercase tracking-[0.15em] text-hud-label">
+          OPS SNAPSHOT
+        </div>
+        <span
+          className={`font-mono text-[11px] uppercase px-2 py-1 border ${
+            healthBadge.tone === "danger"
+              ? "text-danger border-danger/40"
+              : healthBadge.tone === "warning"
+                ? "text-herald border-herald/40"
+                : "text-success border-success/40"
+          }`}
+        >
+          {healthBadge.label}
+        </span>
       </div>
 
       <div className="grid grid-cols-2 gap-2">
