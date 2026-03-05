@@ -5,6 +5,7 @@ def test_normalize_collapses_punctuation_and_spaces() -> None:
     assert _normalize("  Roman-Empire!!  ") == "roman empire"
     assert _normalize("Dune/Prophecy") == "dune prophecy"
     assert _normalize("Law & Order") == "law order"
+    assert _normalize("Chaos + Order") == "chaos order"
 
 
 def test_fuzzy_match_handles_punctuation_variants() -> None:
