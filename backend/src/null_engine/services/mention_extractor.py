@@ -25,7 +25,7 @@ FUZZY_THRESHOLD = 75
 
 def _normalize(text: str) -> str:
     normalized = text.lower().strip()
-    for token in ("-", "_", "/", ".", ",", "!", "?", ":", ";", "(", ")", "[", "]", "{", "}", "\"", "'"):
+    for token in ("-", "_", "/", ".", ",", "!", "?", ":", ";", "(", ")", "[", "]", "{", "}", "\"", "'", "&", "＆"):
         normalized = normalized.replace(token, " ")
     return " ".join(normalized.split())
 
