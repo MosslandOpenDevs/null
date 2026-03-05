@@ -24,16 +24,26 @@ FUZZY_THRESHOLD = 75
 
 
 def _normalize(text: str) -> str:
-    return text.lower().strip()
+    normalized = text.lower().strip()
+    for token in ("-", "_", "/", ".", ",", "!", "?", ":", ";", "(", ")", "[", "]", "{", "}", "\"", "'"):
+        normalized = normalized.replace(token, " ")
+    return " ".join(normalized.split())
 
 
 def _fuzzy_match(needle: str, haystack: str) -> bool:
-    """Simple substring-based fuzzy match."""
+    """Simple normalization-aware substring fuzzy match."""
     n = _normalize(needle)
     h = _normalize(haystack)
     if len(n) < 2:
         return False
-    return n in h
+    if n in h:
+        return True
+
+    needle_tokens = [token for token in n.split(" ") if len(token) >= 2]
+    if not needle_tokens:
+        return False
+
+    return all(token in h for token in needle_tokens)
 
 
 async def extract_mentions_from_conversation(
