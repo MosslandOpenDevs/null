@@ -1,4 +1,5 @@
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 from typing import Any, Awaitable, Callable
 
 import structlog
@@ -227,4 +228,9 @@ async def handle_unexpected_exception(request: Request, exc: Exception) -> JSONR
 
 @app.get("/health")
 async def health():
-    return {"status": "ok"}
+    return {
+        "status": "ok",
+        "service": "NULL Engine",
+        "version": app.version,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
