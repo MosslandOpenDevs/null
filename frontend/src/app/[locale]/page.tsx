@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, type KeyboardEvent } from "react";
 import { useParams } from "next/navigation";
 import { useSimulationStore, WorldData } from "@/stores/simulation";
 import { CommandPalette } from "@/components/CommandPalette";
@@ -50,6 +50,7 @@ export default function HomePage() {
   const [isTyping, setIsTyping] = useState(true);
   const fetchedCount = useRef(0);
   const { createWorld, autoWorlds, fetchAutoWorlds, worldTags, tagFilter, setTagFilter } = useSimulationStore();
+  const createHintText = locale === "ko" ? "팁: 빠르게 생성하려면 Ctrl/Cmd + Enter" : "Tip: Press Ctrl/Cmd + Enter to create quickly.";
   const { setDrawerOpen } = useBookmarkStore();
   const { fetchNode } = useTaxonomyStore();
   const [taxonomyWorldFilter, setTaxonomyWorldFilter] = useState<string | null>(null);
@@ -145,6 +146,13 @@ export default function HomePage() {
       setTimeout(() => setToast(null), 4000);
     } finally {
       setCreating(false);
+    }
+  };
+
+  const handleSeedKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
+      event.preventDefault();
+      handleCreate();
     }
   };
 
@@ -311,9 +319,14 @@ export default function HomePage() {
         <textarea
           value={seedPrompt}
           onChange={(e) => setSeedPrompt(e.target.value)}
+          onKeyDown={handleSeedKeyDown}
           placeholder={t("world.seedPlaceholder")}
+          aria-label={t("world.seedPlaceholder")}
           className="w-full h-32 bg-void-light border border-hud-border rounded-lg p-4 text-hud-text placeholder-hud-muted focus:border-accent focus:outline-none resize-none"
         />
+        <p className="text-[11px] text-hud-label">
+          {createHintText}
+        </p>
         <button
           onClick={handleCreate}
           disabled={creating || !seedPrompt.trim()}
