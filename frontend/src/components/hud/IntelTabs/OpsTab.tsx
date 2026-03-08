@@ -10,7 +10,7 @@ const ALERT_COLOR: Record<string, string> = {
 };
 
 export function OpsTab() {
-  const { metrics, loading, fetchMetrics } = useOpsStore();
+  const { metrics, loading, error, fetchMetrics } = useOpsStore();
 
   useEffect(() => {
     fetchMetrics();
@@ -28,8 +28,18 @@ export function OpsTab() {
 
   if (!metrics) {
     return (
-      <div className="flex items-center justify-center h-full">
+      <div className="flex flex-col items-center justify-center gap-3 h-full text-center">
         <span className="font-mono text-base text-hud-muted">OPS METRICS UNAVAILABLE</span>
+        {error ? <p className="font-mono text-xs text-danger">{error}</p> : null}
+        <button
+          type="button"
+          onClick={() => {
+            void fetchMetrics();
+          }}
+          className="font-mono text-xs px-3 py-1 border border-hud-border bg-hud-bg text-hud-text"
+        >
+          RETRY
+        </button>
       </div>
     );
   }

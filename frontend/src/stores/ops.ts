@@ -120,23 +120,29 @@ export function toOpsHealthBadge(summary: OpsHealthSummary): OpsHealthBadge {
 interface OpsState {
   metrics: OpsMetrics | null;
   loading: boolean;
+  error: string | null;
   fetchMetrics: () => Promise<void>;
 }
 
 export const useOpsStore = create<OpsState>((set) => ({
   metrics: null,
   loading: false,
+  error: null,
 
   fetchMetrics: async () => {
-    set({ loading: true });
+    set({ loading: true, error: null });
     try {
       const resp = await fetch(`${API_URL}/api/ops/metrics`);
-      if (resp.ok) {
-        const metrics = await resp.json();
-        set({ metrics });
+      if (!resp.ok) {
+        set({
+          error: `HTTP ${resp.status} ${resp.statusText || ""}`.trim(),
+        });
+        return;
       }
+      const metrics = await resp.json();
+      set({ metrics, error: null });
     } catch {
-      // endpoint may not be available
+      set({ error: "Failed to load ops metrics" });
     } finally {
       set({ loading: false });
     }
