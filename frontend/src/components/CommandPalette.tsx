@@ -1,11 +1,17 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useParams } from "next/navigation";
 import { useSimulationStore } from "@/stores/simulation";
 import { useMultiverseStore, GlobalSearchResult } from "@/stores/multiverse";
 import { useTaxonomyStore, TaxonomyNode } from "@/stores/taxonomy";
+
+function isTypingTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  const tagName = target.tagName.toLowerCase();
+  return target.isContentEditable || tagName === "input" || tagName === "textarea" || tagName === "select";
+}
 
 export function CommandPalette() {
   const t = useTranslations("command");
@@ -16,20 +22,37 @@ export function CommandPalette() {
   const { agents, wikiPages, setSelectedAgent, setIntelTab } = useSimulationStore();
   const { searchResults, searching, globalSearch } = useMultiverseStore();
   const { rootNodes, fetchTree } = useTaxonomyStore();
+  const shortcutLabel = useMemo(() => {
+    if (typeof navigator !== "undefined" && /mac/i.test(navigator.platform)) {
+      return "⌘K";
+    }
+    return "Ctrl+K";
+  }, []);
+
+  const closePalette = useCallback(() => {
+    setOpen(false);
+    setQuery("");
+    setMode("local");
+  }, []);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
-      if (e.key === "/" && !open) {
+      const typingTarget = isTypingTarget(e.target);
+      const openWithShortcut = (e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k";
+      const openWithSlash = e.key === "/" && !typingTarget;
+
+      if (!open && (openWithShortcut || openWithSlash)) {
         e.preventDefault();
         setOpen(true);
+        return;
       }
+
       if (e.key === "Escape" && open) {
-        setOpen(false);
-        setQuery("");
-        setMode("local" as const);
+        e.preventDefault();
+        closePalette();
       }
     },
-    [open]
+    [closePalette, open]
   );
 
   useEffect(() => {
@@ -80,11 +103,7 @@ export function CommandPalette() {
     <div className="fixed inset-0 z-50 flex items-start justify-center pt-24">
       <div
         className="absolute inset-0 bg-black/70"
-        onClick={() => {
-          setOpen(false);
-          setQuery("");
-          setMode("local");
-        }}
+        onClick={closePalette}
       />
       <div className="relative w-full max-w-lg bg-void-light border border-hud-border overflow-hidden">
         <div className="corner-mark corner-mark-tl" />
@@ -120,11 +139,17 @@ export function CommandPalette() {
           </button>
         </div>
 
+        <div className="flex items-center gap-3 border-b border-hud-border px-4 py-2 font-mono text-[11px] uppercase tracking-[0.15em] text-hud-label">
+          <span>{t("shortcutLabel")}</span>
+          <span className="text-hud-muted">{shortcutLabel} /</span>
+          <span className="ml-auto text-hud-muted">esc</span>
+        </div>
+
         <input
           autoFocus
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder={mode === "global" ? "Search across all worlds..." : t("placeholder")}
+          placeholder={mode === "global" ? t("globalPlaceholder") : t("placeholder")}
           className="w-full px-4 py-3 bg-transparent text-hud-text font-mono text-base placeholder-hud-label focus:outline-none"
         />
 
