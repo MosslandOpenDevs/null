@@ -20,6 +20,11 @@ export function CommandPalette() {
   const [query, setQuery] = useState("");
   const [mode, setMode] = useState<"local" | "global" | "taxonomy">("local");
   const [activeIndex, setActiveIndex] = useState(0);
+  const modeMeta = {
+    local: { label: "LOCAL", hint: "Search agents and wiki in the current world", shortcut: "Alt+1" },
+    global: { label: "GLOBAL", hint: "Search entities across worlds", shortcut: "Alt+2" },
+    taxonomy: { label: "TAXONOMY", hint: "Jump into category clusters", shortcut: "Alt+3" },
+  } as const;
   const { agents, wikiPages, setSelectedAgent, setIntelTab } = useSimulationStore();
   const { searchResults, searching, globalSearch } = useMultiverseStore();
   const { rootNodes, fetchTree } = useTaxonomyStore();
@@ -177,6 +182,24 @@ export function CommandPalette() {
         return;
       }
 
+      if (open && e.altKey && !e.metaKey && !e.ctrlKey && !e.shiftKey) {
+        if (e.key === "1") {
+          e.preventDefault();
+          setMode("local");
+          return;
+        }
+        if (e.key === "2") {
+          e.preventDefault();
+          setMode("global");
+          return;
+        }
+        if (e.key === "3") {
+          e.preventDefault();
+          setMode("taxonomy");
+          return;
+        }
+      }
+
       if (!open || navigableResults.length === 0) {
         return;
       }
@@ -224,6 +247,7 @@ export function CommandPalette() {
         <div className="flex border-b border-hud-border">
           <button
             onClick={() => setMode("local")}
+            title={`${modeMeta.local.label} · ${modeMeta.local.shortcut}`}
             className={`flex-1 py-1.5 font-mono text-sm uppercase tracking-[0.15em] ${
               mode === "local" ? "text-accent border-b border-accent" : "text-hud-muted"
             }`}
@@ -232,6 +256,7 @@ export function CommandPalette() {
           </button>
           <button
             onClick={() => setMode("global")}
+            title={`${modeMeta.global.label} · ${modeMeta.global.shortcut}`}
             className={`flex-1 py-1.5 font-mono text-sm uppercase tracking-[0.15em] ${
               mode === "global" ? "text-accent border-b border-accent" : "text-hud-muted"
             }`}
@@ -240,6 +265,7 @@ export function CommandPalette() {
           </button>
           <button
             onClick={() => setMode("taxonomy")}
+            title={`${modeMeta.taxonomy.label} · ${modeMeta.taxonomy.shortcut}`}
             className={`flex-1 py-1.5 font-mono text-sm uppercase tracking-[0.15em] ${
               mode === "taxonomy" ? "text-accent border-b border-accent" : "text-hud-muted"
             }`}
@@ -251,6 +277,9 @@ export function CommandPalette() {
         <div className="flex items-center gap-3 border-b border-hud-border px-4 py-2 font-mono text-[11px] uppercase tracking-[0.15em] text-hud-label">
           <span>{t("shortcutLabel")}</span>
           <span className="text-hud-muted">{shortcutLabel} /</span>
+          <span className="text-hud-muted">{modeMeta.local.shortcut}</span>
+          <span className="text-hud-muted">{modeMeta.global.shortcut}</span>
+          <span className="text-hud-muted">{modeMeta.taxonomy.shortcut}</span>
           <span className="ml-auto text-hud-muted">esc</span>
         </div>
 
@@ -261,6 +290,38 @@ export function CommandPalette() {
           placeholder={mode === "global" ? t("globalPlaceholder") : t("placeholder")}
           className="w-full px-4 py-3 bg-transparent text-hud-text font-mono text-base placeholder-hud-label focus:outline-none"
         />
+
+        {!query && (
+          <div className="border-t border-hud-border px-4 py-3 grid gap-2 bg-black/10">
+            <div className="font-mono text-[11px] uppercase tracking-[0.15em] text-hud-label">
+              Quick modes
+            </div>
+            <div className="grid gap-2">
+              {(["local", "global", "taxonomy"] as const).map((modeKey) => {
+                const meta = modeMeta[modeKey];
+                const isActive = mode === modeKey;
+                return (
+                  <button
+                    key={modeKey}
+                    type="button"
+                    onClick={() => setMode(modeKey)}
+                    className={`flex items-center justify-between gap-3 rounded border px-3 py-2 text-left transition-colors ${
+                      isActive
+                        ? "border-accent bg-accent/10 text-hud-text"
+                        : "border-hud-border text-hud-muted hover:border-hud-border-active hover:text-hud-text"
+                    }`}
+                  >
+                    <div>
+                      <div className="font-mono text-[13px] uppercase tracking-[0.14em]">{meta.label}</div>
+                      <div className="font-mono text-[12px] normal-case tracking-normal">{meta.hint}</div>
+                    </div>
+                    <span className="font-mono text-[11px] uppercase tracking-[0.14em]">{meta.shortcut}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Local results */}
         {mode === "local" && (agentResults.length > 0 || wikiResults.length > 0) && (
