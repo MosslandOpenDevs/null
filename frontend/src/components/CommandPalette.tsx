@@ -430,45 +430,48 @@ export function CommandPalette() {
         {/* Global results */}
         {mode === "global" && (
           <div className="border-t border-hud-border max-h-64 overflow-y-auto">
-            {searching && (
+            {query.length < 2 && (
+              <div className="px-4 py-3 font-mono text-[13px] text-hud-label">
+                Type at least 2 characters to search across worlds
+              </div>
+            )}
+            {query.length >= 2 && searching && (
               <div className="px-4 py-3 font-mono text-[13px] text-hud-muted animate-pulse">
                 Searching all worlds...
               </div>
             )}
-            {!searching && searchResults.length === 0 && query.length >= 2 && (
+            {query.length >= 2 && !searching && globalResults.length === 0 && (
               <div className="px-4 py-3 font-mono text-[13px] text-hud-label">
                 No results found across worlds
               </div>
             )}
-            {[...searchResults].sort((a, b) => b.score - a.score).map((result: GlobalSearchResult, index) => {
+            {query.length >= 2 && globalResults.map((result, index) => {
               const isActive = activeIndex === index;
               return (
                 <button
-                  key={`${result.entity_type}-${result.entity_id}`}
-                  onClick={() => {
-                    window.location.href = `/${locale}/world/${result.world_id}`;
-                  }}
+                  key={result.id}
+                  onClick={result.onSelect}
                   className={`w-full px-4 py-2 text-left flex items-center gap-3 transition-colors ${
                     isActive ? "bg-accent/15" : "hover:bg-accent/10"
                   }`}
                 >
                   <div className={`w-1.5 h-1.5 rounded-full ${
-                    result.entity_type === "wiki_page" ? "bg-success" :
-                    result.entity_type === "agent" ? "bg-accent" : "bg-herald"
+                    result.entityType === "wiki_page" ? "bg-success" :
+                    result.entityType === "agent" ? "bg-accent" : "bg-herald"
                   }`} />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="font-mono text-base text-hud-text truncate">{result.title}</span>
+                      <span className="font-mono text-base text-hud-text truncate">{result.label}</span>
                       <span className="font-mono text-[11px] text-hud-label uppercase flex-shrink-0">
-                        {result.entity_type.replace("_", " ")}
+                        {result.badge}
                       </span>
                     </div>
                     <div className="font-mono text-sm text-hud-muted truncate">
-                      {result.snippet}
+                      {result.sublabel}
                     </div>
                   </div>
                   <span className="font-mono text-[11px] text-hud-label flex-shrink-0">
-                    {(result.score * 100).toFixed(0)}%
+                    {result.meta}
                   </span>
                 </button>
               );
