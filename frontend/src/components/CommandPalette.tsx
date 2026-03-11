@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+
+const COMMAND_MODE_STORAGE_KEY = "null-command-palette-mode";
 import { useTranslations } from "next-intl";
 import { useParams } from "next/navigation";
 import { useSimulationStore } from "@/stores/simulation";
@@ -38,10 +40,27 @@ export function CommandPalette() {
   const closePalette = useCallback(() => {
     setOpen(false);
     setQuery("");
-    setMode("local");
     setActiveIndex(0);
   }, []);
 
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const storedMode = window.localStorage.getItem(COMMAND_MODE_STORAGE_KEY);
+    if (storedMode === "local" || storedMode === "global" || storedMode === "taxonomy") {
+      setMode(storedMode);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    window.localStorage.setItem(COMMAND_MODE_STORAGE_KEY, mode);
+  }, [mode]);
 
   // Trigger global search with debounce
   useEffect(() => {
@@ -150,6 +169,20 @@ export function CommandPalette() {
     : mode === "taxonomy"
       ? taxonomyResults
       : globalResults;
+
+  const resultsSummary = useMemo(() => {
+    if (mode === "global") {
+      if (query.length < 2) return "Type 2+ characters to search across worlds";
+      if (searching) return "Searching across worlds…";
+      return `${globalResults.length} result${globalResults.length === 1 ? "" : "s"}`;
+    }
+
+    if (mode === "taxonomy") {
+      return `${filteredNodes.length} taxonomy node${filteredNodes.length === 1 ? "" : "s"}`;
+    }
+
+    return `${localResults.length} local match${localResults.length === 1 ? "" : "es"}`;
+  }, [filteredNodes.length, globalResults.length, localResults.length, mode, query.length, searching]);
 
   useEffect(() => {
     setActiveIndex(0);
@@ -283,6 +316,11 @@ export function CommandPalette() {
           <span className="ml-auto text-hud-muted">esc</span>
         </div>
 
+        <div className="flex items-center justify-between gap-3 border-b border-hud-border px-4 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-hud-label bg-black/10">
+          <span className="truncate">{modeMeta[mode].hint}</span>
+          <span className="text-hud-muted whitespace-nowrap">{resultsSummary}</span>
+        </div>
+
         <input
           autoFocus
           value={query}
@@ -324,6 +362,12 @@ export function CommandPalette() {
         )}
 
         {/* Local results */}
+        {mode === "local" && query && localResults.length === 0 && (
+          <div className="border-t border-hud-border px-4 py-3 font-mono text-[13px] text-hud-label">
+            No agents or wiki pages matched this world search
+          </div>
+        )}
+
         {mode === "local" && (agentResults.length > 0 || wikiResults.length > 0) && (
           <div className="border-t border-hud-border max-h-64 overflow-y-auto">
             {agentResults.length > 0 && (
@@ -396,7 +440,7 @@ export function CommandPalette() {
           <div className="border-t border-hud-border max-h-64 overflow-y-auto">
             {filteredNodes.length === 0 ? (
               <div className="px-4 py-3 font-mono text-[13px] text-hud-label">
-                No taxonomy nodes
+                {query ? "No taxonomy nodes matched this filter" : "No taxonomy nodes"}
               </div>
             ) : (
               filteredNodes.map((node: TaxonomyNode, index) => {
