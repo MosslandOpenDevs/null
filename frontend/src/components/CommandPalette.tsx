@@ -184,6 +184,58 @@ export function CommandPalette() {
     return `${localResults.length} local match${localResults.length === 1 ? "" : "es"}`;
   }, [filteredNodes.length, globalResults.length, localResults.length, mode, query.length, searching]);
 
+  const emptyStateActions = useMemo(() => {
+    if (!query) {
+      return [] as { label: string; description: string; onClick: () => void }[];
+    }
+
+    const actions = [
+      {
+        label: "Clear query",
+        description: "Reset the search and keep this mode open",
+        onClick: () => {
+          setQuery("");
+          setActiveIndex(0);
+        },
+      },
+    ];
+
+    if (mode !== "local") {
+      actions.push({
+        label: "Try local mode",
+        description: "Search agents and wiki in the current world",
+        onClick: () => {
+          setMode("local");
+          setActiveIndex(0);
+        },
+      });
+    }
+
+    if (mode !== "global") {
+      actions.push({
+        label: "Try global mode",
+        description: "Search entities across every world",
+        onClick: () => {
+          setMode("global");
+          setActiveIndex(0);
+        },
+      });
+    }
+
+    if (mode !== "taxonomy") {
+      actions.push({
+        label: "Try taxonomy mode",
+        description: "Jump through category clusters instead",
+        onClick: () => {
+          setMode("taxonomy");
+          setActiveIndex(0);
+        },
+      });
+    }
+
+    return actions;
+  }, [mode, query]);
+
   useEffect(() => {
     setActiveIndex(0);
   }, [mode, query]);
@@ -361,12 +413,32 @@ export function CommandPalette() {
           </div>
         )}
 
-        {/* Local results */}
-        {mode === "local" && query && localResults.length === 0 && (
-          <div className="border-t border-hud-border px-4 py-3 font-mono text-[13px] text-hud-label">
-            No agents or wiki pages matched this world search
+        {query && navigableResults.length === 0 && !(mode === "global" && (query.length < 2 || searching)) && (
+          <div className="border-t border-hud-border px-4 py-3 grid gap-3 bg-black/10">
+            <div className="font-mono text-[13px] text-hud-label">
+              {mode === "local"
+                ? "No agents or wiki pages matched this world search"
+                : mode === "taxonomy"
+                  ? "No taxonomy nodes matched this filter"
+                  : "No results found across worlds"}
+            </div>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {emptyStateActions.map((action) => (
+                <button
+                  key={action.label}
+                  type="button"
+                  onClick={action.onClick}
+                  className="rounded border border-hud-border px-3 py-2 text-left transition-colors text-hud-muted hover:border-hud-border-active hover:text-hud-text"
+                >
+                  <div className="font-mono text-[12px] uppercase tracking-[0.14em] text-hud-text">{action.label}</div>
+                  <div className="mt-1 font-mono text-[12px] normal-case tracking-normal">{action.description}</div>
+                </button>
+              ))}
+            </div>
           </div>
         )}
+
+        {/* Local results */}
 
         {mode === "local" && (agentResults.length > 0 || wikiResults.length > 0) && (
           <div className="border-t border-hud-border max-h-64 overflow-y-auto">
@@ -439,9 +511,11 @@ export function CommandPalette() {
         {mode === "taxonomy" && (
           <div className="border-t border-hud-border max-h-64 overflow-y-auto">
             {filteredNodes.length === 0 ? (
-              <div className="px-4 py-3 font-mono text-[13px] text-hud-label">
-                {query ? "No taxonomy nodes matched this filter" : "No taxonomy nodes"}
-              </div>
+              query ? null : (
+                <div className="px-4 py-3 font-mono text-[13px] text-hud-label">
+                  No taxonomy nodes
+                </div>
+              )
             ) : (
               filteredNodes.map((node: TaxonomyNode, index) => {
                 const isActive = activeIndex === index;
@@ -482,11 +556,6 @@ export function CommandPalette() {
             {query.length >= 2 && searching && (
               <div className="px-4 py-3 font-mono text-[13px] text-hud-muted animate-pulse">
                 Searching all worlds...
-              </div>
-            )}
-            {query.length >= 2 && !searching && globalResults.length === 0 && (
-              <div className="px-4 py-3 font-mono text-[13px] text-hud-label">
-                No results found across worlds
               </div>
             )}
             {query.length >= 2 && globalResults.map((result, index) => {
