@@ -1,13 +1,15 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-
-const COMMAND_MODE_STORAGE_KEY = "null-command-palette-mode";
 import { useTranslations } from "next-intl";
 import { useParams } from "next/navigation";
 import { useSimulationStore } from "@/stores/simulation";
 import { useMultiverseStore, GlobalSearchResult } from "@/stores/multiverse";
 import { useTaxonomyStore, TaxonomyNode } from "@/stores/taxonomy";
+
+const COMMAND_MODE_STORAGE_KEY = "null-command-palette-mode";
+const RECENT_QUERY_STORAGE_KEY = "null-command-palette-recent-queries";
+const RECENT_QUERY_LIMIT = 5;
 
 function isTypingTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
@@ -22,6 +24,11 @@ export function CommandPalette() {
   const [query, setQuery] = useState("");
   const [mode, setMode] = useState<"local" | "global" | "taxonomy">("local");
   const [activeIndex, setActiveIndex] = useState(0);
+  const [recentQueries, setRecentQueries] = useState<Record<"local" | "global" | "taxonomy", string[]>>({
+    local: [],
+    global: [],
+    taxonomy: [],
+  });
   const modeMeta = {
     local: { label: "LOCAL", hint: "Search agents and wiki in the current world", shortcut: "Alt+1" },
     global: { label: "GLOBAL", hint: "Search entities across worlds", shortcut: "Alt+2" },
@@ -37,11 +44,24 @@ export function CommandPalette() {
     return "Ctrl+K";
   }, []);
 
+  const persistRecentQuery = useCallback((value: string, selectedMode = mode) => {
+    const normalizedQuery = value.trim();
+    if (normalizedQuery.length < 2) {
+      return;
+    }
+
+    setRecentQueries((current) => ({
+      ...current,
+      [selectedMode]: [normalizedQuery, ...current[selectedMode].filter((entry) => entry !== normalizedQuery)].slice(0, RECENT_QUERY_LIMIT),
+    }));
+  }, [mode]);
+
   const closePalette = useCallback(() => {
+    persistRecentQuery(query);
     setOpen(false);
     setQuery("");
     setActiveIndex(0);
-  }, []);
+  }, [persistRecentQuery, query]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -59,8 +79,38 @@ export function CommandPalette() {
       return;
     }
 
+    try {
+      const rawRecentQueries = window.localStorage.getItem(RECENT_QUERY_STORAGE_KEY);
+      if (!rawRecentQueries) {
+        return;
+      }
+
+      const parsed = JSON.parse(rawRecentQueries);
+      setRecentQueries({
+        local: Array.isArray(parsed?.local) ? parsed.local.filter((value: unknown): value is string => typeof value === "string").slice(0, RECENT_QUERY_LIMIT) : [],
+        global: Array.isArray(parsed?.global) ? parsed.global.filter((value: unknown): value is string => typeof value === "string").slice(0, RECENT_QUERY_LIMIT) : [],
+        taxonomy: Array.isArray(parsed?.taxonomy) ? parsed.taxonomy.filter((value: unknown): value is string => typeof value === "string").slice(0, RECENT_QUERY_LIMIT) : [],
+      });
+    } catch {
+      window.localStorage.removeItem(RECENT_QUERY_STORAGE_KEY);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
     window.localStorage.setItem(COMMAND_MODE_STORAGE_KEY, mode);
   }, [mode]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    window.localStorage.setItem(RECENT_QUERY_STORAGE_KEY, JSON.stringify(recentQueries));
+  }, [recentQueries]);
 
   // Trigger global search with debounce
   useEffect(() => {
@@ -236,6 +286,8 @@ export function CommandPalette() {
     return actions;
   }, [mode, query]);
 
+  const modeRecentQueries = recentQueries[mode];
+
   useEffect(() => {
     setActiveIndex(0);
   }, [mode, query]);
@@ -303,10 +355,11 @@ export function CommandPalette() {
 
       if (e.key === "Enter") {
         e.preventDefault();
+        persistRecentQuery(query);
         navigableResults[activeIndex]?.onSelect();
       }
     },
-    [activeIndex, closePalette, navigableResults, open]
+    [activeIndex, closePalette, navigableResults, open, persistRecentQuery, query]
   );
 
   useEffect(() => {
@@ -382,34 +435,69 @@ export function CommandPalette() {
         />
 
         {!query && (
-          <div className="border-t border-hud-border px-4 py-3 grid gap-2 bg-black/10">
-            <div className="font-mono text-[11px] uppercase tracking-[0.15em] text-hud-label">
-              Quick modes
+          <div className="border-t border-hud-border px-4 py-3 grid gap-3 bg-black/10">
+            <div>
+              <div className="font-mono text-[11px] uppercase tracking-[0.15em] text-hud-label">
+                Quick modes
+              </div>
+              <div className="mt-2 grid gap-2">
+                {(["local", "global", "taxonomy"] as const).map((modeKey) => {
+                  const meta = modeMeta[modeKey];
+                  const isActive = mode === modeKey;
+                  return (
+                    <button
+                      key={modeKey}
+                      type="button"
+                      onClick={() => setMode(modeKey)}
+                      className={`flex items-center justify-between gap-3 rounded border px-3 py-2 text-left transition-colors ${
+                        isActive
+                          ? "border-accent bg-accent/10 text-hud-text"
+                          : "border-hud-border text-hud-muted hover:border-hud-border-active hover:text-hud-text"
+                      }`}
+                    >
+                      <div>
+                        <div className="font-mono text-[13px] uppercase tracking-[0.14em]">{meta.label}</div>
+                        <div className="font-mono text-[12px] normal-case tracking-normal">{meta.hint}</div>
+                      </div>
+                      <span className="font-mono text-[11px] uppercase tracking-[0.14em]">{meta.shortcut}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-            <div className="grid gap-2">
-              {(["local", "global", "taxonomy"] as const).map((modeKey) => {
-                const meta = modeMeta[modeKey];
-                const isActive = mode === modeKey;
-                return (
+
+            {modeRecentQueries.length > 0 && (
+              <div className="grid gap-2">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="font-mono text-[11px] uppercase tracking-[0.15em] text-hud-label">
+                    Recent in {modeMeta[mode].label}
+                  </div>
                   <button
-                    key={modeKey}
                     type="button"
-                    onClick={() => setMode(modeKey)}
-                    className={`flex items-center justify-between gap-3 rounded border px-3 py-2 text-left transition-colors ${
-                      isActive
-                        ? "border-accent bg-accent/10 text-hud-text"
-                        : "border-hud-border text-hud-muted hover:border-hud-border-active hover:text-hud-text"
-                    }`}
+                    onClick={() => setRecentQueries((current) => ({ ...current, [mode]: [] }))}
+                    className="font-mono text-[10px] uppercase tracking-[0.15em] text-hud-muted transition-colors hover:text-hud-text"
                   >
-                    <div>
-                      <div className="font-mono text-[13px] uppercase tracking-[0.14em]">{meta.label}</div>
-                      <div className="font-mono text-[12px] normal-case tracking-normal">{meta.hint}</div>
-                    </div>
-                    <span className="font-mono text-[11px] uppercase tracking-[0.14em]">{meta.shortcut}</span>
+                    Clear
                   </button>
-                );
-              })}
-            </div>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {modeRecentQueries.map((recentQuery) => (
+                    <button
+                      key={`${mode}-${recentQuery}`}
+                      type="button"
+                      onClick={() => {
+                        setQuery(recentQuery);
+                        setActiveIndex(0);
+                      }}
+                      className="rounded-full border border-hud-border px-3 py-1.5 font-mono text-[11px] text-hud-muted transition-colors hover:border-hud-border-active hover:text-hud-text"
+                      title={`Reuse recent ${modeMeta[mode].label.toLowerCase()} search`}
+                    >
+                      {recentQuery}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
