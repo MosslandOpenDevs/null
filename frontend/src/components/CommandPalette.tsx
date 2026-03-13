@@ -482,18 +482,36 @@ export function CommandPalette() {
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {modeRecentQueries.map((recentQuery) => (
-                    <button
+                    <div
                       key={`${mode}-${recentQuery}`}
-                      type="button"
-                      onClick={() => {
-                        setQuery(recentQuery);
-                        setActiveIndex(0);
-                      }}
-                      className="rounded-full border border-hud-border px-3 py-1.5 font-mono text-[11px] text-hud-muted transition-colors hover:border-hud-border-active hover:text-hud-text"
-                      title={`Reuse recent ${modeMeta[mode].label.toLowerCase()} search`}
+                      className="inline-flex items-center overflow-hidden rounded-full border border-hud-border text-hud-muted transition-colors hover:border-hud-border-active"
                     >
-                      {recentQuery}
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setQuery(recentQuery);
+                          setActiveIndex(0);
+                        }}
+                        className="px-3 py-1.5 font-mono text-[11px] transition-colors hover:text-hud-text"
+                        title={`Reuse recent ${modeMeta[mode].label.toLowerCase()} search`}
+                      >
+                        {recentQuery}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setRecentQueries((current) => ({
+                            ...current,
+                            [mode]: current[mode].filter((entry) => entry !== recentQuery),
+                          }));
+                        }}
+                        className="border-l border-hud-border px-2 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] transition-colors hover:bg-white/5 hover:text-hud-text"
+                        title={`Remove ${recentQuery} from recent ${modeMeta[mode].label.toLowerCase()} searches`}
+                        aria-label={`Remove ${recentQuery} from recent ${modeMeta[mode].label.toLowerCase()} searches`}
+                      >
+                        ×
+                      </button>
+                    </div>
                   ))}
                 </div>
               </div>
