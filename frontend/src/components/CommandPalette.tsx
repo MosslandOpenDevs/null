@@ -378,10 +378,11 @@ export function CommandPalette() {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-24">
+    <div className="fixed inset-0 z-50 flex items-start justify-center pt-24" role="dialog" aria-modal="true" aria-label="Command palette">
       <div
         className="absolute inset-0 bg-black/70"
         onClick={closePalette}
+        aria-hidden="true"
       />
       <div className="relative w-full max-w-lg bg-void-light border border-hud-border overflow-hidden">
         <div className="corner-mark corner-mark-tl" />
@@ -438,6 +439,7 @@ export function CommandPalette() {
           autoFocus
           value={query}
           onChange={(e) => setQuery(e.target.value)}
+          aria-label={t("placeholder")}
           placeholder={mode === "global" ? t("globalPlaceholder") : t("placeholder")}
           className="w-full px-4 py-3 bg-transparent text-hud-text font-mono text-base placeholder-hud-label focus:outline-none"
         />
