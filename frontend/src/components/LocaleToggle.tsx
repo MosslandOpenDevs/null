@@ -7,6 +7,7 @@ export function LocaleToggle() {
   const pathname = usePathname();
 
   const otherLocale = locale === "ko" ? "en" : "ko";
+  const toggleLabel = locale === "ko" ? "Switch to English" : "한국어로 전환";
   // Replace /{locale}/ prefix in pathname
   const newPath = pathname.replace(`/${locale}`, `/${otherLocale}`);
 
@@ -14,11 +15,13 @@ export function LocaleToggle() {
     <a
       href={newPath}
       className="flex items-center gap-1.5 px-3 py-1.5 border border-hud-border hover:border-accent bg-void-light/80 rounded font-mono text-sm text-hud-muted hover:text-accent transition-colors"
-      title={locale === "ko" ? "Switch to English" : "한국어로 전환"}
+      title={toggleLabel}
+      aria-label={toggleLabel}
     >
       <span className={locale === "ko" ? "text-hud-muted" : "text-accent font-semibold"}>EN</span>
       <span className="text-hud-label">/</span>
       <span className={locale === "ko" ? "text-accent font-semibold" : "text-hud-muted"}>한</span>
+      <span className="sr-only">{locale === "ko" ? "Korean" : "English"} language</span>
     </a>
   );
 }
