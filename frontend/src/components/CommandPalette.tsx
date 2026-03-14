@@ -337,7 +337,15 @@ export function CommandPalette() {
         }
       }
 
-      if (!open || navigableResults.length === 0) {
+      if (!open) {
+        return;
+      }
+
+      if (navigableResults.length === 0) {
+        if (e.key === "Enter" && emptyStateActions.length > 0) {
+          e.preventDefault();
+          emptyStateActions[0].onClick();
+        }
         return;
       }
 
@@ -359,7 +367,7 @@ export function CommandPalette() {
         navigableResults[activeIndex]?.onSelect();
       }
     },
-    [activeIndex, closePalette, navigableResults, open, persistRecentQuery, query]
+    [activeIndex, closePalette, emptyStateActions, navigableResults, open, persistRecentQuery, query]
   );
 
   useEffect(() => {
