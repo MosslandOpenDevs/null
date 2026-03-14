@@ -391,10 +391,13 @@ export function CommandPalette() {
         <div className="corner-mark corner-mark-br" />
 
         {/* Mode toggle */}
-        <div className="flex border-b border-hud-border">
+        <div className="flex border-b border-hud-border" role="tablist" aria-label="Command palette modes">
           <button
+            type="button"
+            role="tab"
             onClick={() => setMode("local")}
             title={`${modeMeta.local.label} · ${modeMeta.local.shortcut}`}
+            aria-selected={mode === "local"}
             className={`flex-1 py-1.5 font-mono text-sm uppercase tracking-[0.15em] ${
               mode === "local" ? "text-accent border-b border-accent" : "text-hud-muted"
             }`}
@@ -402,8 +405,11 @@ export function CommandPalette() {
             LOCAL (THIS WORLD)
           </button>
           <button
+            type="button"
+            role="tab"
             onClick={() => setMode("global")}
             title={`${modeMeta.global.label} · ${modeMeta.global.shortcut}`}
+            aria-selected={mode === "global"}
             className={`flex-1 py-1.5 font-mono text-sm uppercase tracking-[0.15em] ${
               mode === "global" ? "text-accent border-b border-accent" : "text-hud-muted"
             }`}
@@ -411,8 +417,11 @@ export function CommandPalette() {
             GLOBAL
           </button>
           <button
+            type="button"
+            role="tab"
             onClick={() => setMode("taxonomy")}
             title={`${modeMeta.taxonomy.label} · ${modeMeta.taxonomy.shortcut}`}
+            aria-selected={mode === "taxonomy"}
             className={`flex-1 py-1.5 font-mono text-sm uppercase tracking-[0.15em] ${
               mode === "taxonomy" ? "text-accent border-b border-accent" : "text-hud-muted"
             }`}
@@ -432,7 +441,7 @@ export function CommandPalette() {
 
         <div className="flex items-center justify-between gap-3 border-b border-hud-border px-4 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-hud-label bg-black/10">
           <span className="truncate">{modeMeta[mode].hint}</span>
-          <span className="text-hud-muted whitespace-nowrap">{resultsSummary}</span>
+          <p role="status" aria-live="polite" className="text-hud-muted whitespace-nowrap">{resultsSummary}</p>
         </div>
 
         <input
