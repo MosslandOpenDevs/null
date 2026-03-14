@@ -267,7 +267,7 @@ export default function HomePage() {
       </div>
 
       {/* Taxonomy-filtered worlds */}
-      {taxonomyWorldFilter && taxonomyWorlds.length > 0 && (
+      {taxonomyWorldFilter && (
         <div className="w-full max-w-5xl mb-8">
           <div className="flex items-center justify-between mb-2">
             <h2 className="text-base uppercase tracking-widest text-hud-label">
@@ -278,21 +278,26 @@ export default function HomePage() {
                 setTaxonomyWorldFilter(null);
                 setTaxonomyWorlds([]);
               }}
+              aria-label="Clear taxonomy filter"
               className="text-sm font-mono text-hud-muted hover:text-accent uppercase"
             >
               CLEAR
             </button>
           </div>
           <div className="space-y-1">
-            {taxonomyWorlds.map((w) => (
-              <a
-                key={w.id}
-                href={`/${locale}/world/${w.id}`}
-                className="block px-4 py-2 rounded-lg border border-accent/30 bg-accent/5 hover:bg-accent/10 transition-all"
-              >
-                <p className="text-base text-hud-text truncate">{w.seed_prompt}</p>
-              </a>
-            ))}
+            {taxonomyWorlds.length > 0 ? (
+              taxonomyWorlds.map((w) => (
+                <a
+                  key={w.id}
+                  href={`/${locale}/world/${w.id}`}
+                  className="block px-4 py-2 rounded-lg border border-accent/30 bg-accent/5 hover:bg-accent/10 transition-all"
+                >
+                  <p className="text-base text-hud-text truncate">{w.seed_prompt}</p>
+                </a>
+              ))
+            ) : (
+              <p className="text-sm text-hud-muted font-mono">No worlds matched this category yet.</p>
+            )}
           </div>
         </div>
       )}
@@ -342,6 +347,7 @@ export default function HomePage() {
       {/* Bookmark toggle button */}
       <button
         onClick={() => setDrawerOpen(true)}
+        aria-label="Open bookmarks"
         className="fixed right-4 bottom-4 z-40 px-3 py-2 bg-void-light border border-hud-border hover:border-accent font-mono text-sm text-hud-muted hover:text-accent uppercase tracking-wider transition-colors"
       >
         BOOKMARKS
