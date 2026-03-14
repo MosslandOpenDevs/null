@@ -172,7 +172,11 @@ export default function HomePage() {
 
       {/* Toast */}
       {toast && (
-        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2 bg-accent text-void font-mono text-base uppercase tracking-wider rounded shadow-lg">
+        <div
+          className="fixed top-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2 bg-accent text-void font-mono text-base uppercase tracking-wider rounded shadow-lg"
+          role="status"
+          aria-live="polite"
+        >
           {toast}
         </div>
       )}
