@@ -108,6 +108,15 @@ export default function HomePage() {
       .slice(0, 20);
   }, [worldTags]);
 
+  const tagFilterLabel =
+    locale === "ko"
+      ? tagFilter
+        ? `필터: ${tagFilter}`
+        : "필터: 전체"
+      : tagFilter
+        ? `Filter: ${tagFilter}`
+        : "Filter: All";
+
   // Fetch fresh AI-generated examples every time we cycle through existing ones
   useEffect(() => {
     if (exampleIndex > 0 && exampleIndex % 5 === 0) {
@@ -272,9 +281,18 @@ export default function HomePage() {
       {/* ===== Tag filter ===== */}
       {allTags.length > 0 && (
         <div className="w-full max-w-5xl mb-8">
-          <h2 className="text-base uppercase tracking-widest text-hud-label mb-3">
-            Filter by tag
-          </h2>
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <h2 className="text-base uppercase tracking-widest text-hud-label">
+              Filter by tag
+            </h2>
+            <p
+              className="text-[11px] font-mono uppercase tracking-wider text-hud-muted"
+              role="status"
+              aria-live="polite"
+            >
+              {tagFilterLabel}
+            </p>
+          </div>
           <div className="flex flex-wrap gap-1.5">
             <button
               onClick={() => setTagFilter(null)}
