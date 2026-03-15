@@ -122,7 +122,7 @@ interface SimulationState {
   oracleTarget: OracleTarget | null;
   oracleOpen: boolean;
 
-  createWorld: (seedPrompt: string) => Promise<void>;
+  createWorld: (seedPrompt: string) => Promise<boolean>;
   fetchWorld: (id: string) => Promise<void>;
   fetchAgents: (worldId: string) => Promise<void>;
   fetchFactions: (worldId: string) => Promise<void>;
@@ -188,10 +188,17 @@ export const useSimulationStore = create<SimulationState>((set, get) => ({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ seed_prompt: seedPrompt }),
       });
-      if (!resp.ok) console.error("[Store] createWorld failed:", resp.status);
-      get().fetchAutoWorlds();
+
+      if (!resp.ok) {
+        console.error("[Store] createWorld failed:", resp.status);
+        return false;
+      }
+
+      await get().fetchAutoWorlds();
+      return true;
     } catch (err) {
       console.error("[Store] createWorld error:", err);
+      return false;
     }
   },
 

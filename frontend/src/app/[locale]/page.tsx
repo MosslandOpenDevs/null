@@ -15,6 +15,7 @@ import { useTaxonomyStore } from "@/stores/taxonomy";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3301";
 const MAX_SEED_PROMPT_LENGTH = 2000;
+const SEED_DRAFT_STORAGE_KEY = "null.seedPromptDraft";
 
 const INITIAL_EXAMPLES = [
   "Neon Joseon — 1700년대 조선이 증기기관을 발명한 대체역사. 왕실, 상인 길드, 비밀 학자 결사, 농민 반란군이 권력을 두고 경쟁한다.",
@@ -75,6 +76,24 @@ export default function HomePage() {
     }
     return { matureWorlds: mature, incubatingWorlds: incubating };
   }, [autoWorlds]);
+
+  // Restore seed prompt draft on first render
+  useEffect(() => {
+    const saved = window.localStorage.getItem(SEED_DRAFT_STORAGE_KEY);
+    if (saved) {
+      setSeedPrompt(saved.slice(0, MAX_SEED_PROMPT_LENGTH));
+    }
+  }, []);
+
+  // Persist draft as user types for continuity across refreshes
+  useEffect(() => {
+    if (!seedPrompt.length) {
+      window.localStorage.removeItem(SEED_DRAFT_STORAGE_KEY);
+      return;
+    }
+
+    window.localStorage.setItem(SEED_DRAFT_STORAGE_KEY, seedPrompt);
+  }, [seedPrompt]);
 
   // Collect all unique tags from worlds
   const allTags = useMemo(() => {
@@ -142,9 +161,14 @@ export default function HomePage() {
     if (!seedPrompt.trim()) return;
     setCreating(true);
     try {
-      await createWorld(seedPrompt);
-      setSeedPrompt("");
-      setToast("World queued — check the Incubator");
+      const created = await createWorld(seedPrompt);
+      if (created) {
+        setSeedPrompt("");
+        window.localStorage.removeItem(SEED_DRAFT_STORAGE_KEY);
+        setToast("World queued — check the Incubator");
+      } else {
+        setToast("Seed submission failed. Please retry after checking API connectivity.");
+      }
       setTimeout(() => setToast(null), 4000);
     } finally {
       setCreating(false);
