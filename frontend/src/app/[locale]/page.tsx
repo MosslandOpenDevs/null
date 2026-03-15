@@ -169,6 +169,13 @@ export default function HomePage() {
     setSeedPrompt(examples[exampleIndex % examples.length]);
   };
 
+  const isSeedNearLimit = seedPrompt.length >= Math.floor(MAX_SEED_PROMPT_LENGTH * 0.9);
+
+  const seedCounterLabel =
+    locale === "ko"
+      ? `글자 수: ${seedPrompt.length}/${MAX_SEED_PROMPT_LENGTH}`
+      : `Characters: ${seedPrompt.length}/${MAX_SEED_PROMPT_LENGTH}`;
+
   const skipLabel = locale === "ko" ? "본문으로 이동" : "Skip to main content";
 
   return (
@@ -355,10 +362,14 @@ export default function HomePage() {
           maxLength={MAX_SEED_PROMPT_LENGTH}
           className="w-full h-32 bg-void-light border border-hud-border rounded-lg p-4 text-hud-text placeholder-hud-muted focus:border-accent focus:outline-none resize-none"
         />
-        <p id="seed-prompt-counter" className="text-[11px] text-hud-label">
-          {locale === "ko"
-            ? `글자 수: ${seedPrompt.length}/${MAX_SEED_PROMPT_LENGTH}`
-            : `Characters: ${seedPrompt.length}/${MAX_SEED_PROMPT_LENGTH}`}
+        <p
+          id="seed-prompt-counter"
+          className={`text-[11px] ${isSeedNearLimit ? "text-amber-300" : "text-hud-label"}`}
+          role="status"
+          aria-live="polite"
+        >
+          {seedCounterLabel}
+          {isSeedNearLimit ? ` (${locale === "ko" ? "최대치 임계" : "close to limit"})` : ""}
         </p>
         <p className="text-[11px] text-hud-label">
           {createHintText}
