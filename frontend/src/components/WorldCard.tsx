@@ -9,12 +9,15 @@ interface WorldCardProps {
 
 export function WorldCard({ world, locale }: WorldCardProps) {
   const tags = world.tags || [];
+  const visibleTags = tags.slice(0, 5);
+  const remainingTagCount = Math.max(0, tags.length - visibleTags.length);
   const description =
     (world.config as Record<string, unknown>)?.description as string || "";
 
   return (
     <a
       href={`/${locale}/world/${world.id}`}
+      aria-label={`${world.seed_prompt} world`}
       className="block p-4 rounded-lg border border-hud-border bg-void-light/30 hover:border-accent/50 hover:bg-void-light/60 transition-all group"
     >
       <p className="text-base text-hud-text group-hover:text-accent font-medium truncate mb-2">
@@ -42,14 +45,23 @@ export function WorldCard({ world, locale }: WorldCardProps) {
 
       {tags.length > 0 && (
         <div className="flex flex-wrap gap-1">
-          {tags.slice(0, 5).map((t) => (
+          {visibleTags.map((t) => (
             <span
               key={t.tag}
               className="px-1.5 py-0.5 text-sm font-mono uppercase tracking-wider text-hud-muted border border-hud-border rounded"
+              title={t.tag}
             >
               {t.tag}
             </span>
           ))}
+          {remainingTagCount > 0 ? (
+            <span
+              className="px-1.5 py-0.5 text-sm font-mono uppercase tracking-wider text-hud-label border border-hud-border rounded"
+              aria-label={`${remainingTagCount} more tags hidden`}
+            >
+              +{remainingTagCount}
+            </span>
+          ) : null}
         </div>
       )}
     </a>
