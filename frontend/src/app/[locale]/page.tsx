@@ -61,8 +61,10 @@ export default function HomePage() {
   const fetchedCount = useRef(0);
   const { createWorld, autoWorlds, fetchAutoWorlds, worldTags, tagFilter, setTagFilter } = useSimulationStore();
   const createHintText = locale === "ko" ? "팁: 빠르게 생성하려면 Ctrl/Cmd + Enter" : "Tip: Press Ctrl/Cmd + Enter to create quickly.";
-  const shortcutHintText = locale === "ko" ? "단축키: Ctrl/Cmd + B(북마크 열기), Ctrl/Cmd + R(예시 회전)" : "Shortcuts: Ctrl/Cmd + B (open bookmarks), Ctrl/Cmd + R (rotate example).";
-  const { setDrawerOpen } = useBookmarkStore();
+  const shortcutHintText = locale === "ko"
+    ? "단축키: Ctrl/Cmd + B(북마크 토글), Ctrl/Cmd + R(예시 회전)"
+    : "Shortcuts: Ctrl/Cmd + B (toggle bookmarks), Ctrl/Cmd + R (rotate example).";
+  const { setDrawerOpen, drawerOpen } = useBookmarkStore();
   const { fetchNode } = useTaxonomyStore();
   const [taxonomyWorldFilter, setTaxonomyWorldFilter] = useState<string | null>(null);
   const [taxonomyWorlds, setTaxonomyWorlds] = useState<Array<{ id: string; seed_prompt: string; status: string }>>([]);
@@ -222,8 +224,8 @@ export default function HomePage() {
 
     if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "b") {
       event.preventDefault();
-      setDrawerOpen(true);
-      setToast("Bookmarks drawer opened");
+      setDrawerOpen(!drawerOpen);
+      setToast(drawerOpen ? "Bookmarks drawer closed" : "Bookmarks drawer opened");
       setTimeout(() => setToast(null), 1600);
     }
 
@@ -233,7 +235,7 @@ export default function HomePage() {
       setToast("Example rotated");
       setTimeout(() => setToast(null), 1000);
     }
-  }, [handleExampleRotate, setDrawerOpen, setToast]);
+  }, [drawerOpen, handleExampleRotate, setDrawerOpen, setToast]);
 
   useEffect(() => {
     if (typeof document === "undefined") return;
