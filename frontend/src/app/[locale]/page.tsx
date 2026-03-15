@@ -14,6 +14,7 @@ import { LocaleToggle } from "@/components/LocaleToggle";
 import { useTaxonomyStore } from "@/stores/taxonomy";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3301";
+const MAX_SEED_PROMPT_LENGTH = 2000;
 
 const INITIAL_EXAMPLES = [
   "Neon Joseon — 1700년대 조선이 증기기관을 발명한 대체역사. 왕실, 상인 길드, 비밀 학자 결사, 농민 반란군이 권력을 두고 경쟁한다.",
@@ -337,12 +338,19 @@ export default function HomePage() {
 
         <textarea
           value={seedPrompt}
-          onChange={(e) => setSeedPrompt(e.target.value)}
+          onChange={(e) => setSeedPrompt(e.target.value.slice(0, MAX_SEED_PROMPT_LENGTH))}
           onKeyDown={handleSeedKeyDown}
           placeholder={t("world.seedPlaceholder")}
           aria-label={t("world.seedPlaceholder")}
+          aria-describedby="seed-prompt-counter"
+          maxLength={MAX_SEED_PROMPT_LENGTH}
           className="w-full h-32 bg-void-light border border-hud-border rounded-lg p-4 text-hud-text placeholder-hud-muted focus:border-accent focus:outline-none resize-none"
         />
+        <p id="seed-prompt-counter" className="text-[11px] text-hud-label">
+          {locale === "ko"
+            ? `글자 수: ${seedPrompt.length}/${MAX_SEED_PROMPT_LENGTH}`
+            : `Characters: ${seedPrompt.length}/${MAX_SEED_PROMPT_LENGTH}`}
+        </p>
         <p className="text-[11px] text-hud-label">
           {createHintText}
         </p>
