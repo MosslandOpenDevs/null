@@ -8,8 +8,13 @@ export function LocaleToggle() {
 
   const otherLocale = locale === "ko" ? "en" : "ko";
   const toggleLabel = locale === "ko" ? "Switch to English" : "한국어로 전환";
-  // Replace /{locale}/ prefix in pathname
-  const newPath = pathname.replace(`/${locale}`, `/${otherLocale}`);
+  const normalizedPath = pathname.startsWith(`/${locale}`)
+    ? pathname
+    : `/${locale}${pathname}`;
+  const safePath = normalizedPath.replace(new RegExp(`^/${locale}(?=/|$)`), `/${otherLocale}`);
+
+  // Replace /{locale} prefix in pathname
+  const newPath = safePath;
 
   return (
     <a
