@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useParams } from "next/navigation";
 import { useSimulationStore } from "@/stores/simulation";
@@ -29,6 +29,7 @@ export function CommandPalette() {
     global: [],
     taxonomy: [],
   });
+  const previousBodyOverflowRef = useRef<string>("");
   const modeMeta = {
     local: { label: "LOCAL", hint: "Search agents and wiki in the current world", shortcut: "Alt+1" },
     global: { label: "GLOBAL", hint: "Search entities across worlds", shortcut: "Alt+2" },
@@ -43,6 +44,19 @@ export function CommandPalette() {
     }
     return "Ctrl+K";
   }, []);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    previousBodyOverflowRef.current = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousBodyOverflowRef.current;
+    };
+  }, [open]);
 
   const persistRecentQuery = useCallback((value: string, selectedMode = mode) => {
     const normalizedQuery = value.trim();
