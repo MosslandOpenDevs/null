@@ -39,7 +39,7 @@ export function KnowledgeHub() {
                 setIntelTab(tab.id);
               }}
               className={`px-4 py-2.5 font-mono text-sm uppercase tracking-[0.15em] transition-colors border-b-2 ${
-                tab.id === "feed"
+                activeTab === tab.id
                   ? "text-accent border-accent"
                   : "text-hud-muted border-transparent hover:text-hud-text"
               }`}
