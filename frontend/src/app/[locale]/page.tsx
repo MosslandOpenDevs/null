@@ -160,8 +160,18 @@ export default function HomePage() {
     setSeedPrompt(examples[exampleIndex % examples.length]);
   };
 
+  const skipLabel = locale === "ko" ? "본문으로 이동" : "Skip to main content";
+
   return (
-    <main className="flex flex-col items-center min-h-screen p-8">
+    <>
+      <a
+        href="#main-content"
+        className="sr-only absolute left-4 top-4 z-50 rounded border border-hud-border bg-void-light px-3 py-1.5 text-xs uppercase tracking-wider text-hud-text transition-all focus:not-sr-only focus-visible:bg-hud-text focus-visible:text-void"
+        aria-label={skipLabel}
+      >
+        {skipLabel}
+      </a>
+      <main id="main-content" className="flex flex-col items-center min-h-screen p-8">
       <div className="fixed top-4 right-4 z-40">
         <LocaleToggle />
       </div>
@@ -357,5 +367,6 @@ export default function HomePage() {
         BOOKMARKS
       </button>
     </main>
+    </>
   );
 }
