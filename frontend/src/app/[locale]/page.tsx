@@ -1,7 +1,14 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useState, useEffect, useRef, useMemo, type KeyboardEvent } from "react";
+import {
+  useState,
+  useEffect,
+  useRef,
+  useMemo,
+  useCallback,
+  type KeyboardEvent as ReactKeyboardEvent,
+} from "react";
 import { useParams } from "next/navigation";
 import { useSimulationStore, WorldData } from "@/stores/simulation";
 import { CommandPalette } from "@/components/CommandPalette";
@@ -54,6 +61,7 @@ export default function HomePage() {
   const fetchedCount = useRef(0);
   const { createWorld, autoWorlds, fetchAutoWorlds, worldTags, tagFilter, setTagFilter } = useSimulationStore();
   const createHintText = locale === "ko" ? "팁: 빠르게 생성하려면 Ctrl/Cmd + Enter" : "Tip: Press Ctrl/Cmd + Enter to create quickly.";
+  const shortcutHintText = locale === "ko" ? "단축키: Ctrl/Cmd + B(북마크 열기), Ctrl/Cmd + R(예시 회전)" : "Shortcuts: Ctrl/Cmd + B (open bookmarks), Ctrl/Cmd + R (rotate example).";
   const { setDrawerOpen } = useBookmarkStore();
   const { fetchNode } = useTaxonomyStore();
   const [taxonomyWorldFilter, setTaxonomyWorldFilter] = useState<string | null>(null);
@@ -166,6 +174,10 @@ export default function HomePage() {
     return () => clearInterval(interval);
   }, [fetchAutoWorlds]);
 
+  const handleExampleRotate = useCallback(() => {
+    setSeedPrompt(examples[exampleIndex % examples.length]);
+  }, [exampleIndex, examples]);
+
   const handleCreate = async () => {
     if (!seedPrompt.trim()) return;
     setCreating(true);
@@ -191,7 +203,7 @@ export default function HomePage() {
     seedPromptInputRef.current?.focus();
   };
 
-  const handleSeedKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+  const handleSeedKeyDown = (event: ReactKeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
       event.preventDefault();
       handleCreate();
@@ -199,8 +211,36 @@ export default function HomePage() {
   };
 
   const handleExampleClick = () => {
-    setSeedPrompt(examples[exampleIndex % examples.length]);
+    handleExampleRotate();
   };
+
+  const handleGlobalKeyDown = useCallback((event: globalThis.KeyboardEvent) => {
+    const activeTag = (event.target as HTMLElement | null)?.tagName;
+    const isEditing = activeTag ? ["INPUT", "TEXTAREA", "SELECT"].includes(activeTag) : false;
+
+    if (isEditing) return;
+
+    if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "b") {
+      event.preventDefault();
+      setDrawerOpen(true);
+      setToast("Bookmarks drawer opened");
+      setTimeout(() => setToast(null), 1600);
+    }
+
+    if (event.key.toLowerCase() === "r" && (event.metaKey || event.ctrlKey)) {
+      event.preventDefault();
+      handleExampleRotate();
+      setToast("Example rotated");
+      setTimeout(() => setToast(null), 1000);
+    }
+  }, [handleExampleRotate, setDrawerOpen, setToast]);
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+
+    document.addEventListener("keydown", handleGlobalKeyDown);
+    return () => document.removeEventListener("keydown", handleGlobalKeyDown);
+  }, [handleGlobalKeyDown]);
 
   const isSeedNearLimit = seedPrompt.length >= Math.floor(MAX_SEED_PROMPT_LENGTH * 0.9);
 
@@ -415,6 +455,9 @@ export default function HomePage() {
         </p>
         <p className="text-[11px] text-hud-label">
           {createHintText}
+        </p>
+        <p className="text-[11px] text-hud-label">
+          {shortcutHintText}
         </p>
         <div className="flex flex-wrap gap-2">
           <button
