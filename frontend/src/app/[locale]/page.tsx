@@ -45,6 +45,7 @@ export default function HomePage() {
   const [seedPrompt, setSeedPrompt] = useState("");
   const [creating, setCreating] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const seedPromptInputRef = useRef<HTMLTextAreaElement | null>(null);
   const [examples, setExamples] = useState<string[]>(INITIAL_EXAMPLES);
   const [exampleIndex, setExampleIndex] = useState(0);
   const [displayedExample, setDisplayedExample] = useState("");
@@ -148,6 +149,13 @@ export default function HomePage() {
     } finally {
       setCreating(false);
     }
+  };
+
+  const handleSeedClear = () => {
+    setSeedPrompt("");
+    setToast("Seed prompt cleared");
+    setTimeout(() => setToast(null), 1200);
+    seedPromptInputRef.current?.focus();
   };
 
   const handleSeedKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -337,6 +345,7 @@ export default function HomePage() {
         </button>
 
         <textarea
+          ref={seedPromptInputRef}
           value={seedPrompt}
           onChange={(e) => setSeedPrompt(e.target.value.slice(0, MAX_SEED_PROMPT_LENGTH))}
           onKeyDown={handleSeedKeyDown}
@@ -354,13 +363,22 @@ export default function HomePage() {
         <p className="text-[11px] text-hud-label">
           {createHintText}
         </p>
-        <button
-          onClick={handleCreate}
-          disabled={creating || !seedPrompt.trim()}
-          className="w-full py-3 bg-accent hover:bg-accent/80 disabled:opacity-50 rounded-lg font-semibold transition-colors"
-        >
-          {creating ? "Queuing genesis..." : t("world.create")}
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={handleCreate}
+            disabled={creating || !seedPrompt.trim()}
+            className="flex-1 py-3 bg-accent hover:bg-accent/80 disabled:opacity-50 rounded-lg font-semibold transition-colors"
+          >
+            {creating ? "Queuing genesis..." : t("world.create")}
+          </button>
+          <button
+            onClick={handleSeedClear}
+            disabled={!seedPrompt.trim()}
+            className="px-4 py-3 border border-hud-border rounded-lg font-semibold uppercase tracking-wider text-hud-label hover:border-hud-border-active hover:text-accent disabled:opacity-50 transition-colors"
+          >
+            CLEAR
+          </button>
+        </div>
       </div>
 
       <CommandPalette />
