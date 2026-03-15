@@ -234,3 +234,35 @@ async def health():
         "version": app.version,
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }
+
+
+@app.get("/health/live")
+async def health_live():
+    return {
+        "status": "ok",
+        "service": "NULL Engine",
+        "version": app.version,
+        "mode": "live",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+
+
+@app.get("/health/ready")
+async def health_ready():
+    return {
+        "status": "ok",
+        "service": "NULL Engine",
+        "version": app.version,
+        "mode": "ready",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+
+
+@app.get("/ping")
+async def ping():
+    return {
+        "ok": True,
+        "service": "NULL Engine",
+        "version": app.version,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
