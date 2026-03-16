@@ -36,7 +36,7 @@ export function CommandPalette() {
     taxonomy: { label: "TAXONOMY", hint: "Jump into category clusters", shortcut: "Alt+3" },
   } as const;
   const { agents, wikiPages, setSelectedAgent, setIntelTab } = useSimulationStore();
-  const { searchResults, searching, globalSearch } = useMultiverseStore();
+  const { searchResults, searching, globalSearch, setGlobalSearchResults } = useMultiverseStore();
   const { rootNodes, fetchTree } = useTaxonomyStore();
   const shortcutLabel = useMemo(() => {
     if (typeof navigator !== "undefined" && /mac/i.test(navigator.platform)) {
@@ -132,7 +132,11 @@ export function CommandPalette() {
       const timer = setTimeout(() => globalSearch(query), 300);
       return () => clearTimeout(timer);
     }
-  }, [query, mode, globalSearch]);
+
+    if (mode === "global") {
+      setGlobalSearchResults([]);
+    }
+  }, [query, mode, globalSearch, setGlobalSearchResults]);
 
   // Fetch taxonomy when mode changes
   useEffect(() => {

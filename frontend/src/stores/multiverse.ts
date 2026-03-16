@@ -79,6 +79,7 @@ interface MultiverseState {
   fetchWorldNeighbors: (worldId: string, minStrength?: number) => Promise<void>;
   fetchWorldMap: (minStrength?: number, minCount?: number) => Promise<void>;
   globalSearch: (query: string) => Promise<void>;
+  setGlobalSearchResults: (results: GlobalSearchResult[]) => void;
 }
 
 export const useMultiverseStore = create<MultiverseState>((set) => ({
@@ -161,4 +162,5 @@ export const useMultiverseStore = create<MultiverseState>((set) => ({
       set({ searching: false });
     }
   },
+  setGlobalSearchResults: (results: GlobalSearchResult[]) => set({ searchResults: results }),
 }));
