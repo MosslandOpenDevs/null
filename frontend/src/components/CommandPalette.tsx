@@ -337,6 +337,11 @@ export function CommandPalette() {
     setActiveIndex((current) => Math.min(current, navigableResults.length - 1));
   }, [navigableResults]);
 
+  const clearQuery = useCallback(() => {
+    setQuery("");
+    setActiveIndex(0);
+  }, []);
+
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       const typingTarget = isTypingTarget(e.target);
@@ -351,7 +356,11 @@ export function CommandPalette() {
 
       if (e.key === "Escape" && open) {
         e.preventDefault();
-        closePalette();
+        if (query.length > 0) {
+          clearQuery();
+        } else {
+          closePalette();
+        }
         return;
       }
 
@@ -403,7 +412,7 @@ export function CommandPalette() {
         navigableResults[activeIndex]?.onSelect();
       }
     },
-    [activeIndex, closePalette, emptyStateActions, navigableResults, open, persistRecentQuery, query]
+    [activeIndex, clearQuery, closePalette, emptyStateActions, navigableResults, open, persistRecentQuery, query]
   );
 
   useEffect(() => {
