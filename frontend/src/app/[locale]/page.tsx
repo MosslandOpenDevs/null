@@ -53,6 +53,7 @@ export default function HomePage() {
   const [seedPrompt, setSeedPrompt] = useState("");
   const [creating, setCreating] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [restoredDraft, setRestoredDraft] = useState(false);
   const seedPromptInputRef = useRef<HTMLTextAreaElement | null>(null);
   const [examples, setExamples] = useState<string[]>(INITIAL_EXAMPLES);
   const [exampleIndex, setExampleIndex] = useState(0);
@@ -92,6 +93,7 @@ export default function HomePage() {
     const saved = window.localStorage.getItem(SEED_DRAFT_STORAGE_KEY);
     if (saved) {
       setSeedPrompt(saved.slice(0, MAX_SEED_PROMPT_LENGTH));
+      setRestoredDraft(true);
     }
   }, []);
 
@@ -178,6 +180,7 @@ export default function HomePage() {
 
   const handleExampleRotate = useCallback(() => {
     setSeedPrompt(examples[exampleIndex % examples.length]);
+    setRestoredDraft(false);
   }, [exampleIndex, examples]);
 
   const handleCreate = async () => {
@@ -187,6 +190,7 @@ export default function HomePage() {
       const created = await createWorld(seedPrompt);
       if (created) {
         setSeedPrompt("");
+        setRestoredDraft(false);
         window.localStorage.removeItem(SEED_DRAFT_STORAGE_KEY);
         setToast("World queued — check the Incubator");
       } else {
@@ -200,6 +204,7 @@ export default function HomePage() {
 
   const handleSeedClear = () => {
     setSeedPrompt("");
+    setRestoredDraft(false);
     setToast("Seed prompt cleared");
     setTimeout(() => setToast(null), 1200);
     seedPromptInputRef.current?.focus();
@@ -438,7 +443,10 @@ export default function HomePage() {
         <textarea
           ref={seedPromptInputRef}
           value={seedPrompt}
-          onChange={(e) => setSeedPrompt(e.target.value.slice(0, MAX_SEED_PROMPT_LENGTH))}
+          onChange={(e) => {
+            setSeedPrompt(e.target.value.slice(0, MAX_SEED_PROMPT_LENGTH));
+            setRestoredDraft(false);
+          }}
           onKeyDown={handleSeedKeyDown}
           placeholder={t("world.seedPlaceholder")}
           aria-label={t("world.seedPlaceholder")}
@@ -446,6 +454,11 @@ export default function HomePage() {
           maxLength={MAX_SEED_PROMPT_LENGTH}
           className="w-full h-32 bg-void-light border border-hud-border rounded-lg p-4 text-hud-text placeholder-hud-muted focus:border-accent focus:outline-none resize-none"
         />
+        {restoredDraft && (
+          <p className="text-[11px] text-cyan-300" role="status" aria-live="polite">
+            {locale === "ko" ? "임시 입력값을 복원했습니다. 수정하거나 계속 작성해 저장할 수 있어요." : "Draft restored from your previous session. Edit or continue writing to confirm it."}
+          </p>
+        )}
         <p
           id="seed-prompt-counter"
           className={`text-[11px] ${isSeedNearLimit ? "text-amber-300" : "text-hud-label"}`}
