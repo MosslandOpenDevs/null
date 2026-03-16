@@ -234,6 +234,24 @@ export function CommandPalette() {
       ? taxonomyResults
       : globalResults;
 
+  const modeResultCounts = useMemo(
+    () => ({
+      local: localResults.length,
+      taxonomy: filteredNodes.length,
+      global: globalResults.length,
+    }),
+    [filteredNodes.length, globalResults.length, localResults.length]
+  );
+
+  const modeResultLabels = useMemo(
+    () => ({
+      local: `${modeResultCounts.local} local ${modeResultCounts.local === 1 ? "result" : "results"}`,
+      taxonomy: `${modeResultCounts.taxonomy} taxonomy ${modeResultCounts.taxonomy === 1 ? "node" : "nodes"}`,
+      global: `${modeResultCounts.global} global ${modeResultCounts.global === 1 ? "result" : "results"}`,
+    }),
+    [modeResultCounts]
+  );
+
   const resultsSummary = useMemo(() => {
     if (mode === "global") {
       if (query.length < 2) return "Type 2+ characters to search across worlds";
@@ -412,11 +430,12 @@ export function CommandPalette() {
             onClick={() => setMode("local")}
             title={`${modeMeta.local.label} · ${modeMeta.local.shortcut}`}
             aria-selected={mode === "local"}
+            aria-label={`Local mode, ${modeResultLabels.local}`}
             className={`flex-1 py-1.5 font-mono text-sm uppercase tracking-[0.15em] ${
               mode === "local" ? "text-accent border-b border-accent" : "text-hud-muted"
             }`}
           >
-            LOCAL (THIS WORLD)
+            LOCAL (${modeResultCounts.local})
           </button>
           <button
             type="button"
@@ -424,11 +443,12 @@ export function CommandPalette() {
             onClick={() => setMode("global")}
             title={`${modeMeta.global.label} · ${modeMeta.global.shortcut}`}
             aria-selected={mode === "global"}
+            aria-label={`Global mode, ${modeResultLabels.global}`}
             className={`flex-1 py-1.5 font-mono text-sm uppercase tracking-[0.15em] ${
               mode === "global" ? "text-accent border-b border-accent" : "text-hud-muted"
             }`}
           >
-            GLOBAL
+            GLOBAL (${modeResultCounts.global})
           </button>
           <button
             type="button"
@@ -436,11 +456,12 @@ export function CommandPalette() {
             onClick={() => setMode("taxonomy")}
             title={`${modeMeta.taxonomy.label} · ${modeMeta.taxonomy.shortcut}`}
             aria-selected={mode === "taxonomy"}
+            aria-label={`Taxonomy mode, ${modeResultLabels.taxonomy}`}
             className={`flex-1 py-1.5 font-mono text-sm uppercase tracking-[0.15em] ${
               mode === "taxonomy" ? "text-accent border-b border-accent" : "text-hud-muted"
             }`}
           >
-            TAXONOMY
+            TAXONOMY (${modeResultCounts.taxonomy})
           </button>
         </div>
 
