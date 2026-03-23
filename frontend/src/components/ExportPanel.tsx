@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { useState } from "react";
 import { useSimulationStore } from "@/stores/simulation";
 
@@ -21,6 +22,26 @@ export function ExportPanel({ open, onClose }: ExportPanelProps) {
   const [selectedType, setSelectedType] = useState("wiki");
   const [selectedFormat, setSelectedFormat] = useState("md");
   const [exporting, setExporting] = useState(false);
+  const closeButtonRef = useRef<HTMLButtonElement | null>(null);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        if (!exporting) {
+          onClose();
+        }
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    closeButtonRef.current?.focus();
+
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [exporting, onClose, open]);
 
   if (!open || !world) return null;
 
@@ -36,8 +57,12 @@ export function ExportPanel({ open, onClose }: ExportPanelProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/70" onClick={onClose} />
+    <div className="fixed inset-0 z-50 flex items-center justify-center" role="dialog" aria-modal="true" aria-label="Export world data dialog">
+      <div className="absolute inset-0 bg-black/70" onClick={() => {
+        if (!exporting) {
+          onClose();
+        }
+      }} />
       <div className="relative w-full max-w-md bg-void-light border border-hud-border p-6 space-y-4">
         <div className="corner-mark corner-mark-tl" />
         <div className="corner-mark corner-mark-tr" />
@@ -102,17 +127,20 @@ export function ExportPanel({ open, onClose }: ExportPanelProps) {
         </div>
 
         {/* Actions */}
-        <div className="flex gap-2 pt-2">
+        <div className="flex gap-2 pt-2" role="status" aria-live="polite">
           <button
             onClick={handleExport}
             disabled={exporting}
             className="flex-1 py-2 bg-accent hover:bg-accent/80 disabled:opacity-50 font-mono text-[13px] uppercase tracking-wider transition-colors"
+            aria-label={exporting ? "Export in progress" : "Download exported world data"}
           >
             {exporting ? "EXPORTING..." : "DOWNLOAD"}
           </button>
           <button
+            ref={closeButtonRef}
             onClick={onClose}
-            className="px-4 py-2 border border-hud-border text-hud-muted hover:text-hud-text font-mono text-[13px] uppercase tracking-wider transition-colors"
+            disabled={exporting}
+            className="px-4 py-2 border border-hud-border text-hud-muted hover:text-hud-text font-mono text-[13px] uppercase tracking-wider transition-colors disabled:opacity-50"
           >
             CLOSE
           </button>
