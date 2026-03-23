@@ -16,6 +16,9 @@ export function ExportTab() {
   const [selectedType, setSelectedType] = useState("wiki");
   const [selectedFormat, setSelectedFormat] = useState("md");
   const [exporting, setExporting] = useState(false);
+  const typeHelpId = "export-tab-type-help";
+  const formatHelpId = "export-tab-format-help";
+  const statusHelpId = "export-tab-status";
 
   if (!world) return null;
 
@@ -43,7 +46,10 @@ export function ExportTab() {
         <div className="font-mono text-sm uppercase tracking-[0.15em] text-hud-label mb-2">
           DATA TYPE
         </div>
-        <div className="grid grid-cols-3 gap-1">
+        <p id={typeHelpId} className="mb-2 font-mono text-[11px] text-hud-muted">
+          Choose which world data to include in the export package.
+        </p>
+        <div className="grid grid-cols-3 gap-1" role="group" aria-describedby={typeHelpId}>
           {EXPORT_TYPES.map((type) => (
             <button
               key={type.id}
@@ -51,6 +57,7 @@ export function ExportTab() {
                 setSelectedType(type.id);
                 setSelectedFormat(type.formats[0]);
               }}
+              aria-pressed={selectedType === type.id}
               className={`font-mono text-[13px] px-2 py-1.5 border transition-colors ${
                 selectedType === type.id
                   ? "border-accent text-accent"
@@ -68,11 +75,15 @@ export function ExportTab() {
         <div className="font-mono text-sm uppercase tracking-[0.15em] text-hud-label mb-2">
           FORMAT
         </div>
-        <div className="flex gap-2">
+        <p id={formatHelpId} className="mb-2 font-mono text-[11px] text-hud-muted">
+          Available formats update based on the selected data type.
+        </p>
+        <div className="flex gap-2" role="group" aria-describedby={formatHelpId}>
           {currentType.formats.map((fmt) => (
             <button
               key={fmt}
               onClick={() => setSelectedFormat(fmt)}
+              aria-pressed={selectedFormat === fmt}
               className={`font-mono text-[13px] px-3 py-1 border transition-colors ${
                 selectedFormat === fmt
                   ? "border-accent text-accent"
@@ -85,9 +96,16 @@ export function ExportTab() {
         </div>
       </div>
 
+      <div id={statusHelpId} className="font-mono text-[11px] text-hud-muted" role="status" aria-live="polite">
+        {exporting
+          ? `Preparing ${currentType.label} as ${selectedFormat.toUpperCase()}.`
+          : `Ready to export ${currentType.label} as ${selectedFormat.toUpperCase()}.`}
+      </div>
+
       <button
         onClick={handleExport}
         disabled={exporting}
+        aria-describedby={statusHelpId}
         className="py-2 px-6 bg-accent hover:bg-accent/80 disabled:opacity-50 font-mono text-[13px] uppercase tracking-wider transition-colors"
       >
         {exporting ? "EXPORTING..." : "DOWNLOAD"}
