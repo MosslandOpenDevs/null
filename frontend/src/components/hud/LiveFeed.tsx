@@ -7,8 +7,12 @@ import { CornerMark } from "./CornerMark";
 function useCopyToast() {
   const [toast, setToast] = useState<string | null>(null);
   const copy = useCallback(async (text: string) => {
-    await navigator.clipboard.writeText(text);
-    setToast("Copied!");
+    try {
+      await navigator.clipboard.writeText(text);
+      setToast("Copied!");
+    } catch {
+      setToast("Copy failed");
+    }
     setTimeout(() => setToast(null), 1200);
   }, []);
   return { toast, copy };
@@ -221,14 +225,19 @@ export function LiveFeed() {
               <span className="text-hud-text">{item.content}</span>
               <button
                 onClick={() => copy(`${item.agentName}: ${item.content}`)}
-                className="ml-1 opacity-0 group-hover:opacity-100 text-[11px] text-hud-muted hover:text-accent transition-opacity"
+                className="ml-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 text-[11px] text-hud-muted hover:text-accent transition-opacity"
                 title="Copy message"
+                aria-label={`Copy message from ${item.agentName ?? "agent"}`}
               >
                 📋
               </button>
             </div>
           );
         })}
+      </div>
+
+      <div className="sr-only" role="status" aria-live="polite">
+        {toast ?? ""}
       </div>
 
       {/* Copy toast */}
