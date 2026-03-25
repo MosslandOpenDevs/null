@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useLocale } from "next-intl";
 import { useSimulationStore } from "@/stores/simulation";
 import { AgentAvatar } from "@/components/AgentAvatar";
@@ -30,19 +30,26 @@ const TYPE_COLOR: Record<string, string> = {
 
 function useCopy() {
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
-  const copy = async (text: string, idx: number) => {
+  const [copiedLabel, setCopiedLabel] = useState<string>("");
+
+  const copy = async (text: string, idx: number, label: string) => {
     await navigator.clipboard.writeText(text);
     setCopiedIdx(idx);
-    setTimeout(() => setCopiedIdx(null), 1200);
+    setCopiedLabel(label);
+    setTimeout(() => {
+      setCopiedIdx(null);
+      setCopiedLabel("");
+    }, 1200);
   };
-  return { copiedIdx, copy };
+
+  return { copiedIdx, copiedLabel, copy };
 }
 
 export function LogTab() {
   const locale = useLocale();
   const { events, agents, factions } = useSimulationStore();
   const [filter, setFilter] = useState<string>("all");
-  const { copiedIdx, copy } = useCopy();
+  const { copiedIdx, copiedLabel, copy } = useCopy();
 
   const filtered = filter === "all"
     ? events
@@ -50,24 +57,45 @@ export function LogTab() {
 
   // Show most recent first
   const displayed = [...filtered].reverse().slice(0, 100);
+  const filterResultLabel = useMemo(() => {
+    const filterName = filter === "all" ? "all events" : `${filter} events`;
+    return `Showing ${displayed.length} of ${filtered.length} ${filterName}`;
+  }, [displayed.length, filter, filtered.length]);
 
   return (
     <div className="flex flex-col h-full">
+      <div className="sr-only" role="status" aria-live="polite">
+        {filterResultLabel}
+        {copiedLabel ? `, copied ${copiedLabel}` : ""}
+      </div>
+
       {/* Filter bar */}
-      <div className="flex flex-wrap gap-1 p-2 border-b border-hud-border">
-        {EVENT_TYPES.map((type) => (
-          <button
-            key={type}
-            onClick={() => setFilter(type)}
-            className={`font-mono text-sm uppercase px-1.5 py-0.5 border transition-colors ${
-              filter === type
-                ? "border-accent text-accent"
-                : "border-hud-border text-hud-muted hover:text-hud-text"
-            }`}
-          >
-            {type === "all" ? "ALL" : type.split(".")[1]}
-          </button>
-        ))}
+      <div className="flex flex-wrap gap-1 p-2 border-b border-hud-border" role="tablist" aria-label="Log event filters">
+        {EVENT_TYPES.map((type) => {
+          const isActive = filter === type;
+          const shortLabel = type === "all" ? "ALL" : type.split(".")[1];
+          const resultCount = type === "all"
+            ? events.length
+            : events.filter((event) => event.type === type).length;
+
+          return (
+            <button
+              key={type}
+              type="button"
+              onClick={() => setFilter(type)}
+              role="tab"
+              aria-selected={isActive}
+              aria-label={`${shortLabel} filter, ${resultCount} events`}
+              className={`font-mono text-sm uppercase px-1.5 py-0.5 border transition-colors ${
+                isActive
+                  ? "border-accent text-accent"
+                  : "border-hud-border text-hud-muted hover:text-hud-text"
+              }`}
+            >
+              {shortLabel}
+            </button>
+          );
+        })}
       </div>
 
       {/* Log entries */}
@@ -85,12 +113,15 @@ export function LogTab() {
             second: "2-digit",
           });
           const summary = getSummary(event, locale);
+          const copyLabel = `${event.type} event at ${time}`;
 
           return (
-            <div
+            <button
               key={i}
-              className="font-mono text-sm flex gap-2 group cursor-pointer hover:bg-accent/5"
-              onClick={() => copy(`[${time}] ${event.type}: ${summary}`, i)}
+              type="button"
+              className="w-full text-left font-mono text-sm flex gap-2 group cursor-pointer hover:bg-accent/5 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent"
+              onClick={() => copy(`[${time}] ${event.type}: ${summary}`, i, copyLabel)}
+              aria-label={`Copy ${copyLabel}: ${summary}`}
             >
               {event.type === "agent.message" && (() => {
                 const agentId = event.payload.agent_id as string;
@@ -103,10 +134,10 @@ export function LogTab() {
                 {event.type.split(".")[1]}
               </span>
               <span className="text-hud-muted truncate flex-1">{summary}</span>
-              <span className="text-sm text-hud-label opacity-0 group-hover:opacity-100 flex-shrink-0">
+              <span className="text-sm text-hud-label opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 flex-shrink-0" aria-hidden="true">
                 {copiedIdx === i ? "COPIED" : "📋"}
               </span>
-            </div>
+            </button>
           );
         })}
       </div>
