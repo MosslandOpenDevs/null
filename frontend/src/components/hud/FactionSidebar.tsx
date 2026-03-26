@@ -83,59 +83,61 @@ export function FactionSidebar() {
           return (
             <div
               key={faction.id}
-              className="relative p-2 border border-hud-border cursor-pointer transition-colors hover:border-hud-border-active focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 focus-visible:ring-offset-2 focus-visible:ring-offset-void-light"
+              className="relative p-2 border border-hud-border transition-colors hover:border-hud-border-active"
               style={{
                 borderColor: isSelected ? faction.color + "80" : undefined,
                 backgroundColor: isSelected ? faction.color + "08" : undefined,
               }}
-              role="button"
-              tabIndex={0}
-              aria-expanded={isSelected}
-              aria-controls={`faction-agents-${faction.id}`}
-              aria-label={`${isSelected ? "Collapse" : "Expand"} ${faction.name} faction details`}
-              onClick={() => toggleFaction(faction.id)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  toggleFaction(faction.id);
-                }
-              }}
             >
               <CornerMark />
-              {/* Faction header */}
-              <div className="flex items-center gap-2 mb-1">
-                <span
-                  className="w-2 h-2 rounded-full flex-shrink-0"
-                  style={{ backgroundColor: faction.color }}
-                />
-                <span className="font-mono text-base text-hud-text truncate">
-                  {faction.name}
-                </span>
-                <span className="font-mono text-sm text-hud-muted ml-auto">
-                  {faction.agent_count}
-                </span>
-              </div>
+              <button
+                type="button"
+                className="w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 focus-visible:ring-offset-2 focus-visible:ring-offset-void-light"
+                aria-expanded={isSelected}
+                aria-controls={`faction-agents-${faction.id}`}
+                aria-label={`${isSelected ? "Collapse" : "Expand"} ${faction.name} faction details`}
+                onClick={() => toggleFaction(faction.id)}
+              >
+                {/* Faction header */}
+                <div className="flex items-center gap-2 mb-1">
+                  <span
+                    className="w-2 h-2 rounded-full flex-shrink-0"
+                    style={{ backgroundColor: faction.color }}
+                  />
+                  <span className="font-mono text-base text-hud-text truncate">
+                    {faction.name}
+                  </span>
+                  <span className="font-mono text-sm text-hud-muted ml-auto">
+                    {faction.agent_count}
+                  </span>
+                </div>
 
-              {/* Power bar */}
-              <div className="h-1 bg-void rounded-full overflow-hidden mb-1">
-                <div
-                  className="h-full rounded-full transition-all"
-                  style={{
-                    width: `${power}%`,
-                    backgroundColor: faction.color + "80",
-                  }}
-                />
-              </div>
+                {/* Power bar */}
+                <div className="h-1 bg-void rounded-full overflow-hidden mb-1">
+                  <div
+                    className="h-full rounded-full transition-all"
+                    style={{
+                      width: `${power}%`,
+                      backgroundColor: faction.color + "80",
+                    }}
+                  />
+                </div>
+              </button>
 
               {/* Agent list (shown when selected) */}
               {isSelected && factionAgents.length > 0 && (
-                <div id={`faction-agents-${faction.id}`} className="mt-2 space-y-0.5">
+                <div
+                  id={`faction-agents-${faction.id}`}
+                  className="mt-2 space-y-0.5"
+                  role="region"
+                  aria-label={`${faction.name} agents`}
+                >
                   {factionAgents.map((agent) => (
                     <button
                       key={agent.id}
+                      type="button"
                       className="w-full text-left px-1 py-0.5 text-[13px] font-mono text-hud-muted hover:text-hud-text transition-colors truncate"
-                      onClick={(e) => {
-                        e.stopPropagation();
+                      onClick={() => {
                         setSelectedAgent(agent.id);
                         setIntelTab("agent");
                       }}
