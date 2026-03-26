@@ -7,6 +7,10 @@ export function FactionSidebar() {
   const { factions, agents, relationships, selectedFaction, setSelectedFaction, setSelectedAgent, setIntelTab } =
     useSimulationStore();
 
+  const toggleFaction = (factionId: string) => {
+    setSelectedFaction(selectedFaction === factionId ? null : factionId);
+  };
+
   // Derive factions from world config if API factions are empty
   const world = useSimulationStore((s) => s.world);
   const displayFactions = factions.length > 0
@@ -79,12 +83,23 @@ export function FactionSidebar() {
           return (
             <div
               key={faction.id}
-              className="relative p-2 border border-hud-border cursor-pointer transition-colors hover:border-hud-border-active"
+              className="relative p-2 border border-hud-border cursor-pointer transition-colors hover:border-hud-border-active focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 focus-visible:ring-offset-2 focus-visible:ring-offset-void-light"
               style={{
                 borderColor: isSelected ? faction.color + "80" : undefined,
                 backgroundColor: isSelected ? faction.color + "08" : undefined,
               }}
-              onClick={() => setSelectedFaction(isSelected ? null : faction.id)}
+              role="button"
+              tabIndex={0}
+              aria-expanded={isSelected}
+              aria-controls={`faction-agents-${faction.id}`}
+              aria-label={`${isSelected ? "Collapse" : "Expand"} ${faction.name} faction details`}
+              onClick={() => toggleFaction(faction.id)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  toggleFaction(faction.id);
+                }
+              }}
             >
               <CornerMark />
               {/* Faction header */}
@@ -114,7 +129,7 @@ export function FactionSidebar() {
 
               {/* Agent list (shown when selected) */}
               {isSelected && factionAgents.length > 0 && (
-                <div className="mt-2 space-y-0.5">
+                <div id={`faction-agents-${faction.id}`} className="mt-2 space-y-0.5">
                   {factionAgents.map((agent) => (
                     <button
                       key={agent.id}
