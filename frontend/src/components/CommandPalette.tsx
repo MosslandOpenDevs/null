@@ -256,6 +256,9 @@ export function CommandPalette() {
     [modeResultCounts]
   );
 
+  const modeTabId = `command-mode-tab-${mode}`;
+  const modePanelId = `command-mode-panel-${mode}`;
+
   const resultsSummary = useMemo(() => {
     if (mode === "global") {
       if (query.length < 2) return "Type 2+ characters to search across worlds";
@@ -438,11 +441,14 @@ export function CommandPalette() {
         {/* Mode toggle */}
         <div className="flex border-b border-hud-border" role="tablist" aria-label="Command palette modes">
           <button
+            id="command-mode-tab-local"
             type="button"
             role="tab"
+            tabIndex={mode === "local" ? 0 : -1}
             onClick={() => setMode("local")}
             title={`${modeMeta.local.label} · ${modeMeta.local.shortcut}`}
             aria-selected={mode === "local"}
+            aria-controls="command-mode-panel-local"
             aria-label={`Local mode, ${modeResultLabels.local}`}
             className={`flex-1 py-1.5 font-mono text-sm uppercase tracking-[0.15em] ${
               mode === "local" ? "text-accent border-b border-accent" : "text-hud-muted"
@@ -451,11 +457,14 @@ export function CommandPalette() {
             LOCAL (${modeResultCounts.local})
           </button>
           <button
+            id="command-mode-tab-global"
             type="button"
             role="tab"
+            tabIndex={mode === "global" ? 0 : -1}
             onClick={() => setMode("global")}
             title={`${modeMeta.global.label} · ${modeMeta.global.shortcut}`}
             aria-selected={mode === "global"}
+            aria-controls="command-mode-panel-global"
             aria-label={`Global mode, ${modeResultLabels.global}`}
             className={`flex-1 py-1.5 font-mono text-sm uppercase tracking-[0.15em] ${
               mode === "global" ? "text-accent border-b border-accent" : "text-hud-muted"
@@ -464,11 +473,14 @@ export function CommandPalette() {
             GLOBAL (${modeResultCounts.global})
           </button>
           <button
+            id="command-mode-tab-taxonomy"
             type="button"
             role="tab"
+            tabIndex={mode === "taxonomy" ? 0 : -1}
             onClick={() => setMode("taxonomy")}
             title={`${modeMeta.taxonomy.label} · ${modeMeta.taxonomy.shortcut}`}
             aria-selected={mode === "taxonomy"}
+            aria-controls="command-mode-panel-taxonomy"
             aria-label={`Taxonomy mode, ${modeResultLabels.taxonomy}`}
             className={`flex-1 py-1.5 font-mono text-sm uppercase tracking-[0.15em] ${
               mode === "taxonomy" ? "text-accent border-b border-accent" : "text-hud-muted"
@@ -478,6 +490,12 @@ export function CommandPalette() {
           </button>
         </div>
 
+        <div
+          id={modePanelId}
+          role="tabpanel"
+          aria-labelledby={modeTabId}
+          className="contents"
+        >
         <div className="flex items-center gap-3 border-b border-hud-border px-4 py-2 font-mono text-[11px] uppercase tracking-[0.15em] text-hud-label">
           <span>{t("shortcutLabel")}</span>
           <span className="text-hud-muted">{shortcutLabel} /</span>
@@ -764,6 +782,7 @@ export function CommandPalette() {
             })}
           </div>
         )}
+        </div>
       </div>
     </div>
   );
