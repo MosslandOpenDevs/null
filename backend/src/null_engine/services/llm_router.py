@@ -23,20 +23,20 @@ ROLE_MODEL_MAP: dict[str, tuple[str, str]] = {
     "wiki_writer": ("openai", "gpt-4o"),
 }
 
-# Ollama role → model mapping (local dev)
+# Ollama role → model mapping (remote host)
 OLLAMA_ROLE_MODEL_MAP: dict[str, str] = {
-    "genesis_architect": "qwen2.5:14b",
-    "main_debater": "llama3.2:3b",
-    "reaction_agent": "llama3.2:3b",
-    "chaos_joker": "llama3.2:3b",
-    "searcher": "llama3.2:3b",
-    "librarian": "llama3.2:3b",
-    "translator": "llama3.2:3b",
-    "post_writer": "llama3.2:3b",
-    "wiki_writer": "qwen2.5:14b",
+    "genesis_architect": "gemma4:e4b",
+    "main_debater": "qwen3.5:9b",
+    "reaction_agent": "qwen3.5:4b",
+    "chaos_joker": "qwen3.5:4b",
+    "searcher": "qwen3.5:4b",
+    "librarian": "qwen3.5:4b",
+    "translator": "qwen3.5:4b",
+    "post_writer": "qwen3.5:9b",
+    "wiki_writer": "gemma4:e4b",
 }
 
-OLLAMA_DEFAULT_MODEL = "llama3.2:3b"
+OLLAMA_DEFAULT_MODEL = "qwen3.5:4b"
 
 
 class LLMRouter:
