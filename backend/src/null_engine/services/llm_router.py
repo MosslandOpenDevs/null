@@ -23,20 +23,23 @@ ROLE_MODEL_MAP: dict[str, tuple[str, str]] = {
     "wiki_writer": ("openai", "gpt-4o"),
 }
 
-# Ollama role → model mapping (remote host)
+# Ollama role → model mapping (remote host).
+# All roles consolidated to qwen3.5:9b: the shared remote Ollama (~8GB GPU)
+# can only fit one generation model in VRAM, so keeping every role on the
+# same model eliminates cold-load swap stalls between agent calls.
 OLLAMA_ROLE_MODEL_MAP: dict[str, str] = {
-    "genesis_architect": "gemma4:e4b",
+    "genesis_architect": "qwen3.5:9b",
     "main_debater": "qwen3.5:9b",
-    "reaction_agent": "qwen3.5:4b",
-    "chaos_joker": "qwen3.5:4b",
-    "searcher": "qwen3.5:4b",
-    "librarian": "qwen3.5:4b",
-    "translator": "qwen3.5:4b",
+    "reaction_agent": "qwen3.5:9b",
+    "chaos_joker": "qwen3.5:9b",
+    "searcher": "qwen3.5:9b",
+    "librarian": "qwen3.5:9b",
+    "translator": "qwen3.5:9b",
     "post_writer": "qwen3.5:9b",
-    "wiki_writer": "gemma4:e4b",
+    "wiki_writer": "qwen3.5:9b",
 }
 
-OLLAMA_DEFAULT_MODEL = "qwen3.5:4b"
+OLLAMA_DEFAULT_MODEL = "qwen3.5:9b"
 
 
 class LLMRouter:
