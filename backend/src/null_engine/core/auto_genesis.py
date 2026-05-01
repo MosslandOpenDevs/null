@@ -40,20 +40,22 @@ AUTO_SEEDS = [
     "The Emotion Market — Feelings are commodified. Joy is expensive, anger is cheap. A black market for forbidden emotions thrives underground.",
 ]
 
-# Only auto-generate if fewer than this many ready/running worlds exist
-MAX_AUTO_WORLDS = 3
-# Wait between generation attempts
-AUTO_GENESIS_INTERVAL = 300
+# Hard cap — never exceed this many running worlds (protects LLM resources)
+MAX_RUNNING_WORLDS = 5
+# Interval between genesis checks
+AUTO_GENESIS_INTERVAL = 300  # 5 minutes
+# Minimum age (seconds) of the newest world before creating another
+MIN_WORLD_AGE_SECONDS = 1800  # 30 minutes
 
 
 async def auto_genesis_loop():
-    """Generate worlds in the background, but only when needed."""
+    """Generate worlds continuously, even when active worlds exist."""
     logger.info("auto_genesis.started")
     used_indices: set[int] = set()
 
     while True:
         try:
-            # Check how many worlds are ready/running — skip if enough exist
+            # Hard cap: don't exceed MAX_RUNNING_WORLDS
             async with async_session() as db:
                 result = await db.execute(
                     select(func.count()).select_from(World).where(
@@ -62,12 +64,12 @@ async def auto_genesis_loop():
                 )
                 active_count = result.scalar() or 0
 
-            if active_count >= MAX_AUTO_WORLDS:
-                logger.info("auto_genesis.skipped", active=active_count, max=MAX_AUTO_WORLDS)
+            if active_count >= MAX_RUNNING_WORLDS:
+                logger.info("auto_genesis.at_cap", active=active_count, max=MAX_RUNNING_WORLDS)
                 await asyncio.sleep(AUTO_GENESIS_INTERVAL)
                 continue
 
-            # Also skip if there's already a world being generated
+            # Skip if a world is currently being generated
             async with async_session() as db:
                 result = await db.execute(
                     select(func.count()).select_from(World).where(World.status == "generating")
@@ -79,6 +81,26 @@ async def auto_genesis_loop():
                 await asyncio.sleep(60)
                 continue
 
+            # Throttle: wait until the newest world is old enough
+            async with async_session() as db:
+                from sqlalchemy import desc
+                result = await db.execute(
+                    select(World.created_at)
+                    .where(World.status.in_(["ready", "running", "generating"]))
+                    .order_by(desc(World.created_at))
+                    .limit(1)
+                )
+                newest_created = result.scalar_one_or_none()
+
+            if newest_created:
+                from datetime import datetime, timezone
+                age = (datetime.now(timezone.utc) - newest_created.replace(tzinfo=timezone.utc)).total_seconds()
+                if age < MIN_WORLD_AGE_SECONDS:
+                    wait = int(MIN_WORLD_AGE_SECONDS - age)
+                    logger.info("auto_genesis.throttled", newest_age_s=int(age), wait_s=wait)
+                    await asyncio.sleep(min(wait, AUTO_GENESIS_INTERVAL))
+                    continue
+
             # Pick a random unused seed
             available = [i for i in range(len(AUTO_SEEDS)) if i not in used_indices]
             if not available:
@@ -89,7 +111,7 @@ async def auto_genesis_loop():
             used_indices.add(idx)
             seed = AUTO_SEEDS[idx]
 
-            logger.info("auto_genesis.creating", seed=seed[:60])
+            logger.info("auto_genesis.creating", seed=seed[:60], active=active_count)
 
             async with async_session() as db:
                 world = await create_world(db, seed)

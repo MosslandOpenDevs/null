@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useBookmarkStore } from "@/stores/bookmarks";
 
 export function BookmarkDrawer() {
@@ -13,11 +13,16 @@ export function BookmarkDrawer() {
     exportBookmarks,
   } = useBookmarkStore();
 
+  const hasBookmarks = bookmarks.length > 0;
+  const canExport = drawerOpen && hasBookmarks;
+
   useEffect(() => {
     if (drawerOpen) {
       fetchBookmarks();
     }
   }, [drawerOpen, fetchBookmarks]);
+
+  const footerText = useMemo(() => (hasBookmarks ? `${bookmarks.length} BOOKMARKS` : "No bookmarks yet"), [bookmarks.length, hasBookmarks]);
 
   if (!drawerOpen) return null;
 
@@ -30,14 +35,22 @@ export function BookmarkDrawer() {
         </h2>
         <div className="flex items-center gap-2">
           <button
+            type="button"
             onClick={exportBookmarks}
-            className="font-mono text-sm text-accent hover:text-accent/80 uppercase tracking-wider"
+            disabled={!hasBookmarks}
+            className={`font-mono text-sm uppercase tracking-wider ${
+              hasBookmarks ? "text-accent hover:text-accent/80" : "text-hud-label cursor-not-allowed"
+            }`}
+            title={hasBookmarks ? "Download bookmarks JSON" : "No bookmarks to export"}
+            aria-label={hasBookmarks ? "Export bookmarks" : "Export unavailable: no bookmarks"}
           >
             EXPORT
           </button>
           <button
+            type="button"
             onClick={() => setDrawerOpen(false)}
             className="font-mono text-[13px] text-hud-muted hover:text-danger"
+            aria-label="Close bookmark drawer"
           >
             ✕
           </button>
@@ -64,8 +77,10 @@ export function BookmarkDrawer() {
                   {bm.label || bm.entity_type}
                 </a>
                 <button
+                  type="button"
                   onClick={() => removeBookmark(bm.id)}
                   className="font-mono text-[11px] text-hud-muted hover:text-danger ml-2 flex-shrink-0"
+                  aria-label={`Remove bookmark for ${bm.label || bm.entity_type}`}
                 >
                   DEL
                 </button>
@@ -85,9 +100,11 @@ export function BookmarkDrawer() {
 
       {/* Footer */}
       <div className="px-4 py-2 border-t border-hud-border">
-        <div className="font-mono text-[11px] text-hud-label">
-          {bookmarks.length} BOOKMARKS
-        </div>
+        <div className="font-mono text-[11px] text-hud-label">{footerText}</div>
+      </div>
+
+      <div className="sr-only" aria-live="polite">
+        {canExport ? `Bookmark drawer open, ${bookmarks.length} bookmarks` : "Bookmark drawer open, no bookmarks"}
       </div>
     </div>
   );

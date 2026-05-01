@@ -160,7 +160,7 @@ async def populate_world(db: AsyncSession, world_id: uuid.UUID, seed_prompt: str
             f"Summoning agents for {faction.name}..."
         )
 
-        count = spec.get("agent_count", settings.default_agents_per_faction)
+        count = min(spec.get("agent_count", settings.default_agents_per_faction), settings.default_agents_per_faction)
         personas = await _generate_personas(
             faction.name, faction.description, world_desc, count,
         )

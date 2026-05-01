@@ -1,3 +1,4 @@
+import json
 import uuid
 from collections import defaultdict
 
@@ -21,10 +22,54 @@ async def websocket_endpoint(websocket: WebSocket, world_id: uuid.UUID):
 
     try:
         while True:
-            # Keep connection alive; handle incoming messages if needed
             data = await websocket.receive_text()
-            # Client messages can be used for divine intervention in the future
             logger.debug("ws.received", world_id=str(world_id), data=data[:100])
+
+            # Parse client messages for divine intervention
+            try:
+                msg = json.loads(data)
+                msg_type = msg.get("type", "")
+
+                if msg_type == "divine.whisper":
+                    agent_id = msg.get("agent_id")
+                    message = msg.get("message", "")
+                    if agent_id and message:
+                        await broadcast(world_id, WSEnvelope(
+                            type="event.triggered",
+                            payload={
+                                "description": f"A divine whisper reaches an agent: '{message[:100]}'",
+                                "source": "divine_intervention",
+                                "target_agent": agent_id,
+                            },
+                        ))
+
+                elif msg_type == "divine.event":
+                    event_type = msg.get("event_type", "general")
+                    description = msg.get("description", "A divine event occurs")
+                    await broadcast(world_id, WSEnvelope(
+                        type="event.triggered",
+                        payload={
+                            "description": description,
+                            "source": "divine_intervention",
+                            "event_type": event_type,
+                        },
+                    ))
+
+                elif msg_type == "divine.seed_bomb":
+                    topic = msg.get("topic", "")
+                    if topic:
+                        await broadcast(world_id, WSEnvelope(
+                            type="event.triggered",
+                            payload={
+                                "description": f"A new idea ripples through the world: '{topic}'",
+                                "source": "divine_intervention",
+                                "topic": topic,
+                            },
+                        ))
+
+            except (json.JSONDecodeError, Exception):
+                pass  # Ignore malformed client messages
+
     except WebSocketDisconnect:
         _connections[world_id].discard(websocket)
         logger.info("ws.disconnected", world_id=str(world_id))

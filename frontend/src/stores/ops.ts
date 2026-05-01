@@ -52,26 +52,97 @@ export interface OpsMetrics {
   alerts: OpsAlert[];
 }
 
+export interface OpsHealthSummary {
+  criticalAlerts: number;
+  warningAlerts: number;
+  unhealthyLoops: number;
+  failingRunners: number;
+  backlogSize: number;
+  level: "healthy" | "degraded" | "critical";
+}
+
+export interface OpsHealthBadge {
+  label: "Healthy" | "Degraded" | "Critical";
+  tone: "success" | "warning" | "danger";
+}
+
+export function summarizeOpsHealth(metrics: OpsMetrics | null): OpsHealthSummary {
+  if (!metrics) {
+    return {
+      criticalAlerts: 0,
+      warningAlerts: 0,
+      unhealthyLoops: 0,
+      failingRunners: 0,
+      backlogSize: 0,
+      level: "healthy",
+    };
+  }
+
+  const criticalAlerts = metrics.alerts.filter((alert) => alert.severity === "critical").length;
+  const warningAlerts = metrics.alerts.filter((alert) => alert.severity === "warning").length;
+  const unhealthyLoops = metrics.loops.filter((loop) => loop.status !== "running").length;
+  const failingRunners = metrics.runners.filter((runner) => runner.tick_failures > 0).length;
+  const backlogSize =
+    metrics.queues.translator_pending_conversations +
+    metrics.queues.translator_pending_wiki_pages +
+    metrics.queues.translator_pending_strata +
+    metrics.queues.generating_worlds;
+
+  const level: OpsHealthSummary["level"] =
+    criticalAlerts > 0 || failingRunners > 0
+      ? "critical"
+      : warningAlerts > 0 || unhealthyLoops > 0 || backlogSize >= 20
+        ? "degraded"
+        : "healthy";
+
+  return {
+    criticalAlerts,
+    warningAlerts,
+    unhealthyLoops,
+    failingRunners,
+    backlogSize,
+    level,
+  };
+}
+
+export function toOpsHealthBadge(summary: OpsHealthSummary): OpsHealthBadge {
+  if (summary.level === "critical") {
+    return { label: "Critical", tone: "danger" };
+  }
+
+  if (summary.level === "degraded") {
+    return { label: "Degraded", tone: "warning" };
+  }
+
+  return { label: "Healthy", tone: "success" };
+}
+
 interface OpsState {
   metrics: OpsMetrics | null;
   loading: boolean;
+  error: string | null;
   fetchMetrics: () => Promise<void>;
 }
 
 export const useOpsStore = create<OpsState>((set) => ({
   metrics: null,
   loading: false,
+  error: null,
 
   fetchMetrics: async () => {
-    set({ loading: true });
+    set({ loading: true, error: null });
     try {
       const resp = await fetch(`${API_URL}/api/ops/metrics`);
-      if (resp.ok) {
-        const metrics = await resp.json();
-        set({ metrics });
+      if (!resp.ok) {
+        set({
+          error: `HTTP ${resp.status} ${resp.statusText || ""}`.trim(),
+        });
+        return;
       }
+      const metrics = await resp.json();
+      set({ metrics, error: null });
     } catch {
-      // endpoint may not be available
+      set({ error: "Failed to load ops metrics" });
     } finally {
       set({ loading: false });
     }

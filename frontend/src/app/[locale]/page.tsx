@@ -1,7 +1,14 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useState, useEffect, useRef, useMemo } from "react";
+import {
+  useState,
+  useEffect,
+  useRef,
+  useMemo,
+  useCallback,
+  type KeyboardEvent as ReactKeyboardEvent,
+} from "react";
 import { useParams } from "next/navigation";
 import { useSimulationStore, WorldData } from "@/stores/simulation";
 import { CommandPalette } from "@/components/CommandPalette";
@@ -14,6 +21,8 @@ import { LocaleToggle } from "@/components/LocaleToggle";
 import { useTaxonomyStore } from "@/stores/taxonomy";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3301";
+const MAX_SEED_PROMPT_LENGTH = 2000;
+const SEED_DRAFT_STORAGE_KEY = "null.seedPromptDraft";
 
 const INITIAL_EXAMPLES = [
   "Neon Joseon — 1700년대 조선이 증기기관을 발명한 대체역사. 왕실, 상인 길드, 비밀 학자 결사, 농민 반란군이 권력을 두고 경쟁한다.",
@@ -44,13 +53,19 @@ export default function HomePage() {
   const [seedPrompt, setSeedPrompt] = useState("");
   const [creating, setCreating] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [restoredDraft, setRestoredDraft] = useState(false);
+  const seedPromptInputRef = useRef<HTMLTextAreaElement | null>(null);
   const [examples, setExamples] = useState<string[]>(INITIAL_EXAMPLES);
   const [exampleIndex, setExampleIndex] = useState(0);
   const [displayedExample, setDisplayedExample] = useState("");
   const [isTyping, setIsTyping] = useState(true);
   const fetchedCount = useRef(0);
   const { createWorld, autoWorlds, fetchAutoWorlds, worldTags, tagFilter, setTagFilter } = useSimulationStore();
-  const { setDrawerOpen } = useBookmarkStore();
+  const createHintText = locale === "ko" ? "팁: 빠르게 생성하려면 Ctrl/Cmd + Enter" : "Tip: Press Ctrl/Cmd + Enter to create quickly.";
+  const shortcutHintText = locale === "ko"
+    ? "단축키: Ctrl/Cmd + B(북마크 토글), Ctrl/Cmd + R(예시 회전)"
+    : "Shortcuts: Ctrl/Cmd + B (toggle bookmarks), Ctrl/Cmd + R (rotate example).";
+  const { setDrawerOpen, drawerOpen } = useBookmarkStore();
   const { fetchNode } = useTaxonomyStore();
   const [taxonomyWorldFilter, setTaxonomyWorldFilter] = useState<string | null>(null);
   const [taxonomyWorlds, setTaxonomyWorlds] = useState<Array<{ id: string; seed_prompt: string; status: string }>>([]);
@@ -73,6 +88,25 @@ export default function HomePage() {
     return { matureWorlds: mature, incubatingWorlds: incubating };
   }, [autoWorlds]);
 
+  // Restore seed prompt draft on first render
+  useEffect(() => {
+    const saved = window.localStorage.getItem(SEED_DRAFT_STORAGE_KEY);
+    if (saved) {
+      setSeedPrompt(saved.slice(0, MAX_SEED_PROMPT_LENGTH));
+      setRestoredDraft(true);
+    }
+  }, []);
+
+  // Persist draft as user types for continuity across refreshes
+  useEffect(() => {
+    if (!seedPrompt.length) {
+      window.localStorage.removeItem(SEED_DRAFT_STORAGE_KEY);
+      return;
+    }
+
+    window.localStorage.setItem(SEED_DRAFT_STORAGE_KEY, seedPrompt);
+  }, [seedPrompt]);
+
   // Collect all unique tags from worlds
   const allTags = useMemo(() => {
     const tagSet = new Map<string, number>();
@@ -85,6 +119,15 @@ export default function HomePage() {
       .sort((a, b) => b[1] - a[1])
       .slice(0, 20);
   }, [worldTags]);
+
+  const tagFilterLabel =
+    locale === "ko"
+      ? tagFilter
+        ? `필터: ${tagFilter}`
+        : "필터: 전체"
+      : tagFilter
+        ? `Filter: ${tagFilter}`
+        : "Filter: All";
 
   // Fetch fresh AI-generated examples every time we cycle through existing ones
   useEffect(() => {
@@ -135,25 +178,96 @@ export default function HomePage() {
     return () => clearInterval(interval);
   }, [fetchAutoWorlds]);
 
+  const handleExampleRotate = useCallback(() => {
+    setSeedPrompt(examples[exampleIndex % examples.length]);
+    setRestoredDraft(false);
+  }, [exampleIndex, examples]);
+
   const handleCreate = async () => {
     if (!seedPrompt.trim()) return;
     setCreating(true);
     try {
-      await createWorld(seedPrompt);
-      setSeedPrompt("");
-      setToast("World queued — check the Incubator");
+      const created = await createWorld(seedPrompt);
+      if (created) {
+        setSeedPrompt("");
+        setRestoredDraft(false);
+        window.localStorage.removeItem(SEED_DRAFT_STORAGE_KEY);
+        setToast("World queued — check the Incubator");
+      } else {
+        setToast("Seed submission failed. Please retry after checking API connectivity.");
+      }
       setTimeout(() => setToast(null), 4000);
     } finally {
       setCreating(false);
     }
   };
 
-  const handleExampleClick = () => {
-    setSeedPrompt(examples[exampleIndex % examples.length]);
+  const handleSeedClear = () => {
+    setSeedPrompt("");
+    setRestoredDraft(false);
+    setToast("Seed prompt cleared");
+    setTimeout(() => setToast(null), 1200);
+    seedPromptInputRef.current?.focus();
   };
 
+  const handleSeedKeyDown = (event: ReactKeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
+      event.preventDefault();
+      handleCreate();
+    }
+  };
+
+  const handleExampleClick = () => {
+    handleExampleRotate();
+  };
+
+  const handleGlobalKeyDown = useCallback((event: globalThis.KeyboardEvent) => {
+    const activeTag = (event.target as HTMLElement | null)?.tagName;
+    const isEditing = activeTag ? ["INPUT", "TEXTAREA", "SELECT"].includes(activeTag) : false;
+
+    if (isEditing) return;
+
+    if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "b") {
+      event.preventDefault();
+      setDrawerOpen(!drawerOpen);
+      setToast(drawerOpen ? "Bookmarks drawer closed" : "Bookmarks drawer opened");
+      setTimeout(() => setToast(null), 1600);
+    }
+
+    if (event.key.toLowerCase() === "r" && (event.metaKey || event.ctrlKey)) {
+      event.preventDefault();
+      handleExampleRotate();
+      setToast("Example rotated");
+      setTimeout(() => setToast(null), 1000);
+    }
+  }, [drawerOpen, handleExampleRotate, setDrawerOpen, setToast]);
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+
+    document.addEventListener("keydown", handleGlobalKeyDown);
+    return () => document.removeEventListener("keydown", handleGlobalKeyDown);
+  }, [handleGlobalKeyDown]);
+
+  const isSeedNearLimit = seedPrompt.length >= Math.floor(MAX_SEED_PROMPT_LENGTH * 0.9);
+
+  const seedCounterLabel =
+    locale === "ko"
+      ? `글자 수: ${seedPrompt.length}/${MAX_SEED_PROMPT_LENGTH}`
+      : `Characters: ${seedPrompt.length}/${MAX_SEED_PROMPT_LENGTH}`;
+
+  const skipLabel = locale === "ko" ? "본문으로 이동" : "Skip to main content";
+
   return (
-    <main className="flex flex-col items-center min-h-screen p-8">
+    <>
+      <a
+        href="#main-content"
+        className="sr-only absolute left-4 top-4 z-50 rounded border border-hud-border bg-void-light px-3 py-1.5 text-xs uppercase tracking-wider text-hud-text transition-all focus:not-sr-only focus-visible:bg-hud-text focus-visible:text-void"
+        aria-label={skipLabel}
+      >
+        {skipLabel}
+      </a>
+      <main id="main-content" className="flex flex-col items-center min-h-screen p-8">
       <div className="fixed top-4 right-4 z-40">
         <LocaleToggle />
       </div>
@@ -164,7 +278,11 @@ export default function HomePage() {
 
       {/* Toast */}
       {toast && (
-        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2 bg-accent text-void font-mono text-base uppercase tracking-wider rounded shadow-lg">
+        <div
+          className="fixed top-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2 bg-accent text-void font-mono text-base uppercase tracking-wider rounded shadow-lg"
+          role="status"
+          aria-live="polite"
+        >
           {toast}
         </div>
       )}
@@ -210,9 +328,18 @@ export default function HomePage() {
       {/* ===== Tag filter ===== */}
       {allTags.length > 0 && (
         <div className="w-full max-w-5xl mb-8">
-          <h2 className="text-base uppercase tracking-widest text-hud-label mb-3">
-            Filter by tag
-          </h2>
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <h2 className="text-base uppercase tracking-widest text-hud-label">
+              Filter by tag
+            </h2>
+            <p
+              className="text-[11px] font-mono uppercase tracking-wider text-hud-muted"
+              role="status"
+              aria-live="polite"
+            >
+              {tagFilterLabel}
+            </p>
+          </div>
           <div className="flex flex-wrap gap-1.5">
             <button
               onClick={() => setTagFilter(null)}
@@ -259,7 +386,7 @@ export default function HomePage() {
       </div>
 
       {/* Taxonomy-filtered worlds */}
-      {taxonomyWorldFilter && taxonomyWorlds.length > 0 && (
+      {taxonomyWorldFilter && (
         <div className="w-full max-w-5xl mb-8">
           <div className="flex items-center justify-between mb-2">
             <h2 className="text-base uppercase tracking-widest text-hud-label">
@@ -270,21 +397,26 @@ export default function HomePage() {
                 setTaxonomyWorldFilter(null);
                 setTaxonomyWorlds([]);
               }}
+              aria-label="Clear taxonomy filter"
               className="text-sm font-mono text-hud-muted hover:text-accent uppercase"
             >
               CLEAR
             </button>
           </div>
           <div className="space-y-1">
-            {taxonomyWorlds.map((w) => (
-              <a
-                key={w.id}
-                href={`/${locale}/world/${w.id}`}
-                className="block px-4 py-2 rounded-lg border border-accent/30 bg-accent/5 hover:bg-accent/10 transition-all"
-              >
-                <p className="text-base text-hud-text truncate">{w.seed_prompt}</p>
-              </a>
-            ))}
+            {taxonomyWorlds.length > 0 ? (
+              taxonomyWorlds.map((w) => (
+                <a
+                  key={w.id}
+                  href={`/${locale}/world/${w.id}`}
+                  className="block px-4 py-2 rounded-lg border border-accent/30 bg-accent/5 hover:bg-accent/10 transition-all"
+                >
+                  <p className="text-base text-hud-text truncate">{w.seed_prompt}</p>
+                </a>
+              ))
+            ) : (
+              <p className="text-sm text-hud-muted font-mono">No worlds matched this category yet.</p>
+            )}
           </div>
         </div>
       )}
@@ -309,18 +441,55 @@ export default function HomePage() {
         </button>
 
         <textarea
+          ref={seedPromptInputRef}
           value={seedPrompt}
-          onChange={(e) => setSeedPrompt(e.target.value)}
+          onChange={(e) => {
+            setSeedPrompt(e.target.value.slice(0, MAX_SEED_PROMPT_LENGTH));
+            setRestoredDraft(false);
+          }}
+          onKeyDown={handleSeedKeyDown}
           placeholder={t("world.seedPlaceholder")}
+          aria-label={t("world.seedPlaceholder")}
+          aria-describedby="seed-prompt-counter"
+          maxLength={MAX_SEED_PROMPT_LENGTH}
           className="w-full h-32 bg-void-light border border-hud-border rounded-lg p-4 text-hud-text placeholder-hud-muted focus:border-accent focus:outline-none resize-none"
         />
-        <button
-          onClick={handleCreate}
-          disabled={creating || !seedPrompt.trim()}
-          className="w-full py-3 bg-accent hover:bg-accent/80 disabled:opacity-50 rounded-lg font-semibold transition-colors"
+        {restoredDraft && (
+          <p className="text-[11px] text-cyan-300" role="status" aria-live="polite">
+            {locale === "ko" ? "임시 입력값을 복원했습니다. 수정하거나 계속 작성해 저장할 수 있어요." : "Draft restored from your previous session. Edit or continue writing to confirm it."}
+          </p>
+        )}
+        <p
+          id="seed-prompt-counter"
+          className={`text-[11px] ${isSeedNearLimit ? "text-amber-300" : "text-hud-label"}`}
+          role="status"
+          aria-live="polite"
         >
-          {creating ? "Queuing genesis..." : t("world.create")}
-        </button>
+          {seedCounterLabel}
+          {isSeedNearLimit ? ` (${locale === "ko" ? "최대치 임계" : "close to limit"})` : ""}
+        </p>
+        <p className="text-[11px] text-hud-label">
+          {createHintText}
+        </p>
+        <p className="text-[11px] text-hud-label">
+          {shortcutHintText}
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={handleCreate}
+            disabled={creating || !seedPrompt.trim()}
+            className="flex-1 py-3 bg-accent hover:bg-accent/80 disabled:opacity-50 rounded-lg font-semibold transition-colors"
+          >
+            {creating ? "Queuing genesis..." : t("world.create")}
+          </button>
+          <button
+            onClick={handleSeedClear}
+            disabled={!seedPrompt.trim()}
+            className="px-4 py-3 border border-hud-border rounded-lg font-semibold uppercase tracking-wider text-hud-label hover:border-hud-border-active hover:text-accent disabled:opacity-50 transition-colors"
+          >
+            CLEAR
+          </button>
+        </div>
       </div>
 
       <CommandPalette />
@@ -329,10 +498,12 @@ export default function HomePage() {
       {/* Bookmark toggle button */}
       <button
         onClick={() => setDrawerOpen(true)}
+        aria-label="Open bookmarks"
         className="fixed right-4 bottom-4 z-40 px-3 py-2 bg-void-light border border-hud-border hover:border-accent font-mono text-sm text-hud-muted hover:text-accent uppercase tracking-wider transition-colors"
       >
         BOOKMARKS
       </button>
     </main>
+    </>
   );
 }

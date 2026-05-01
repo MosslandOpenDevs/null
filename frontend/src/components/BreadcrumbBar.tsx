@@ -15,7 +15,10 @@ export function BreadcrumbBar({ items }: BreadcrumbBarProps) {
   if (items.length === 0) return null;
 
   return (
-    <nav className="flex items-center justify-between px-3 py-1.5 border-b border-hud-border bg-void-light/50">
+    <nav
+      aria-label="Breadcrumb"
+      className="flex items-center justify-between px-3 py-1.5 border-b border-hud-border bg-void-light/50"
+    >
       <div className="flex items-center gap-1">
         {items.map((item, i) => (
           <span key={i} className="flex items-center gap-1">
@@ -30,7 +33,7 @@ export function BreadcrumbBar({ items }: BreadcrumbBarProps) {
                 {item.label}
               </a>
             ) : (
-              <span className="font-mono text-sm text-hud-text uppercase tracking-wider">
+              <span aria-current="page" className="font-mono text-sm text-hud-text uppercase tracking-wider">
                 {item.label}
               </span>
             )}

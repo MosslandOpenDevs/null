@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useOpsStore } from "@/stores/ops";
+import { summarizeOpsHealth, toOpsHealthBadge, useOpsStore } from "@/stores/ops";
 
 const ALERT_COLOR: Record<string, string> = {
   critical: "text-danger border-danger/40",
@@ -10,7 +10,7 @@ const ALERT_COLOR: Record<string, string> = {
 };
 
 export function OpsTab() {
-  const { metrics, loading, fetchMetrics } = useOpsStore();
+  const { metrics, loading, error, fetchMetrics } = useOpsStore();
 
   useEffect(() => {
     fetchMetrics();
@@ -28,16 +28,46 @@ export function OpsTab() {
 
   if (!metrics) {
     return (
-      <div className="flex items-center justify-center h-full">
+      <div className="flex flex-col items-center justify-center gap-3 h-full text-center">
         <span className="font-mono text-base text-hud-muted">OPS METRICS UNAVAILABLE</span>
+        {error ? <p className="font-mono text-xs text-danger">{error}</p> : null}
+        <button
+          type="button"
+          onClick={() => {
+            void fetchMetrics();
+          }}
+          className="font-mono text-xs px-3 py-1 border border-hud-border bg-hud-bg text-hud-text"
+        >
+          RETRY
+        </button>
       </div>
     );
   }
 
+  const healthSummary = summarizeOpsHealth(metrics);
+  const healthBadge = toOpsHealthBadge(healthSummary);
+
   return (
     <div className="p-3 space-y-3">
-      <div className="font-mono text-sm uppercase tracking-[0.15em] text-hud-label">
-        OPS SNAPSHOT
+      <div className="flex items-center justify-between">
+        <div className="font-mono text-sm uppercase tracking-[0.15em] text-hud-label">
+          OPS SNAPSHOT
+        </div>
+        <span
+          className={`font-mono text-[11px] uppercase px-2 py-1 border ${
+            healthBadge.tone === "danger"
+              ? "text-danger border-danger/40"
+              : healthBadge.tone === "warning"
+                ? "text-herald border-herald/40"
+                : "text-success border-success/40"
+          }`}
+        >
+          {healthBadge.label}
+        </span>
+      </div>
+
+      <div className="font-mono text-[11px] text-hud-label uppercase">
+        Health detail: critical={healthSummary.criticalAlerts} warning={healthSummary.warningAlerts} loops={healthSummary.unhealthyLoops} runners={healthSummary.failingRunners} backlog={healthSummary.backlogSize}
       </div>
 
       <div className="grid grid-cols-2 gap-2">

@@ -22,7 +22,29 @@ TrainingFormat = Literal["chatml", "alpaca", "sharegpt"]
 
 
 def _parse_include(include: str) -> set[str]:
-    return {token.strip() for token in include.split(",") if token.strip()}
+    aliases = {
+        "conversation": "conversations",
+        "conversations": "conversations",
+        "wiki": "wiki",
+        "wikis": "wiki",
+        "kg": "kg",
+        "knowledgegraph": "kg",
+        "knowledge_graph": "kg",
+        "knowledge-graph": "kg",
+    }
+    include_set: set[str] = set()
+    for token in include.split(","):
+        normalized = token.strip().lower()
+        if not normalized:
+            continue
+        if normalized in {"all", "*", "default", "full"}:
+            return {"conversations", "wiki", "kg"}
+        if normalized in {"none", "null", "off"}:
+            return set()
+        canonical = aliases.get(normalized)
+        if canonical:
+            include_set.add(canonical)
+    return include_set
 
 
 def _conversation_training_sample(conversation: Any, fmt: TrainingFormat) -> dict[str, Any] | None:

@@ -30,6 +30,8 @@
     "beliefs": "신념"
   },
   "command": {
-    "placeholder": "에이전트, 이벤트, 위키 검색..."
+    "placeholder": "에이전트, 이벤트, 위키 검색...",
+    "globalPlaceholder": "모든 세계에서 검색...",
+    "shortcutLabel": "커맨드 팔레트"
   }
 }

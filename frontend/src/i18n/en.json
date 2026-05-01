@@ -30,6 +30,8 @@
     "beliefs": "Beliefs"
   },
   "command": {
-    "placeholder": "Search agents, events, wiki..."
+    "placeholder": "Search agents, events, wiki...",
+    "globalPlaceholder": "Search across all worlds...",
+    "shortcutLabel": "Command palette"
   }
 }

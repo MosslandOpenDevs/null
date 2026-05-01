@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Source_Serif_4, JetBrains_Mono } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages } from "next-intl/server";
 import "@/app/globals.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
+const sourceSerif = Source_Serif_4({ subsets: ["latin"], variable: "--font-serif" });
+const jetbrainsMono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-mono" });
 
 export const metadata: Metadata = {
   title: "NULL — The Omniscope",
@@ -22,7 +24,7 @@ export default async function LocaleLayout({
 
   return (
     <html lang={locale}>
-      <body className={`bg-void text-hud-text font-mono antialiased min-h-screen ${inter.variable}`}>
+      <body className={`bg-void text-hud-text font-mono antialiased min-h-screen ${inter.variable} ${sourceSerif.variable} ${jetbrainsMono.variable}`}>
         <NextIntlClientProvider messages={messages}>
           {children}
         </NextIntlClientProvider>

@@ -3,6 +3,7 @@ import time
 import uuid
 
 import structlog
+from sqlalchemy import select
 
 from null_engine.agents.memory import MemoryManager
 from null_engine.core.consensus import consensus_engine
@@ -17,7 +18,7 @@ from null_engine.models.tables import World
 from null_engine.services.runtime_metrics import note_runner_status, note_runner_tick
 
 logger = structlog.get_logger()
-RUNNER_TICK_INTERVAL_SECONDS = 5
+RUNNER_TICK_INTERVAL_SECONDS = 10
 
 
 class SimulationRunner:
@@ -56,8 +57,6 @@ class SimulationRunner:
                 self._last_tick_started_at = loop_now
 
                 async with async_session() as db:
-                    from sqlalchemy import select
-
                     result = await db.execute(select(World).where(World.id == self.world_id))
                     world = result.scalar_one_or_none()
                     if not world:
@@ -138,11 +137,21 @@ class SimulationRunner:
             text = "\n".join(f"{m.content}" for m in turn.messages)
             claims = await consensus_engine.extract_claims(text)
             claims_count = len(claims)
-            for claim in claims:
-                if turn.participants:
-                    await consensus_engine.propose_claim(
-                        self.world_id, claim, turn.participants[0], turn.participants[0]
-                    )
+            if claims and turn.participants:
+                # Look up the proposer agent's faction_id
+                from null_engine.models.tables import Agent
+                proposer_id = turn.participants[0]
+                agent_result = await db.execute(
+                    select(Agent).where(Agent.id == proposer_id)
+                )
+                proposer_agent = agent_result.scalar_one_or_none()
+                faction_id = proposer_agent.faction_id if proposer_agent else None
+
+                for claim in claims:
+                    if faction_id:
+                        await consensus_engine.propose_claim(
+                            db, self.world_id, claim, proposer_id, faction_id
+                        )
 
         # 2. Check random events
         events = await check_random_events(db, world, tick)
