@@ -62,7 +62,7 @@ async def _get_embedding(text: str) -> list[float] | None:
             async with httpx.AsyncClient(timeout=30.0) as client:
                 resp = await client.post(
                     f"{settings.ollama_base_url}/api/embeddings",
-                    json={"model": "nomic-embed-text", "prompt": text[:2000]},
+                    json={"model": "qwen3-embedding:0.6b", "prompt": text[:2000]},
                 )
                 if resp.status_code == 200:
                     data = resp.json()
