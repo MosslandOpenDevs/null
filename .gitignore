@@ -40,3 +40,8 @@ artifacts/ux-smoke-report.json
 
 # Build
 *.log
+*.tsbuildinfo
+
+# Enforce pnpm as the single package manager
+package-lock.json
+yarn.lock
