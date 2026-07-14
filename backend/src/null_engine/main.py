@@ -96,11 +96,14 @@ def _build_error_payload(
 
 
 async def _recover_running_worlds() -> None:
-    """Re-create SimulationRunners for worlds left in 'running' status."""
+    """Re-create SimulationRunners for worlds left in 'running' status.
+
+    Goes through the runner manager, so with multiple workers each world
+    is picked up by exactly one process (lease-guarded).
+    """
     from sqlalchemy import select
 
-    from null_engine.api.routes.worlds import _runners
-    from null_engine.core.runner import SimulationRunner
+    from null_engine.core.runner_manager import runner_manager
     from null_engine.db import async_session
     from null_engine.models.tables import World
 
@@ -108,15 +111,14 @@ async def _recover_running_worlds() -> None:
         result = await db.execute(select(World).where(World.status == "running"))
         running_worlds = result.scalars().all()
 
+    recovered = 0
     for world in running_worlds:
-        if world.id not in _runners or not _runners[world.id].running:
-            runner = SimulationRunner(world.id)
-            _runners[world.id] = runner
-            runner.start()
+        if await runner_manager.start(world.id):
+            recovered += 1
             logger.info("runner.recovered", world_id=str(world.id), epoch=world.current_epoch)
 
     if running_worlds:
-        logger.info("runner.recovery_complete", count=len(running_worlds))
+        logger.info("runner.recovery_complete", count=recovered, candidates=len(running_worlds))
 
 
 @asynccontextmanager

@@ -7,7 +7,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from null_engine.api.deps import require_write_access
-from null_engine.core.runner import SimulationRunner
+from null_engine.core.runner_manager import runner_manager
 from null_engine.db import async_session, get_db
 from null_engine.models.schemas import (
     RecentMessageOut,
@@ -21,7 +21,6 @@ from null_engine.models.tables import Agent, Conversation, WikiPage, World, Worl
 
 router = APIRouter(tags=["worlds"])
 
-_runners: dict[uuid.UUID, SimulationRunner] = {}
 _genesis_tasks: dict[uuid.UUID, asyncio.Task] = {}
 
 
@@ -157,18 +156,30 @@ async def _background_genesis(world_id: uuid.UUID, seed_prompt: str, extra_confi
         async with async_session() as db:
             from null_engine.core.genesis import populate_world
             await populate_world(db, world_id, seed_prompt, extra_config)
-        # Auto-start simulation after genesis completes
-        runner = SimulationRunner(world_id)
-        _runners[world_id] = runner
-        runner.start()
 
+        # generating -> ready, then hand off to the runner manager
         async with async_session() as db:
             result = await db.execute(select(World).where(World.id == world_id))
             world = result.scalar_one_or_none()
             if world:
+                world.status = "ready"
+                await db.commit()
+
+        # Auto-start simulation after genesis completes (no-op if a manual
+        # /start or another worker already owns the world's lease).
+        started = await runner_manager.start(world_id)
+
+        async with async_session() as db:
+            result = await db.execute(select(World).where(World.id == world_id))
+            world = result.scalar_one_or_none()
+            if world and started:
                 world.status = "running"
                 await db.commit()
-            logger.info("genesis.background_complete", world_id=str(world_id), status="running")
+            logger.info(
+                "genesis.background_complete",
+                world_id=str(world_id),
+                status=world.status if world else "missing",
+            )
     except Exception:
         logger.exception("genesis.background_failed", world_id=str(world_id))
         try:
@@ -216,12 +227,15 @@ async def start_simulation(world_id: uuid.UUID, db: AsyncSession = Depends(get_d
     if not world:
         raise HTTPException(404, "World not found")
 
-    if world_id in _runners and _runners[world_id].running:
+    if world.status == "generating":
+        raise HTTPException(409, "World is still generating; wait for genesis to finish")
+
+    if runner_manager.is_running(world_id):
         raise HTTPException(409, "Simulation already running")
 
-    runner = SimulationRunner(world_id)
-    _runners[world_id] = runner
-    runner.start()
+    started = await runner_manager.start(world_id)
+    if not started:
+        raise HTTPException(409, "Simulation already running (possibly on another worker)")
 
     world.status = "running"
     await db.commit()
@@ -230,11 +244,9 @@ async def start_simulation(world_id: uuid.UUID, db: AsyncSession = Depends(get_d
 
 @router.post("/worlds/{world_id}/stop", response_model=SimulationControlOut, dependencies=[Depends(require_write_access)])
 async def stop_simulation(world_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
-    runner = _runners.get(world_id)
-    if not runner or not runner.running:
+    stopped = await runner_manager.stop(world_id)
+    if not stopped:
         raise HTTPException(409, "Simulation not running")
-
-    runner.stop()
 
     result = await db.execute(select(World).where(World.id == world_id))
     world = result.scalar_one_or_none()

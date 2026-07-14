@@ -5,8 +5,8 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from null_engine.api.routes import worlds as worlds_route
 from null_engine.config import settings
+from null_engine.core.runner_manager import runner_manager
 from null_engine.db import get_db
 from null_engine.models.schemas import (
     OpsAlertOut,
@@ -184,7 +184,7 @@ async def _build_ops_snapshot(db: AsyncSession) -> OpsMetricsOut:
     ]
     runners.sort(key=lambda runner: runner.world_id.hex)
 
-    active_runners = sum(1 for runner in worlds_route._runners.values() if runner.running)
+    active_runners = len(runner_manager.running_world_ids())
 
     alerts = _build_alerts(
         world_status_counts=world_status_counts,

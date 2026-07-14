@@ -28,6 +28,9 @@ class World(Base):
     current_epoch = Column(Integer, default=0)
     current_tick = Column(Integer, default=0)
     created_at = Column(DateTime, default=datetime.utcnow)
+    # Runner lease: which process may tick this world (see core/runner_manager.py)
+    lease_owner = Column(String(64), nullable=True)
+    lease_expires_at = Column(DateTime, nullable=True)
 
     factions = relationship("Faction", back_populates="world", cascade="all, delete-orphan")
     agents = relationship("Agent", back_populates="world", cascade="all, delete-orphan")

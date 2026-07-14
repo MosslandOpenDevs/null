@@ -118,19 +118,17 @@ async def auto_genesis_loop():
                 world_id = world.id
                 logger.info("auto_genesis.created", world_id=str(world_id))
 
-                # Auto-start the simulation
-                from null_engine.api.routes.worlds import _runners
-                from null_engine.core.runner import SimulationRunner
+            # Auto-start the simulation through the manager (lease-guarded)
+            from null_engine.core.runner_manager import runner_manager
 
-                runner = SimulationRunner(world_id)
-                _runners[world_id] = runner
-                runner.start()
-
-                from sqlalchemy import update
-                await db.execute(
-                    update(World).where(World.id == world_id).values(status="running")
-                )
-                await db.commit()
+            started = await runner_manager.start(world_id)
+            if started:
+                async with async_session() as db:
+                    from sqlalchemy import update
+                    await db.execute(
+                        update(World).where(World.id == world_id).values(status="running")
+                    )
+                    await db.commit()
 
         except Exception:
             logger.exception("auto_genesis.error")

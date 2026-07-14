@@ -6,6 +6,7 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 
 from null_engine.api.routes import worlds as worlds_route
+from null_engine.core.runner_manager import runner_manager
 from null_engine.db import get_db
 from null_engine.main import app
 
@@ -73,7 +74,7 @@ def world_db(monkeypatch):
     for task in list(worlds_route._genesis_tasks.values()):
         task.cancel()
     worlds_route._genesis_tasks.clear()
-    worlds_route._runners.clear()
+    runner_manager._runners.clear()
 
 
 @pytest.mark.anyio
@@ -157,8 +158,17 @@ async def test_start_stop_world_smoke(world_db, monkeypatch) -> None:
         def stop(self):
             self.running = False
 
-    monkeypatch.setattr(worlds_route, "SimulationRunner", _DummyRunner)
-    worlds_route._runners.clear()
+    monkeypatch.setattr(runner_manager, "runner_factory", _DummyRunner)
+
+    async def _lease_ok(_world_id):
+        return True
+
+    async def _release(_world_id):
+        return None
+
+    monkeypatch.setattr(runner_manager, "try_acquire_lease", _lease_ok)
+    monkeypatch.setattr(runner_manager, "release_lease", _release)
+    runner_manager._runners.clear()
     world_db.world = type(
         "WorldStub",
         (),

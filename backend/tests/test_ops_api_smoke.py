@@ -6,7 +6,7 @@ from uuid import uuid4
 import pytest
 from httpx import ASGITransport, AsyncClient
 
-from null_engine.api.routes import worlds as worlds_route
+from null_engine.core.runner_manager import runner_manager
 from null_engine.db import get_db
 from null_engine.main import app
 
@@ -88,9 +88,9 @@ def patch_runtime(monkeypatch):
             }
         ],
     )
-    worlds_route._runners = {world_id: SimpleNamespace(running=True)}
+    runner_manager._runners = {world_id: SimpleNamespace(running=True)}
     yield world_id
-    worlds_route._runners.clear()
+    runner_manager._runners.clear()
 
 
 @pytest.mark.anyio
@@ -153,7 +153,7 @@ async def test_ops_alerts_smoke(override_db, monkeypatch) -> None:
             }
         ],
     )
-    worlds_route._runners = {}
+    runner_manager._runners = {}
 
     override_db(
         _ExecuteResult(rows=[("running", 3)]),
@@ -167,7 +167,7 @@ async def test_ops_alerts_smoke(override_db, monkeypatch) -> None:
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         resp = await client.get("/api/ops/alerts")
 
-    worlds_route._runners.clear()
+    runner_manager._runners.clear()
 
     assert resp.status_code == 200
     alerts = resp.json()

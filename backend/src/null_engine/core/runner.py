@@ -43,12 +43,32 @@ class SimulationRunner:
             self._task.cancel()
         note_runner_status(self.world_id, "stopping")
 
+    async def shutdown(self):
+        """Stop and wait for the loop task, so no orphan loop keeps ticking."""
+        self.running = False
+        if self._task:
+            self._task.cancel()
+            try:
+                await self._task
+            except asyncio.CancelledError:
+                pass
+        note_runner_status(self.world_id, "stopped")
+
     async def _run_loop(self):
+        from null_engine.core.runner_manager import runner_manager
+
         logger.info("runner.start", world_id=str(self.world_id))
         note_runner_status(self.world_id, "running")
 
         try:
             while self.running:
+                # Keep exclusive ownership of the world; if another worker
+                # took the lease (or the row vanished), stop this loop.
+                if not await runner_manager.renew_lease(self.world_id):
+                    logger.warning("runner.lease_lost", world_id=str(self.world_id))
+                    note_runner_status(self.world_id, "lease_lost")
+                    break
+
                 loop_now = time.monotonic()
                 tick_delay_ms = 0
                 if self._last_tick_started_at is not None:
