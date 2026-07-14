@@ -16,6 +16,20 @@ jobs:
     defaults:
       run:
         working-directory: backend
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: null_user
+          POSTGRES_PASSWORD: null_pass
+          POSTGRES_DB: null_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U null_user -d null_db"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -25,6 +39,13 @@ jobs:
       - run: poetry install --no-interaction
       - run: poetry run ruff check src tests
       - run: poetry run pytest --tb=short
+      - name: Migration round-trip on empty DB (upgrade → downgrade → upgrade)
+        env:
+          DATABASE_URL: postgresql+asyncpg://null_user:null_pass@127.0.0.1:5432/null_db
+        run: |
+          poetry run alembic upgrade head
+          poetry run alembic downgrade base
+          poetry run alembic upgrade head
 
   frontend:
     runs-on: ubuntu-latest

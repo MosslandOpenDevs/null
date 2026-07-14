@@ -6,7 +6,12 @@ from sqlalchemy import Column, DateTime, Enum, Float, ForeignKey, Integer, Strin
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import relationship
 
+from null_engine.config import settings
 from null_engine.models.base import Base
+
+# Single source of truth for vector width — must match the embedding model
+# output (see null_engine.services.embeddings).
+EMBEDDING_DIM = settings.embedding_dim
 
 
 def new_uuid():
@@ -51,7 +56,7 @@ class Agent(Base):
     persona = Column(JSONB, default=dict)
     beliefs = Column(JSONB, default=list)
     status = Column(String(20), default="idle")
-    embedding = Column(Vector(1536), nullable=True)
+    embedding = Column(Vector(EMBEDDING_DIM), nullable=True)
 
     world = relationship("World", back_populates="agents")
     faction = relationship("Faction", back_populates="agents")
@@ -79,7 +84,7 @@ class WikiPage(Base):
     content_ko = Column(Text, nullable=True, default=None)
     status = Column(Enum("draft", "canon", "legend", "disputed", name="wiki_status"), default="draft")
     version = Column(Integer, default=1)
-    embedding = Column(Vector(1536), nullable=True)
+    embedding = Column(Vector(EMBEDDING_DIM), nullable=True)
     created_by_agent = Column(UUID(as_uuid=True), ForeignKey("agents.id", ondelete="SET NULL"), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -119,7 +124,7 @@ class Conversation(Base):
     participants = Column(JSONB, default=list)  # list[str(UUID)]
     messages = Column(JSONB, default=list)  # list[{agent_id, agent_name, content}]
     summary = Column(Text, default="")
-    embedding = Column(Vector(1536), nullable=True)
+    embedding = Column(Vector(EMBEDDING_DIM), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     # Korean translations (populated by background worker)
@@ -143,7 +148,7 @@ class ConceptCluster(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=new_uuid)
     label = Column(String(200), nullable=False)
     description = Column(Text, default="")
-    centroid = Column(Vector(1536), nullable=True)
+    centroid = Column(Vector(EMBEDDING_DIM), nullable=True)
     member_count = Column(Integer, default=0)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -209,7 +214,7 @@ class TaxonomyNode(Base):
     description = Column(Text, default="")
     depth = Column(Integer, default=0)
     path = Column(String(1000), default="")
-    centroid = Column(Vector(1536), nullable=True)
+    centroid = Column(Vector(EMBEDDING_DIM), nullable=True)
     member_count = Column(Integer, default=0)
 
     children = relationship("TaxonomyNode", back_populates="parent_node", foreign_keys="[TaxonomyNode.parent_id]")
@@ -238,7 +243,7 @@ class Stratum(Base):
     emerged_concepts = Column(JSONB, default=list)
     faded_concepts = Column(JSONB, default=list)
     dominant_themes = Column(JSONB, default=list)
-    embedding = Column(Vector(1536), nullable=True)
+    embedding = Column(Vector(EMBEDDING_DIM), nullable=True)
 
 
 class Bookmark(Base):
@@ -258,8 +263,8 @@ class AgentMemory(Base):
     __tablename__ = "agent_memories"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=new_uuid)
-    agent_id = Column(UUID(as_uuid=True), ForeignKey("agents.id", ondelete="CASCADE"), nullable=False)
-    world_id = Column(UUID(as_uuid=True), ForeignKey("worlds.id", ondelete="CASCADE"), nullable=False)
+    agent_id = Column(UUID(as_uuid=True), ForeignKey("agents.id", ondelete="CASCADE"), nullable=False, index=True)
+    world_id = Column(UUID(as_uuid=True), ForeignKey("worlds.id", ondelete="CASCADE"), nullable=False, index=True)
     tier = Column(String(10), nullable=False)  # "short", "mid", "long"
     content = Column(JSONB, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -269,11 +274,11 @@ class Claim(Base):
     __tablename__ = "claims"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=new_uuid)
-    world_id = Column(UUID(as_uuid=True), ForeignKey("worlds.id", ondelete="CASCADE"), nullable=False)
+    world_id = Column(UUID(as_uuid=True), ForeignKey("worlds.id", ondelete="CASCADE"), nullable=False, index=True)
     claim_text = Column(Text, nullable=False)
     category = Column(String(50), default="general")
     confidence = Column(Float, default=0.5)
-    status = Column(String(20), default="proposed")  # proposed, canon, legend, rejected
+    status = Column(String(20), default="proposed", index=True)  # proposed, canon, legend, rejected
     proposer_id = Column(UUID(as_uuid=True), ForeignKey("agents.id", ondelete="SET NULL"), nullable=True)
     faction_id = Column(UUID(as_uuid=True), ForeignKey("factions.id", ondelete="SET NULL"), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -283,7 +288,7 @@ class ClaimVote(Base):
     __tablename__ = "claim_votes"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=new_uuid)
-    claim_id = Column(UUID(as_uuid=True), ForeignKey("claims.id", ondelete="CASCADE"), nullable=False)
+    claim_id = Column(UUID(as_uuid=True), ForeignKey("claims.id", ondelete="CASCADE"), nullable=False, index=True)
     agent_id = Column(UUID(as_uuid=True), ForeignKey("agents.id", ondelete="CASCADE"), nullable=False)
     faction_id = Column(UUID(as_uuid=True), ForeignKey("factions.id", ondelete="SET NULL"), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)

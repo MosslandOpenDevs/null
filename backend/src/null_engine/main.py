@@ -125,12 +125,17 @@ async def lifespan(app: FastAPI):
 
     from null_engine.core.auto_genesis import auto_genesis_loop
     from null_engine.services.convergence import convergence_loop
+    from null_engine.services.embeddings import probe_embedding_dimension
     from null_engine.services.semantic_indexer import semantic_indexer_loop
     from null_engine.services.taxonomy_builder import taxonomy_builder_loop
     from null_engine.services.translator import translation_worker_loop
 
     logger.info("starting null-engine")
     await create_tables()
+
+    # Verify the embedding model's real output dimension; a mismatch means
+    # every embedding would be silently discarded (fails /health/ready).
+    await probe_embedding_dimension()
 
     # Recover runners for worlds that were "running" before restart.
     await _recover_running_worlds()
@@ -263,6 +268,7 @@ async def health_ready():
     from sqlalchemy import text
 
     from null_engine.db import async_session
+    from null_engine.services.embeddings import probe_state
 
     checks: dict[str, str] = {}
     healthy = True
@@ -273,6 +279,16 @@ async def health_ready():
     except Exception as exc:
         healthy = False
         checks["database"] = f"error: {type(exc).__name__}"
+
+    embedding_status = str(probe_state["status"])
+    checks["embeddings"] = embedding_status
+    if embedding_status == "dimension_mismatch":
+        # Reachable but misconfigured: every embedding would be discarded.
+        healthy = False
+        checks["embeddings"] = (
+            f"dimension_mismatch: model emits {probe_state['actual_dim']}, "
+            f"expected {settings.embedding_dim}"
+        )
 
     payload = {
         "status": "ok" if healthy else "degraded",

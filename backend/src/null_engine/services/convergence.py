@@ -54,33 +54,10 @@ async def _ensure_embeddings(db: AsyncSession):
 
 
 async def _get_embedding(text: str) -> list[float] | None:
-    """Get embedding via OpenAI or return None if unavailable."""
-    try:
-        from null_engine.config import settings
-        if settings.llm_provider == "ollama":
-            import httpx
-            async with httpx.AsyncClient(timeout=30.0) as client:
-                resp = await client.post(
-                    f"{settings.ollama_base_url}/api/embeddings",
-                    json={"model": "qwen3-embedding:0.6b", "prompt": text[:2000]},
-                )
-                if resp.status_code == 200:
-                    data = resp.json()
-                    emb = data.get("embedding")
-                    if emb and len(emb) == 1536:
-                        return emb
-            return None
+    """Delegate to the central embedding service (single dimension source)."""
+    from null_engine.services.embeddings import get_embedding
 
-        from openai import AsyncOpenAI
-        client = AsyncOpenAI(api_key=settings.openai_api_key)
-        resp = await client.embeddings.create(
-            model="text-embedding-3-small",
-            input=text[:8000],
-        )
-        return resp.data[0].embedding
-    except Exception:
-        logger.exception("convergence.embedding_error")
-        return None
+    return await get_embedding(text)
 
 
 async def _find_cross_world_neighbors(db: AsyncSession):

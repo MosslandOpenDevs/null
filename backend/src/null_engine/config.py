@@ -34,6 +34,13 @@ class Settings(BaseSettings):
     ollama_base_url: str = "http://localhost:11434"
     llm_provider: str = "ollama"  # "ollama" | "openai" | "anthropic"
 
+    # Embeddings — the single source of truth for the vector dimension.
+    # DB vector columns, the Ollama model and the OpenAI `dimensions`
+    # parameter must all agree with embedding_dim.
+    embedding_model: str = "qwen3-embedding:0.6b"  # Ollama model (1024-dim)
+    openai_embedding_model: str = "text-embedding-3-small"  # truncated via `dimensions`
+    embedding_dim: int = 1024
+
     # Simulation defaults
     default_agents_per_faction: int = 3
     default_factions: int = 3
