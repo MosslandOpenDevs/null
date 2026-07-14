@@ -7,6 +7,8 @@ interface SkeletonProps {
   lines?: number;
 }
 
+const LINE_WIDTHS = [92, 84, 97, 81, 88, 95, 86, 90];
+
 export function Skeleton({ className, lines = 1 }: SkeletonProps) {
   return (
     <div className={clsx("space-y-2", className)}>
@@ -14,7 +16,7 @@ export function Skeleton({ className, lines = 1 }: SkeletonProps) {
         <div
           key={i}
           className="h-4 rounded-sm animate-cosmic-shimmer"
-          style={{ width: `${80 + Math.random() * 20}%` }}
+          style={{ width: `${LINE_WIDTHS[i % LINE_WIDTHS.length]}%` }}
         />
       ))}
     </div>
