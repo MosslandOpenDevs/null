@@ -426,12 +426,12 @@ class StrataComparisonOut(BaseModel):
 
 # --- Bookmark ---
 class BookmarkCreate(BaseModel):
-    user_session: str
-    label: str = ""
-    entity_type: str
+    user_session: str = Field(min_length=1, max_length=200)
+    label: str = Field(default="", max_length=500)
+    entity_type: str = Field(max_length=50)
     entity_id: uuid.UUID
     world_id: uuid.UUID
-    note: str = ""
+    note: str = Field(default="", max_length=2000)
 
 
 class BookmarkOut(BaseModel):

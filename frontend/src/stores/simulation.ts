@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { backendWrite } from "../lib/api.ts";
 import type { ChronicleItem } from "@/components/chronicle/types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3301";
@@ -183,11 +184,7 @@ export const useSimulationStore = create<SimulationState>((set, get) => ({
 
   createWorld: async (seedPrompt: string) => {
     try {
-      const resp = await fetch(`${API_URL}/api/worlds`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ seed_prompt: seedPrompt }),
-      });
+      const resp = await backendWrite("worlds", { seed_prompt: seedPrompt });
 
       if (!resp.ok) {
         console.error("[Store] createWorld failed:", resp.status);
@@ -297,7 +294,7 @@ export const useSimulationStore = create<SimulationState>((set, get) => ({
 
   startSimulation: async (worldId: string) => {
     try {
-      const resp = await fetch(`${API_URL}/api/worlds/${worldId}/start`, { method: "POST" });
+      const resp = await backendWrite(`worlds/${worldId}/start`);
       if (!resp.ok) console.error("[Store] startSimulation failed:", resp.status);
       set((s) => ({ world: s.world ? { ...s.world, status: "running" } : null }));
     } catch (err) {
@@ -307,7 +304,7 @@ export const useSimulationStore = create<SimulationState>((set, get) => ({
 
   stopSimulation: async (worldId: string) => {
     try {
-      const resp = await fetch(`${API_URL}/api/worlds/${worldId}/stop`, { method: "POST" });
+      const resp = await backendWrite(`worlds/${worldId}/stop`);
       if (!resp.ok) console.error("[Store] stopSimulation failed:", resp.status);
       set((s) => ({ world: s.world ? { ...s.world, status: "paused" } : null }));
     } catch (err) {

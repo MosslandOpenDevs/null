@@ -54,6 +54,43 @@ class SimulationRunner:
                 pass
         note_runner_status(self.world_id, "stopped")
 
+    async def _lease_heartbeat(self):
+        """Renew the world lease independently of tick duration.
+
+        A long tick (LLM calls can take minutes) must not let the lease
+        lapse mid-tick, or another worker could start a second runner.
+        Transient DB errors are tolerated; three consecutive failures or
+        a definitive renewal refusal stop the runner.
+        """
+        from null_engine.core.runner_manager import LEASE_SECONDS, runner_manager
+
+        consecutive_failures = 0
+        while self.running:
+            await asyncio.sleep(LEASE_SECONDS / 3)
+            if not self.running:
+                return
+            try:
+                renewed = await runner_manager.renew_lease(self.world_id)
+                consecutive_failures = 0
+            except Exception:
+                consecutive_failures += 1
+                logger.exception(
+                    "runner.lease_renew_error",
+                    world_id=str(self.world_id),
+                    consecutive=consecutive_failures,
+                )
+                if consecutive_failures >= 3:
+                    logger.error("runner.lease_renew_giving_up", world_id=str(self.world_id))
+                    self.running = False
+                    note_runner_status(self.world_id, "lease_lost")
+                    return
+                continue
+            if not renewed:
+                logger.warning("runner.lease_lost", world_id=str(self.world_id))
+                self.running = False
+                note_runner_status(self.world_id, "lease_lost")
+                return
+
     async def _run_loop(self):
         from null_engine.core.runner_manager import runner_manager
 
@@ -75,15 +112,10 @@ class SimulationRunner:
         except Exception:
             logger.exception("runner.state_restore_failed", world_id=str(self.world_id))
 
+        heartbeat = asyncio.create_task(self._lease_heartbeat())
+        consecutive_loop_errors = 0
         try:
             while self.running:
-                # Keep exclusive ownership of the world; if another worker
-                # took the lease (or the row vanished), stop this loop.
-                if not await runner_manager.renew_lease(self.world_id):
-                    logger.warning("runner.lease_lost", world_id=str(self.world_id))
-                    note_runner_status(self.world_id, "lease_lost")
-                    break
-
                 loop_now = time.monotonic()
                 tick_delay_ms = 0
                 if self._last_tick_started_at is not None:
@@ -91,12 +123,42 @@ class SimulationRunner:
                     tick_delay_ms = max(0, int((loop_now - expected_next_tick) * 1000))
                 self._last_tick_started_at = loop_now
 
+                try:
+                    async with async_session() as db:
+                        result = await db.execute(select(World).where(World.id == self.world_id))
+                        world = result.scalar_one_or_none()
+                    consecutive_loop_errors = 0
+                except Exception:
+                    # Transient DB outage must not kill the runner while the
+                    # world row still says "running".
+                    consecutive_loop_errors += 1
+                    logger.exception(
+                        "runner.world_fetch_failed",
+                        world_id=str(self.world_id),
+                        consecutive=consecutive_loop_errors,
+                    )
+                    if consecutive_loop_errors >= 6:
+                        note_runner_status(self.world_id, "db_unreachable")
+                        break
+                    await asyncio.sleep(RUNNER_TICK_INTERVAL_SECONDS)
+                    continue
+
+                if not world:
+                    logger.error("runner.world_not_found", world_id=str(self.world_id))
+                    note_runner_status(self.world_id, "missing_world")
+                    break
+
+                if world.status == "paused":
+                    # Cross-worker stop: another process set the world to
+                    # paused; honor it even though it can't reach this runner.
+                    logger.info("runner.stopped_via_status", world_id=str(self.world_id))
+                    note_runner_status(self.world_id, "stopped_via_status")
+                    break
+
                 async with async_session() as db:
                     result = await db.execute(select(World).where(World.id == self.world_id))
                     world = result.scalar_one_or_none()
                     if not world:
-                        logger.error("runner.world_not_found", world_id=str(self.world_id))
-                        note_runner_status(self.world_id, "missing_world")
                         break
 
                     epoch = world.current_epoch
@@ -112,6 +174,13 @@ class SimulationRunner:
                         self._tick_failures += 1
                         await db.rollback()
                         logger.exception("runner.tick_failed", world_id=str(self.world_id), epoch=epoch, tick=tick)
+                        # The rollback may have erased rows that the consensus
+                        # cache already references; resync so later votes
+                        # don't hit dead claim ids.
+                        try:
+                            await consensus_engine.load_from_db(db, self.world_id)
+                        except Exception:
+                            logger.exception("runner.consensus_resync_failed", world_id=str(self.world_id))
                     finally:
                         self._ticks_total += 1
                         duration_ms = int((time.monotonic() - tick_started) * 1000)
@@ -152,6 +221,13 @@ class SimulationRunner:
             note_runner_status(self.world_id, "error")
         finally:
             self.running = False
+            heartbeat.cancel()
+            # Best-effort lease release (scoped to our INSTANCE_ID, so this
+            # is a no-op if another worker already took over).
+            try:
+                await asyncio.shield(runner_manager.release_lease(self.world_id))
+            except Exception:
+                logger.warning("runner.lease_release_failed", world_id=str(self.world_id))
             note_runner_status(self.world_id, "stopped")
 
     async def _tick(self, db, world: World) -> dict[str, int | bool]:

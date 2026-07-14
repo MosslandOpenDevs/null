@@ -1,3 +1,4 @@
+import asyncio
 import time
 
 from fastapi import APIRouter
@@ -7,9 +8,11 @@ from null_engine.services.llm_router import LLMGenerationError, llm_router
 router = APIRouter(tags=["seeds"])
 
 # /seeds triggers an LLM generation; cache results so anonymous traffic
-# cannot turn every page load into model spend.
+# cannot turn every page load into model spend. The lock makes refresh
+# single-flight: a concurrent burst at expiry runs one generation, not N.
 _SEED_CACHE_TTL_SECONDS = 300.0
 _seed_cache: dict[str, object] = {"expires_at": 0.0, "seeds": []}
+_seed_lock = asyncio.Lock()
 
 FALLBACK_SEEDS = [
     "A drowned archipelago where salvager guilds and cloister-scholars fight over pre-flood machines that still dream.",
@@ -35,27 +38,39 @@ Return a JSON array of strings:
 """
 
 
+def _cached_seeds() -> list[str] | None:
+    if time.monotonic() < float(_seed_cache["expires_at"]) and _seed_cache["seeds"]:
+        return _seed_cache["seeds"]  # type: ignore[return-value]
+    return None
+
+
 @router.get("/seeds", response_model=list[str])
 async def generate_seeds():
-    now = time.monotonic()
-    if now < float(_seed_cache["expires_at"]) and _seed_cache["seeds"]:
-        return _seed_cache["seeds"]
+    cached = _cached_seeds()
+    if cached is not None:
+        return cached
 
-    try:
-        result = await llm_router.generate_json(
-            role="reaction_agent",
-            prompt=GENERATE_SEEDS_PROMPT,
-        )
-    except LLMGenerationError:
-        result = []
-    seeds: list[str] = []
-    if isinstance(result, list):
-        seeds = [s for s in result if isinstance(s, str)][:5]
-    elif isinstance(result, dict):
-        seeds = [s for s in result.get("seeds", []) if isinstance(s, str)][:5]
-    if not seeds:
-        seeds = FALLBACK_SEEDS
+    async with _seed_lock:
+        # Another request may have refreshed while we waited on the lock.
+        cached = _cached_seeds()
+        if cached is not None:
+            return cached
 
-    _seed_cache["seeds"] = seeds
-    _seed_cache["expires_at"] = now + _SEED_CACHE_TTL_SECONDS
-    return seeds
+        try:
+            result = await llm_router.generate_json(
+                role="reaction_agent",
+                prompt=GENERATE_SEEDS_PROMPT,
+            )
+        except LLMGenerationError:
+            result = []
+        seeds: list[str] = []
+        if isinstance(result, list):
+            seeds = [s for s in result if isinstance(s, str)][:5]
+        elif isinstance(result, dict):
+            seeds = [s for s in result.get("seeds", []) if isinstance(s, str)][:5]
+        if not seeds:
+            seeds = FALLBACK_SEEDS
+
+        _seed_cache["seeds"] = seeds
+        _seed_cache["expires_at"] = time.monotonic() + _SEED_CACHE_TTL_SECONDS
+        return seeds

@@ -91,6 +91,7 @@ async def run_conversation(
     )
 
     history_lines: list[str] = []
+    whispers_surfaced: set[uuid.UUID] = set()
 
     # Multi-round conversation (3-6 rounds)
     num_rounds = random.randint(3, 6)
@@ -126,6 +127,9 @@ async def run_conversation(
             logger.warning("conversation.message_skipped", agent=speaker.name, topic=topic)
             continue
 
+        if whispers:
+            whispers_surfaced.add(speaker.id)
+
         msg = AgentMessage(
             agent_id=speaker.id,
             content=response,
@@ -155,8 +159,10 @@ async def run_conversation(
     for p in participants:
         await memory.add_short_term(p.id, turn.messages, db=db, world_id=world_id)
         await memory.add_mid_term(p.id, summary, db=db, world_id=world_id)
-        # Whispers influenced this conversation; consume them.
-        if p.persona and p.persona.get("whispers"):
+        # Consume whispers only for agents whose prompt actually surfaced
+        # them; agents who never got a speaking turn keep theirs for a
+        # later conversation.
+        if p.id in whispers_surfaced and p.persona and p.persona.get("whispers"):
             p.persona = {**p.persona, "whispers": []}
 
     # Update relationships based on conversation (with sentiment analysis)

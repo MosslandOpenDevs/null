@@ -2,14 +2,19 @@ import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import JSONResponse
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from null_engine.db import get_db
 from null_engine.models.schemas import BookmarkCreate, BookmarkOut, OkResponse
-from null_engine.models.tables import Agent, Bookmark, Conversation, WikiPage
+from null_engine.models.tables import Agent, Bookmark, Conversation, WikiPage, World
 
 router = APIRouter(tags=["bookmarks"])
+
+
+# Bookmarks stay anonymous (they are a viewer feature), so cap per-session
+# volume to keep an abusive client from filling the table.
+MAX_BOOKMARKS_PER_SESSION = 500
 
 
 @router.post("/bookmarks", response_model=BookmarkOut)
@@ -17,6 +22,18 @@ async def create_bookmark(
     body: BookmarkCreate,
     db: AsyncSession = Depends(get_db),
 ):
+    world = await db.execute(select(World.id).where(World.id == body.world_id))
+    if world.scalar_one_or_none() is None:
+        raise HTTPException(404, "World not found")
+
+    count_result = await db.execute(
+        select(func.count())
+        .select_from(Bookmark)
+        .where(Bookmark.user_session == body.user_session)
+    )
+    if (count_result.scalar() or 0) >= MAX_BOOKMARKS_PER_SESSION:
+        raise HTTPException(429, "Bookmark limit reached for this session")
+
     bookmark = Bookmark(
         user_session=body.user_session,
         label=body.label,

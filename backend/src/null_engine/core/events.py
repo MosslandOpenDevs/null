@@ -62,7 +62,9 @@ async def inject_event(db: AsyncSession, world: World, event_data: EventCreate) 
     pending = list((world.config or {}).get("_injected_topics", []))
     pending.append(event_data.description[:200])
     world.config = {**(world.config or {}), "_injected_topics": pending[-5:]}
-    await db.flush()
+    # The API route doesn't commit for us; without this the queue write
+    # is rolled back when the request's session closes.
+    await db.commit()
 
     await broadcast(world.id, WSEnvelope(
         type="event.triggered",

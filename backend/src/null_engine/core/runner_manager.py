@@ -120,6 +120,26 @@ class RunnerManager:
             logger.info("runner_manager.stopped", world_id=str(world_id))
             return True
 
+    async def shutdown_all(self) -> None:
+        """Stop every runner and release its lease (process shutdown).
+
+        Without this, a restart leaves lease rows owned by a dead
+        INSTANCE_ID and no process can restart those worlds until the
+        lease TTL expires.
+        """
+        async with self._lock:
+            for world_id, runner in list(self._runners.items()):
+                try:
+                    await self._shutdown_runner(runner)
+                except Exception:
+                    logger.exception("runner_manager.shutdown_failed", world_id=str(world_id))
+                try:
+                    await self.release_lease(world_id)
+                except Exception:
+                    logger.exception("runner_manager.release_failed", world_id=str(world_id))
+            self._runners.clear()
+        logger.info("runner_manager.shutdown_complete")
+
     async def _shutdown_runner(self, runner) -> None:
         shutdown = getattr(runner, "shutdown", None)
         if shutdown is not None:

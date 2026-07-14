@@ -34,6 +34,9 @@ class _ExecuteResult:
             return self._data[0] if self._data else None
         return self._data
 
+    def scalar(self) -> Any:
+        return self.scalar_one_or_none()
+
 
 class _QueueSession:
     def __init__(self, batches: list[Any] | None = None):
@@ -86,9 +89,10 @@ def override_db():
 
 @pytest.mark.anyio
 async def test_create_bookmark_smoke(override_db) -> None:
-    session = override_db()
     world_id = uuid4()
     entity_id = uuid4()
+    # create endpoint queries: world existence, then per-session count
+    session = override_db(world_id, 0)
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:

@@ -51,6 +51,11 @@ services:
         NEXT_PUBLIC_WS_URL: ${NEXT_PUBLIC_WS_URL:-ws://localhost:3301}
     ports:
       - "6001:3000"
+    environment:
+      # Server-side only: the Next proxy route attaches this to backend
+      # writes so the token never reaches the browser bundle.
+      API_WRITE_TOKEN: ${API_WRITE_TOKEN:-}
+      BACKEND_INTERNAL_URL: http://backend:3301
     depends_on:
       - backend
 

@@ -223,15 +223,48 @@ def main() -> int:
             raise RuntimeError("world id missing")
         steps.append(StepResult("create_world", True, f"world_id={world_id}"))
 
+        # /start returns 409 while genesis is running, so wait for the world
+        # to leave "generating" (it becomes ready/running, or error when no
+        # LLM backend is available, e.g. in CI).
+        world_status = "generating"
+        genesis_deadline = time.monotonic() + 90.0
+        while time.monotonic() < genesis_deadline:
+            status_resp = _http_request(
+                "GET", f"{args.backend_url}/api/worlds/{world_id}", timeout_seconds=10.0
+            )
+            if status_resp.status == 200 and isinstance(status_resp.json_body, dict):
+                world_status = str(status_resp.json_body.get("status", ""))
+                if world_status != "generating":
+                    break
+            time.sleep(2.0)
+
         start_world = _http_request(
             "POST",
             f"{args.backend_url}/api/worlds/{world_id}/start",
             timeout_seconds=20.0,
         )
-        if start_world.status != 200:
-            steps.append(StepResult("start_world", False, f"status={start_world.status}"))
+        if start_world.status == 409:
+            # Genesis may have auto-started the runner before we could;
+            # re-check the world status to disambiguate.
+            recheck = _http_request(
+                "GET", f"{args.backend_url}/api/worlds/{world_id}", timeout_seconds=10.0
+            )
+            if recheck.status == 200 and isinstance(recheck.json_body, dict):
+                world_status = str(recheck.json_body.get("status", ""))
+
+        if start_world.status == 200:
+            steps.append(StepResult("start_world", True, "simulation started"))
+        elif start_world.status == 409 and world_status == "running":
+            steps.append(StepResult("start_world", True, "already auto-started after genesis"))
+        else:
+            steps.append(
+                StepResult(
+                    "start_world",
+                    False,
+                    f"status={start_world.status} world_status={world_status}",
+                )
+            )
             raise RuntimeError("world start failed")
-        steps.append(StepResult("start_world", True, "simulation started"))
 
         world_page = _http_request("GET", f"{args.frontend_url}/{args.locale}/world/{world_id}")
         if world_page.status != 200:

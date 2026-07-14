@@ -245,11 +245,18 @@ async def start_simulation(world_id: uuid.UUID, db: AsyncSession = Depends(get_d
 @router.post("/worlds/{world_id}/stop", response_model=SimulationControlOut, dependencies=[Depends(require_write_access)])
 async def stop_simulation(world_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     stopped = await runner_manager.stop(world_id)
-    if not stopped:
-        raise HTTPException(409, "Simulation not running")
 
     result = await db.execute(select(World).where(World.id == world_id))
     world = result.scalar_one_or_none()
+
+    if not stopped:
+        if not world:
+            raise HTTPException(404, "World not found")
+        if world.status != "running":
+            raise HTTPException(409, "Simulation not running")
+        # The runner lives on another worker; signal it via the DB.
+        # Its loop honors status == "paused" and shuts itself down.
+
     if world:
         world.status = "paused"
         await db.commit()
@@ -295,9 +302,18 @@ async def seed_bomb(world_id: uuid.UUID, body: SeedBombRequest, db: AsyncSession
 
 
 # --- Catch Up ---
+# Anonymous GET that triggers an LLM call; cache per world so repeated
+# viewer hits don't turn into model spend (same rationale as /seeds).
+_CATCH_UP_TTL_SECONDS = 120.0
+_catch_up_cache: dict[uuid.UUID, tuple[float, str, dict]] = {}
+_catch_up_lock = asyncio.Lock()
+
+
 @router.get("/worlds/{world_id}/catch-up")
 async def catch_up(world_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     """LLM-generated summary of recent events."""
+    import time
+
     result = await db.execute(select(World).where(World.id == world_id))
     world = result.scalar_one_or_none()
     if not world:
@@ -315,15 +331,26 @@ async def catch_up(world_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     if not recent_convs:
         return {"summary": "Nothing of note has occurred yet in this world."}
 
+    # Invalidate when a newer conversation exists, otherwise serve cached.
+    latest_key = str(recent_convs[0].id)
+    cached = _catch_up_cache.get(world_id)
+    if cached and cached[0] > time.monotonic() and cached[1] == latest_key:
+        return cached[2]
+
     context = "\n".join(
         f"- Topic: {c.topic}. Summary: {c.summary[:200]}"
         for c in recent_convs if c.summary
     )
 
-    try:
-        from null_engine.services.llm_router import llm_router
+    async with _catch_up_lock:
+        cached = _catch_up_cache.get(world_id)
+        if cached and cached[0] > time.monotonic() and cached[1] == latest_key:
+            return cached[2]
 
-        prompt = f"""Summarize the recent events in this simulated world in 3-5 sentences.
+        try:
+            from null_engine.services.llm_router import llm_router
+
+            prompt = f"""Summarize the recent events in this simulated world in 3-5 sentences.
 Write in a dramatic, cosmic narrator style.
 
 Recent events:
@@ -331,11 +358,14 @@ Recent events:
 
 Summary:"""
 
-        summary = await llm_router.generate_text(role="reaction_agent", prompt=prompt)
-        return {"summary": summary.strip()}
-    except Exception:
-        summaries = [c.summary[:100] for c in recent_convs if c.summary]
-        return {"summary": " ".join(summaries) if summaries else "The void stirs, but details are unclear."}
+            summary = await llm_router.generate_text(role="reaction_agent", prompt=prompt)
+            payload = {"summary": summary.strip()}
+        except Exception:
+            summaries = [c.summary[:100] for c in recent_convs if c.summary]
+            payload = {"summary": " ".join(summaries) if summaries else "The void stirs, but details are unclear."}
+
+        _catch_up_cache[world_id] = (time.monotonic() + _CATCH_UP_TTL_SECONDS, latest_key, payload)
+        return payload
 
 
 # --- Analytics: Faction Power ---

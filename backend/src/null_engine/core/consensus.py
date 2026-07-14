@@ -43,6 +43,27 @@ class ConsensusEngine:
             return result
         return result.get("claims", [])
 
+    @staticmethod
+    def _sanitize_claim(claim: dict) -> dict | None:
+        """Coerce raw LLM output into column-safe values.
+
+        The LLM regularly emits over-long categories or non-numeric
+        confidences; an unchecked flush failure would roll back every
+        claim flushed earlier in the same tick.
+        """
+        text = str(claim.get("claim", "") or "").strip()
+        if not text:
+            return None
+        try:
+            confidence = max(0.0, min(1.0, float(claim.get("confidence", 0.5))))
+        except (TypeError, ValueError):
+            confidence = 0.5
+        return {
+            "claim": text,
+            "category": str(claim.get("category", "general") or "general")[:50],
+            "confidence": confidence,
+        }
+
     async def propose_claim(
         self,
         db: AsyncSession,
@@ -51,12 +72,17 @@ class ConsensusEngine:
         proposer_id: uuid.UUID,
         faction_id: uuid.UUID,
     ):
+        clean = self._sanitize_claim(claim)
+        if clean is None:
+            return
+        claim = clean
+
         # Persist to DB
         db_claim = Claim(
             world_id=world_id,
-            claim_text=claim.get("claim", ""),
-            category=claim.get("category", "general"),
-            confidence=claim.get("confidence", 0.5),
+            claim_text=claim["claim"],
+            category=claim["category"],
+            confidence=claim["confidence"],
             status="proposed",
             proposer_id=proposer_id,
             faction_id=faction_id,
@@ -104,16 +130,30 @@ class ConsensusEngine:
                 # Check if this agent already voted
                 voter_ids = {v["agent"] for v in claim["votes"]}
                 if str(voter_id) not in voter_ids:
-                    claim["votes"].append({"agent": str(voter_id), "faction": str(faction_id)})
-
-                    # Persist vote
+                    # Persist first (inside a savepoint), then update the
+                    # cache — a rolled-back vote must not be remembered as
+                    # cast, and a claim whose row vanished in an earlier
+                    # tick rollback (phantom) must be evicted, not allowed
+                    # to fail every future tick with an FK violation.
                     vote = ClaimVote(
                         claim_id=claim["db_id"],
                         agent_id=voter_id,
                         faction_id=faction_id,
                     )
-                    db.add(vote)
-                    await db.flush()
+                    try:
+                        async with db.begin_nested():
+                            db.add(vote)
+                            await db.flush()
+                    except Exception:
+                        logger.warning(
+                            "consensus.vote_persist_failed_evicting_claim",
+                            claim_id=str(claim["db_id"]),
+                        )
+                        self._proposed[world_id] = [
+                            c for c in self._proposed.get(world_id, []) if c is not claim
+                        ]
+                        return None
+                    claim["votes"].append({"agent": str(voter_id), "faction": str(faction_id)})
 
                 # Check consensus: 3+ agents from 2+ factions
                 factions = {v["faction"] for v in claim["votes"]}

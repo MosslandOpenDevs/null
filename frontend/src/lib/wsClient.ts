@@ -35,6 +35,9 @@ export function useWSClient() {
         };
 
         ws.onclose = (event) => {
+          // Stale socket (a newer connection replaced us) or an intentional
+          // disconnect already cleared the ref — never schedule a reconnect.
+          if (wsRef.current !== ws) return;
           wsRef.current = null;
 
           if (retryCount.current >= MAX_RETRIES) {
@@ -70,8 +73,14 @@ export function useWSClient() {
   const disconnect = useCallback(() => {
     clearTimeout(reconnectTimer.current);
     retryCount.current = 0;
-    wsRef.current?.close();
+    const ws = wsRef.current;
+    // Clear the ref before closing so onclose sees an intentional
+    // disconnect and doesn't schedule a zombie reconnect.
     wsRef.current = null;
+    if (ws) {
+      ws.onclose = null;
+      ws.close();
+    }
   }, []);
 
   return { connect, disconnect };

@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { backendWrite } from "@/lib/api";
 import { useSimulationStore } from "@/stores/simulation";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3301";
 
 const EVENT_TYPES = [
   { icon: "⚡", label: "CRISIS", type: "crisis", description: "A sudden crisis shakes the world" },
@@ -24,11 +24,7 @@ export function InterventionBar() {
 
   const triggerEvent = async (eventType: string, description: string) => {
     try {
-      await fetch(`${API_URL}/api/worlds/${world.id}/events`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: eventType, description }),
-      });
+      await backendWrite(`worlds/${world.id}/events`, { type: eventType, description });
     } catch {
       // Event endpoint may not exist yet
     }
@@ -37,10 +33,9 @@ export function InterventionBar() {
   const sendWhisper = async () => {
     if (!whisperTarget || !whisperText.trim()) return;
     try {
-      await fetch(`${API_URL}/api/worlds/${world.id}/agents/${whisperTarget}/whisper`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "whisper", description: whisperText }),
+      await backendWrite(`worlds/${world.id}/agents/${whisperTarget}/whisper`, {
+        type: "whisper",
+        description: whisperText,
       });
       setWhisperText("");
       setShowWhisper(false);
@@ -52,11 +47,7 @@ export function InterventionBar() {
   const sendSeedBomb = async () => {
     if (!topicText.trim()) return;
     try {
-      await fetch(`${API_URL}/api/worlds/${world.id}/seed-bomb`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ topic: topicText }),
-      });
+      await backendWrite(`worlds/${world.id}/seed-bomb`, { topic: topicText });
       setTopicText("");
       setShowTopicInput(false);
     } catch {

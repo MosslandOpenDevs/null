@@ -42,7 +42,9 @@ async def broadcast(world_id: uuid.UUID, envelope: WSEnvelope):
 
     payload = envelope.model_dump_json()
     dead: list[WebSocket] = []
-    for ws in connections:
+    # Snapshot: clients connect/disconnect while we await sends, and
+    # mutating the live set mid-iteration raises RuntimeError.
+    for ws in list(connections):
         try:
             await ws.send_text(payload)
         except Exception:
@@ -50,3 +52,5 @@ async def broadcast(world_id: uuid.UUID, envelope: WSEnvelope):
 
     for ws in dead:
         connections.discard(ws)
+    if not connections:
+        _connections.pop(world_id, None)

@@ -58,10 +58,22 @@ async def create_world(db: AsyncSession, seed_prompt: str, extra_config: dict[st
     await db.commit()
     world_id = world.id
 
-    await populate_world(db, world_id, seed_prompt, extra_config or {})
+    from sqlalchemy import update
+
+    try:
+        await populate_world(db, world_id, seed_prompt, extra_config or {})
+    except Exception:
+        # Mark the world failed instead of stranding it in 'generating' —
+        # a stuck 'generating' row would also livelock auto-genesis, which
+        # counts it against its active-worlds cap forever.
+        await db.rollback()
+        await db.execute(
+            update(World).where(World.id == world_id).values(status="error")
+        )
+        await db.commit()
+        raise
 
     # Re-fetch world since populate_world may have expunged it
-    from sqlalchemy import update
     await db.execute(
         update(World).where(World.id == world_id).values(status="ready")
     )

@@ -95,11 +95,15 @@ def _build_error_payload(
     }
 
 
-async def _recover_running_worlds() -> None:
-    """Re-create SimulationRunners for worlds left in 'running' status.
+RUNNER_RECONCILE_INTERVAL_SECONDS = 30.0
 
-    Goes through the runner manager, so with multiple workers each world
-    is picked up by exactly one process (lease-guarded).
+
+async def _reconcile_running_worlds_once() -> None:
+    """Start a runner for every 'running' world not ticking in this process.
+
+    Lease-guarded, so with multiple workers each world is picked up by
+    exactly one process — and worlds whose lease holder died are adopted
+    automatically once the stale lease (90s) expires.
     """
     from sqlalchemy import select
 
@@ -113,12 +117,27 @@ async def _recover_running_worlds() -> None:
 
     recovered = 0
     for world in running_worlds:
+        if runner_manager.is_running(world.id):
+            continue
         if await runner_manager.start(world.id):
             recovered += 1
             logger.info("runner.recovered", world_id=str(world.id), epoch=world.current_epoch)
 
-    if running_worlds:
+    if recovered:
         logger.info("runner.recovery_complete", count=recovered, candidates=len(running_worlds))
+
+
+async def _runner_reconciliation_loop() -> None:
+    """Periodic reconciliation: a one-shot recovery at startup would
+    permanently orphan worlds whose stale lease hadn't expired yet."""
+    import asyncio
+
+    while True:
+        try:
+            await _reconcile_running_worlds_once()
+        except Exception:
+            logger.exception("runner.reconciliation_failed")
+        await asyncio.sleep(RUNNER_RECONCILE_INTERVAL_SECONDS)
 
 
 @asynccontextmanager
@@ -139,11 +158,12 @@ async def lifespan(app: FastAPI):
     # every embedding would be silently discarded (fails /health/ready).
     await probe_embedding_dimension()
 
-    # Recover runners for worlds that were "running" before restart.
-    await _recover_running_worlds()
-
     # Start resilient background tasks with auto-restart on unexpected failure.
+    # Runner recovery runs as a reconciliation loop (not one-shot): after a
+    # fast restart the old process's lease is still unexpired, so the first
+    # pass finds nothing to adopt.
     background_tasks = [
+        asyncio.create_task(_run_resilient_loop("runner_reconciliation", _runner_reconciliation_loop)),
         asyncio.create_task(_run_resilient_loop("convergence", convergence_loop)),
         asyncio.create_task(_run_resilient_loop("semantic_indexer", semantic_indexer_loop)),
         asyncio.create_task(_run_resilient_loop("taxonomy_builder", taxonomy_builder_loop)),
@@ -161,6 +181,12 @@ async def lifespan(app: FastAPI):
     for task in background_tasks:
         task.cancel()
     await asyncio.gather(*background_tasks, return_exceptions=True)
+
+    # Stop runners and release their leases so a restarted process can
+    # adopt the worlds immediately instead of waiting out the lease TTL.
+    from null_engine.core.runner_manager import runner_manager
+
+    await runner_manager.shutdown_all()
     await engine.dispose()
     logger.info("null-engine stopped")
 
