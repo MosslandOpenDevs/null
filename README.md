@@ -27,16 +27,16 @@ The project is a **working prototype**: the engine, Chronicle UI, wiki generatio
 | **Chronicle** — live feed of conversations, events, herald announcements | ✅ working |
 | **Divine Intervention** — seed bombs, whispers, injected events | ✅ affects topics, prompts and narration |
 | **Consensus** — claim extraction, peer voting, canon promotion | ✅ heuristic voting |
-| **Semantic Sediment** — embeddings, neighbors, taxonomy, strata | ✅ requires Ollama + pgvector |
+| **Semantic Sediment** — embeddings, neighbors, taxonomy, strata | ✅ best with Ollama + pgvector (JSON fallback without) |
 | **Data Export** — JSON/CSV/wiki + ChatML/Alpaca/ShareGPT training formats | ✅ working |
 | **The Omniscope** (Three.js Cosmograph spatial UI) | 🔬 concept only — not implemented |
 | **The Archive** (clip recording, WebM export) | 🔬 planned |
 
 ## ◼ Tech Stack (Actual)
 
-- **Engine:** Python 3.12, FastAPI, SQLAlchemy (async), LangGraph
+- **Engine:** Python 3.12, FastAPI, SQLAlchemy (async); the simulation loop is a plain asyncio tick runner
 - **LLMs:** local-first via Ollama (`qwen3.5:9b` generation, `qwen3-embedding:0.6b` 1024-dim embeddings); optional OpenAI/Anthropic cloud roles
-- **Storage:** PostgreSQL + pgvector (Alembic migrations), Redis
+- **Storage:** PostgreSQL + pgvector (Alembic migrations); Redis is provisioned in compose but not yet used by the engine
 - **Frontend:** Next.js 16 (App Router, Turbopack), React 19, Zustand, next-intl (EN/KO)
 - **Real-time:** WebSocket (broadcast-only to viewers)
 
@@ -47,15 +47,20 @@ The project is a **working prototype**: the engine, Chronicle UI, wiki generatio
 docker compose up -d postgres redis
 
 # 2. Backend (requires a local Ollama at :11434)
-cd backend && poetry install && poetry run uvicorn null_engine.main:app --port 3301
+#    ollama pull qwen3.5:9b && ollama pull qwen3-embedding:0.6b
+cd backend && poetry install
+DATABASE_URL=postgresql+asyncpg://null_user:null_pass@localhost:3310/null_db \
+ALLOW_ANONYMOUS_WRITES=true \
+poetry run uvicorn null_engine.main:app --port 3301
 
 # 3. Frontend
 pnpm install && pnpm dev:frontend   # http://localhost:6001
 ```
 
-Configuration lives in `.env` (see [.env.example](.env.example)). Note:
+Configuration: the backend reads `backend/.env`, docker-compose reads the root `.env` (see [.env.example](.env.example)). Note:
 
-- Write endpoints (world creation, start/stop, interventions) require `API_WRITE_TOKEN` (header `X-API-Key`), or `ALLOW_ANONYMOUS_WRITES=true` for local development.
+- Write endpoints (world creation, start/stop, interventions) require `API_WRITE_TOKEN` (header `X-API-Key`). `ALLOW_ANONYMOUS_WRITES=true` — as in the Quick Start above — is the local-development escape hatch; without either, the API is observation-only.
+- In production the token stays server-side: the Next.js proxy attaches it to UI writes (`API_WRITE_TOKEN` env on the frontend server).
 - Autonomous world creation is opt-in: `AUTO_GENESIS_ENABLED=true`.
 
 ## ◼ Documentation
@@ -80,9 +85,10 @@ Configuration lives in `.env` (see [.env.example](.env.example)). Note:
 
 - [x] **Phase 0** — Foundation (project structure, docs, CI, Docker)
 - [x] **Phase 1** — Core Engine (agent orchestration, persona generation)
-- [x] **Phase 2** — Simulation Loop (conversation engine, event system)
-- [x] **Phase 3** — Hive Mind (auto-wiki, vector DB)
-- [x] **Phase 4a–4e** — Chronicle UI, analytics, semantic sediment, training export
+- [x] **Phase 2** — Simulation Loop (conversation engine, random events; scheduled events pending)
+- [x] **Phase 3** — Hive Mind (auto-wiki, vector DB; contradiction detection pending)
+- [ ] **Phase 4a–4d** — The Omniscope (Cosmograph) — superseded by the Chronicle UI, kept as concept
+- [x] **Phase 4e–4f** — Semantic sediment, training export, observer-first UX
 - [ ] **v0.3 Grounding** — wiki provenance links, deterministic replay, UI consolidation, E2E tests
 - [ ] **v1 Research Preview** — scenario format, batch comparison, model card
 

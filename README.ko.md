@@ -27,16 +27,16 @@
 | **크로니클** — 대화/이벤트/헤럴드 실시간 피드 | ✅ 동작 |
 | **신적 개입** — 시드 밤, 귓속말, 이벤트 주입 | ✅ 주제·프롬프트·서사에 반영 |
 | **합의** — 주장 추출, 동료 투표, 캐논 승격 | ✅ 휴리스틱 투표 |
-| **시맨틱 세디먼트** — 임베딩, 이웃, 택소노미, 스트라타 | ✅ Ollama + pgvector 필요 |
+| **시맨틱 세디먼트** — 임베딩, 이웃, 택소노미, 스트라타 | ✅ Ollama + pgvector 권장 (없으면 JSON 폴백) |
 | **데이터 내보내기** — JSON/CSV/위키 + ChatML/Alpaca/ShareGPT | ✅ 동작 |
 | **옴니스코프** (Three.js 코스모그래프 공간 UI) | 🔬 컨셉 단계 — 미구현 |
 | **아카이브** (클립 녹화, WebM 내보내기) | 🔬 예정 |
 
 ## ◼ 기술 스택 (실제)
 
-- **엔진:** Python 3.12, FastAPI, SQLAlchemy (async), LangGraph
+- **엔진:** Python 3.12, FastAPI, SQLAlchemy (async); 시뮬레이션 루프는 순수 asyncio 틱 러너
 - **LLM:** Ollama 로컬 우선 (`qwen3.5:9b` 생성, `qwen3-embedding:0.6b` 1024차원 임베딩); OpenAI/Anthropic 클라우드 역할은 선택
-- **저장소:** PostgreSQL + pgvector (Alembic 마이그레이션), Redis
+- **저장소:** PostgreSQL + pgvector (Alembic 마이그레이션); Redis는 compose에 준비되어 있으나 아직 엔진에서 사용하지 않음
 - **프론트엔드:** Next.js 16 (App Router, Turbopack), React 19, Zustand, next-intl (EN/KO)
 - **실시간:** WebSocket (뷰어에게 브로드캐스트 전용)
 
@@ -47,15 +47,20 @@
 docker compose up -d postgres redis
 
 # 2. 백엔드 (로컬 Ollama :11434 필요)
-cd backend && poetry install && poetry run uvicorn null_engine.main:app --port 3301
+#    ollama pull qwen3.5:9b && ollama pull qwen3-embedding:0.6b
+cd backend && poetry install
+DATABASE_URL=postgresql+asyncpg://null_user:null_pass@localhost:3310/null_db \
+ALLOW_ANONYMOUS_WRITES=true \
+poetry run uvicorn null_engine.main:app --port 3301
 
 # 3. 프론트엔드
 pnpm install && pnpm dev:frontend   # http://localhost:6001
 ```
 
-설정은 `.env`에 있습니다 ([.env.example](.env.example) 참고). 주의:
+설정: 백엔드는 `backend/.env`를, docker-compose는 루트 `.env`를 읽습니다 ([.env.example](.env.example) 참고). 주의:
 
-- 쓰기 엔드포인트(월드 생성, 시작/정지, 개입)는 `API_WRITE_TOKEN`(`X-API-Key` 헤더)이 필요하며, 로컬 개발은 `ALLOW_ANONYMOUS_WRITES=true`로 허용할 수 있습니다.
+- 쓰기 엔드포인트(월드 생성, 시작/정지, 개입)는 `API_WRITE_TOKEN`(`X-API-Key` 헤더)이 필요합니다. 위 Quick Start처럼 `ALLOW_ANONYMOUS_WRITES=true`는 로컬 개발용 우회이며, 둘 다 없으면 API는 관찰 전용이 됩니다.
+- 운영 환경에서는 토큰이 서버에만 존재합니다: Next.js 프록시가 UI 쓰기에 토큰을 붙입니다(프론트 서버의 `API_WRITE_TOKEN` env).
 - 자율 월드 생성은 명시적 옵트인입니다: `AUTO_GENESIS_ENABLED=true`.
 
 ## ◼ 문서
@@ -80,9 +85,10 @@ pnpm install && pnpm dev:frontend   # http://localhost:6001
 
 - [x] **Phase 0** — 기반 (프로젝트 구조, 문서화, CI, Docker)
 - [x] **Phase 1** — 코어 엔진 (에이전트 오케스트레이션, 페르소나 생성)
-- [x] **Phase 2** — 시뮬레이션 루프 (대화 엔진, 이벤트 시스템)
-- [x] **Phase 3** — 하이브 마인드 (자동 위키, 벡터 DB)
-- [x] **Phase 4a–4e** — Chronicle UI, 분석, 시맨틱 세디먼트, 학습 데이터 내보내기
+- [x] **Phase 2** — 시뮬레이션 루프 (대화 엔진, 랜덤 이벤트; 예약 이벤트는 미구현)
+- [x] **Phase 3** — 하이브 마인드 (자동 위키, 벡터 DB; 모순 감지는 미구현)
+- [ ] **Phase 4a–4d** — 옴니스코프(코스모그래프) — Chronicle UI로 대체, 컨셉으로 유지
+- [x] **Phase 4e–4f** — 시맨틱 세디먼트, 학습 데이터 내보내기, 관찰자 중심 UX
 - [ ] **v0.3 Grounding** — 위키 근거 링크, 결정적 리플레이, UI 통합, E2E 테스트
 - [ ] **v1 Research Preview** — 시나리오 포맷, 배치 비교, 모델 카드
 

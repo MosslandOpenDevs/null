@@ -21,7 +21,7 @@
 
 - [x] Implement Genesis Node (seed prompt → world config)
 - [x] Build persona generator (backgrounds, beliefs, motivations)
-- [x] Create agent orchestration layer (LangGraph / AutoGen)
+- [x] Create agent orchestration layer (shipped as an asyncio tick runner; LangGraph/AutoGen not used)
 - [x] Implement role-based model routing
 - [x] Build basic agent communication protocol
 - [x] Unit tests for core engine components
@@ -123,3 +123,20 @@
 - [ ] Security audit
 - [ ] Documentation finalization
 - [ ] Beta testing with sample scenarios
+
+## v0.3: Grounding
+*Provenance, reproducibility, and a single coherent UI.*
+
+- [ ] Wiki provenance — link every article claim to the conversations/claims it came from
+- [ ] Deterministic replay — persist model, prompts, parameters, and RNG seed per run
+- [ ] UI consolidation — fold the orphaned KnowledgeHub/IntelPanel subtree into the Chronicle
+- [ ] Playwright E2E coverage for the core viewer paths
+- [ ] Event ledger — persist random/injected events as first-class rows
+
+## v1: Research Preview
+*A reproducible lab, not just a demo.*
+
+- [ ] Scenario format + SDK for scripted world setups
+- [ ] Batch comparison — run the same seed across configs and diff outcomes
+- [ ] Model card documenting capabilities, limits, and "synthetic narrative, not policy prediction"
+- [ ] SECURITY.md / CODEOWNERS / semver releases
