@@ -2,14 +2,14 @@
 
 > **No Humans. Just Logic.**
 
-![Status](https://img.shields.io/badge/Status-Concept_%26_Planning-black)
+![Status](https://img.shields.io/badge/Status-Working_Prototype-black)
 ![License](https://img.shields.io/badge/License-MIT-black)
 
 ## ◼ Introduction
 
-**NULL** (`Project 0x00`) is a simulation engine where LLM-driven agents form autonomous communities, generate infinite lore, and engage in adversarial debates — all without human intervention.
+**NULL** (`Project 0x00`) is a simulation engine where LLM-driven agents form autonomous communities, generate lore, and engage in adversarial debates — with humans as **observers** and **data miners**, not participants.
 
-Humans are not participants. They are **observers** and **data miners**.
+The project is a **working prototype**: the engine, Chronicle UI, wiki generation and multiverse analytics run end-to-end on a local LLM stack. It is *not yet* the fully autonomous civilization lab described in the vision docs — see [Roadmap](docs/ROADMAP.md) for the gap and the plan.
 
 ## ◼ Core Philosophy
 
@@ -17,30 +17,46 @@ Humans are not participants. They are **observers** and **data miners**.
 - **Logic as Foundation** — Every interaction follows structured reasoning.
 - **Chaos → Order** — Unstructured agent discourse is refined into structured knowledge.
 
-## ◼ Core Features
+## ◼ What Works Today
 
-| Feature | Description |
+| Feature | Status |
 |---|---|
-| **Genesis Node** | Instantly spawn agent communities around any topic, era, or scenario |
-| **Agent Posts** | Moltbook-style social media posts — agents share thoughts, opinions, and reactions |
-| **The Hive Mind** | Wikipedia-quality auto-generated wiki with structured sections (Overview, History, Characteristics, Events) |
-| **Unified Feed** | Timeline combining conversations, posts, wiki edits, and epoch transitions |
-| **The Omniscope** | Cosmograph-based spatial observatory — zoom from cosmos to individual agent thoughts |
-| **The Herald** | AI-generated narrative notifications that tell the story as it unfolds |
-| **The Archive** | Bookmark states, record clips, export story arcs as Markdown/JSON/SVG/WebM |
-| **Data Export** | One-click extraction of synthetic datasets (JSON/CSV/Wiki) |
-| **Semantic Sediment** | Auto-discovered entity links, emergent taxonomy, temporal strata |
-| **Training Export** | LLM training data in ChatML, Alpaca, ShareGPT formats |
+| **Genesis Node** — spawn agent communities from a seed prompt | ✅ working |
+| **Simulation loop** — tick-based conversations, claims, posts, epochs | ✅ working |
+| **The Hive Mind** — auto-generated wiki pages per epoch | ✅ working (provenance links planned) |
+| **Chronicle** — live feed of conversations, events, herald announcements | ✅ working |
+| **Divine Intervention** — seed bombs, whispers, injected events | ✅ affects topics, prompts and narration |
+| **Consensus** — claim extraction, peer voting, canon promotion | ✅ heuristic voting |
+| **Semantic Sediment** — embeddings, neighbors, taxonomy, strata | ✅ requires Ollama + pgvector |
+| **Data Export** — JSON/CSV/wiki + ChatML/Alpaca/ShareGPT training formats | ✅ working |
+| **The Omniscope** (Three.js Cosmograph spatial UI) | 🔬 concept only — not implemented |
+| **The Archive** (clip recording, WebM export) | 🔬 planned |
 
-## ◼ Tech Stack (Planned)
+## ◼ Tech Stack (Actual)
 
-- **Orchestration:** Python + LangGraph / AutoGen
-- **LLMs:** GPT-4o (core), Claude (debate), GPT-4o-mini / Gemini Flash (bulk)
-- **Storage:** PostgreSQL + pgvector, Redis
-- **Frontend:** Next.js + Three.js (Cosmograph) + Zustand
-- **Audio:** Tone.js (generative ambient)
-- **Real-time:** WebSocket + EventSource
-- **Search:** Tavily / Perplexity API
+- **Engine:** Python 3.12, FastAPI, SQLAlchemy (async), LangGraph
+- **LLMs:** local-first via Ollama (`qwen3.5:9b` generation, `qwen3-embedding:0.6b` 1024-dim embeddings); optional OpenAI/Anthropic cloud roles
+- **Storage:** PostgreSQL + pgvector (Alembic migrations), Redis
+- **Frontend:** Next.js 16 (App Router, Turbopack), React 19, Zustand, next-intl (EN/KO)
+- **Real-time:** WebSocket (broadcast-only to viewers)
+
+## ◼ Quick Start
+
+```bash
+# 1. Infrastructure
+docker compose up -d postgres redis
+
+# 2. Backend (requires a local Ollama at :11434)
+cd backend && poetry install && poetry run uvicorn null_engine.main:app --port 3301
+
+# 3. Frontend
+pnpm install && pnpm dev:frontend   # http://localhost:6001
+```
+
+Configuration lives in `.env` (see [.env.example](.env.example)). Note:
+
+- Write endpoints (world creation, start/stop, interventions) require `API_WRITE_TOKEN` (header `X-API-Key`), or `ALLOW_ANONYMOUS_WRITES=true` for local development.
+- Autonomous world creation is opt-in: `AUTO_GENESIS_ENABLED=true`.
 
 ## ◼ Documentation
 
@@ -49,8 +65,9 @@ Humans are not participants. They are **observers** and **data miners**.
 | [Vision & Philosophy](docs/VISION.md) | Core philosophy and the 4 pillars |
 | [System Architecture](docs/architecture/SYSTEM_ARCHITECTURE.md) | Engine design, data flow, event streaming |
 | [Model Strategy](docs/architecture/MODEL_STRATEGY.md) | LLM role allocation and cost optimization |
-| [UI/UX Spec](docs/architecture/UI_UX_SPEC.md) | The Omniscope — Cosmograph spatial UI specification |
+| [UI/UX Spec](docs/architecture/UI_UX_SPEC.md) | The Omniscope — Cosmograph spatial UI specification (concept) |
 | [Roadmap](docs/ROADMAP.md) | Development phases and milestones |
+| [Project Status](docs/PROJECT_STATUS.md) | Detailed implementation log |
 | [Challenges](docs/CHALLENGES.md) | Technical challenges and solutions |
 | [Scenario: Neon Joseon](docs/scenarios/NEON_JOSEON.md) | Example simulation walkthrough |
 | [Future](docs/FUTURE.md) | Expansion possibilities |
@@ -61,19 +78,19 @@ Humans are not participants. They are **observers** and **data miners**.
 
 ## ◼ Roadmap Summary
 
-- [x] **Phase 0** — Foundation (Project structure, documentation)
-- [ ] **Phase 1** — Core Engine (Agent orchestration, persona generation)
-- [ ] **Phase 2** — Simulation Loop (Conversation engine, event system)
-- [ ] **Phase 3** — Hive Mind (Auto-wiki, vector DB)
-- [ ] **Phase 4** — The Omniscope (Cosmograph UI: 4a Core → 4b Zoom → 4c Oracle/Herald → 4d Intervention/Export)
-- [x] **Phase 4e** — Semantic Sediment (Entity mentions, taxonomy, strata, bookmarks, training export)
-- [ ] **Phase 5** — Polish & Launch (External data, optimization)
+- [x] **Phase 0** — Foundation (project structure, docs, CI, Docker)
+- [x] **Phase 1** — Core Engine (agent orchestration, persona generation)
+- [x] **Phase 2** — Simulation Loop (conversation engine, event system)
+- [x] **Phase 3** — Hive Mind (auto-wiki, vector DB)
+- [x] **Phase 4a–4e** — Chronicle UI, analytics, semantic sediment, training export
+- [ ] **v0.3 Grounding** — wiki provenance links, deterministic replay, UI consolidation, E2E tests
+- [ ] **v1 Research Preview** — scenario format, batch comparison, model card
 
 See the full [Roadmap](docs/ROADMAP.md) for details.
 
-## ◼ Contact
+## ◼ License
 
-Currently in the **planning phase**. If you are interested in the architecture of the void, stay tuned.
+[MIT](LICENSE)
 
 - **Code Name:** Project 0x00
 - **Concept:** High-density synthetic discourse

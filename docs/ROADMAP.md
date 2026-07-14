@@ -1,43 +1,50 @@
 # Development Roadmap
 
+> **Updated 2026-07** to match the actual codebase. Phase 4a–4d as written below
+> described a Three.js *Cosmograph* UI that was never built — the shipped UI is the
+> **Chronicle** (feed-based observatory) with equivalent features (herald, command
+> palette, interventions, bookmarks, export). Cosmograph remains a concept
+> (see docs/architecture/UI_UX_SPEC.md). Near-term work targets **v0.3 Grounding**:
+> wiki provenance links, deterministic replay, UI consolidation, Playwright E2E.
+
 ## Phase 0: Foundation
 *Project structure, documentation, and basic infrastructure.*
 
 - [x] Define project philosophy and vision
 - [x] Create documentation framework
-- [ ] Set up monorepo structure (backend / frontend / shared)
-- [ ] Configure development environment (Docker, CI/CD)
-- [ ] Establish coding standards and linting
+- [x] Set up monorepo structure (backend / frontend / shared)
+- [x] Configure development environment (Docker, CI/CD)
+- [x] Establish coding standards and linting
 
 ## Phase 1: Core Engine
 *Agent orchestration and persona generation.*
 
-- [ ] Implement Genesis Node (seed prompt → world config)
-- [ ] Build persona generator (backgrounds, beliefs, motivations)
-- [ ] Create agent orchestration layer (LangGraph / AutoGen)
-- [ ] Implement role-based model routing
-- [ ] Build basic agent communication protocol
-- [ ] Unit tests for core engine components
+- [x] Implement Genesis Node (seed prompt → world config)
+- [x] Build persona generator (backgrounds, beliefs, motivations)
+- [x] Create agent orchestration layer (LangGraph / AutoGen)
+- [x] Implement role-based model routing
+- [x] Build basic agent communication protocol
+- [x] Unit tests for core engine components
 
 ## Phase 2: Simulation Loop
 *Conversation engine and event system.*
 
-- [ ] Implement multi-agent conversation engine
+- [x] Implement multi-agent conversation engine
 - [ ] Build event system (random events, scheduled events)
-- [ ] Create consensus mechanism (Canon vs. Legends voting)
-- [ ] Implement time dilation controls
-- [ ] Add conversation memory management (sliding window + summary)
-- [ ] Integration tests for simulation loop
+- [x] Create consensus mechanism (Canon vs. Legends voting)
+- [x] Implement time dilation controls
+- [x] Add conversation memory management (sliding window + summary)
+- [x] Integration tests for simulation loop
 
 ## Phase 3: Hive Mind
 *Auto-wiki and knowledge storage.*
 
-- [ ] Set up PostgreSQL + pgvector
-- [ ] Implement wiki page generation from conversations
-- [ ] Build knowledge graph construction pipeline
-- [ ] Create semantic search across wiki entries
+- [x] Set up PostgreSQL + pgvector
+- [x] Implement wiki page generation from conversations
+- [x] Build knowledge graph construction pipeline
+- [x] Create semantic search across wiki entries
 - [ ] Implement contradiction detection
-- [ ] Add wiki versioning and history
+- [x] Add wiki versioning and history
 
 ## Phase 4: The Omniscope
 *Cosmograph-based spatial UI implementation.*
