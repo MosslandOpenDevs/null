@@ -20,18 +20,24 @@ class MemoryManager:
         self._mid_term: dict[uuid.UUID, list[str]] = defaultdict(list)
         self._long_term: dict[uuid.UUID, list[str]] = defaultdict(list)
 
-    async def add_short_term(self, agent_id: uuid.UUID, messages: list[AgentMessage], db: AsyncSession | None = None):
+    async def add_short_term(
+        self,
+        agent_id: uuid.UUID,
+        messages: list[AgentMessage],
+        db: AsyncSession | None = None,
+        world_id: uuid.UUID | None = None,
+    ):
         entries = [{"agent_id": str(m.agent_id), "content": m.content, "type": m.type} for m in messages]
         self._short_term[agent_id].extend(entries)
         self._short_term[agent_id] = self._short_term[agent_id][-20:]
 
         # Write-through to DB
-        if db:
+        if db and world_id:
             try:
                 for entry in entries:
                     mem = AgentMemory(
                         agent_id=agent_id,
-                        world_id=uuid.UUID(entry.get("world_id", "00000000-0000-0000-0000-000000000000")) if "world_id" in entry else agent_id,
+                        world_id=world_id,
                         tier="short",
                         content=entry,
                     )

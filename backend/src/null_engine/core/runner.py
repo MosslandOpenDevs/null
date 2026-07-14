@@ -60,6 +60,21 @@ class SimulationRunner:
         logger.info("runner.start", world_id=str(self.world_id))
         note_runner_status(self.world_id, "running")
 
+        # Restore persisted state so a restart doesn't wipe agent memory
+        # or in-flight consensus.
+        try:
+            async with async_session() as db:
+                from null_engine.models.tables import Agent
+
+                agents_result = await db.execute(
+                    select(Agent.id).where(Agent.world_id == self.world_id)
+                )
+                for (agent_id,) in agents_result.all():
+                    await self._memory.load_from_db(agent_id, db)
+                await consensus_engine.load_from_db(db, self.world_id)
+        except Exception:
+            logger.exception("runner.state_restore_failed", world_id=str(self.world_id))
+
         try:
             while self.running:
                 # Keep exclusive ownership of the world; if another worker
@@ -150,7 +165,13 @@ class SimulationRunner:
         # 1. Run conversation
         turn = await run_conversation(db, self.world_id, epoch, tick, self._memory)
         if turn.messages:
-            summary = f"[E{epoch}T{tick}] {turn.topic}: {len(turn.messages)} messages"
+            # Carry real utterances into the summary so downstream wiki
+            # generation is grounded in what agents actually said, not just
+            # a topic name and a message count.
+            excerpt = " / ".join(
+                m.content[:150].replace("\n", " ") for m in turn.messages[:3]
+            )
+            summary = f"[E{epoch}T{tick}] {turn.topic} ({len(turn.messages)} messages): {excerpt}"
             self._conversation_summaries.append(summary)
 
             # Extract claims for consensus
@@ -172,6 +193,11 @@ class SimulationRunner:
                         await consensus_engine.propose_claim(
                             db, self.world_id, claim, proposer_id, faction_id
                         )
+
+        # 1b. Peer voting on open claims, so consensus (3+ votes from 2+
+        # factions) is actually reachable — previously only the proposer's
+        # own vote ever existed.
+        votes_cast = await self._vote_on_claims(db)
 
         # 2. Check random events
         events = await check_random_events(db, world, tick)
@@ -219,8 +245,51 @@ class SimulationRunner:
             "participants": len(turn.participants),
             "conversation_messages": len(turn.messages),
             "claims_proposed": claims_count,
+            "votes_cast": votes_cast,
             "events_triggered": len(events),
             "posts_created": len(posts),
             "epoch_changed": epoch_changed,
             "wiki_topics_generated": wiki_topics_generated,
         }
+
+    async def _vote_on_claims(self, db) -> int:
+        """Deterministic-heuristic peer voting (no LLM cost per vote).
+
+        A few random agents evaluate each open claim; same-faction agents
+        and high-confidence claims are more likely to attract votes.
+        """
+        import random
+
+        from null_engine.models.tables import Agent
+
+        open_claims = consensus_engine.open_claims(self.world_id)[:3]
+        if not open_claims:
+            return 0
+
+        result = await db.execute(select(Agent).where(Agent.world_id == self.world_id))
+        agents = list(result.scalars().all())
+        if not agents:
+            return 0
+
+        votes_cast = 0
+        for claim in open_claims:
+            already_voted = {v["agent"] for v in claim["votes"]}
+            candidates = [a for a in agents if str(a.id) not in already_voted]
+            for voter in random.sample(candidates, min(3, len(candidates))):
+                same_faction = str(voter.faction_id) == claim.get("faction")
+                confidence = float(claim.get("confidence", 0.5) or 0.5)
+                p_vote = 0.25 + (0.3 if same_faction else 0.0) + 0.3 * confidence
+                if random.random() >= p_vote:
+                    continue
+                outcome = await consensus_engine.vote(
+                    db,
+                    self.world_id,
+                    claim.get("claim", ""),
+                    voter.id,
+                    voter.faction_id,
+                )
+                if outcome:
+                    votes_cast += 1
+                if outcome == "canon":
+                    break
+        return votes_cast

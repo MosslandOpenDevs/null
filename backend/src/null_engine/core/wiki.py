@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from null_engine.models.schemas import WSEnvelope
 from null_engine.models.tables import WikiHistory, WikiPage
-from null_engine.services.llm_router import llm_router
+from null_engine.services.llm_router import LLMGenerationError, llm_router
 from null_engine.ws.handler import broadcast
 
 logger = structlog.get_logger()
@@ -62,15 +62,19 @@ class WikiEngine:
         existing_page = result.scalar_one_or_none()
         existing_content = existing_page.content if existing_page else ""
 
-        content = await llm_router.generate_text(
-            role="wiki_writer",
-            prompt=WIKI_GEN_PROMPT.format(
-                topic=topic,
-                existing=existing_content or "(new article)",
-                summaries="\n".join(f"- {s}" for s in summaries),
-            ),
-            max_tokens=4096,
-        )
+        try:
+            content = await llm_router.generate_text(
+                role="wiki_writer",
+                prompt=WIKI_GEN_PROMPT.format(
+                    topic=topic,
+                    existing=existing_content or "(new article)",
+                    summaries="\n".join(f"- {s}" for s in summaries),
+                ),
+                max_tokens=4096,
+            )
+        except LLMGenerationError:
+            logger.warning("wiki.generation_skipped", topic=topic)
+            return existing_page
 
         if existing_page:
             # Save history

@@ -2,7 +2,7 @@ import time
 
 from fastapi import APIRouter
 
-from null_engine.services.llm_router import llm_router
+from null_engine.services.llm_router import LLMGenerationError, llm_router
 
 router = APIRouter(tags=["seeds"])
 
@@ -41,10 +41,13 @@ async def generate_seeds():
     if now < float(_seed_cache["expires_at"]) and _seed_cache["seeds"]:
         return _seed_cache["seeds"]
 
-    result = await llm_router.generate_json(
-        role="reaction_agent",
-        prompt=GENERATE_SEEDS_PROMPT,
-    )
+    try:
+        result = await llm_router.generate_json(
+            role="reaction_agent",
+            prompt=GENERATE_SEEDS_PROMPT,
+        )
+    except LLMGenerationError:
+        result = []
     seeds: list[str] = []
     if isinstance(result, list):
         seeds = [s for s in result if isinstance(s, str)][:5]

@@ -33,9 +33,7 @@ async def translate_to_korean(text: str) -> str | None:
             temperature=0.3,
             max_tokens=2048,
         )
-        if result and not result.startswith("(LLM error"):
-            return result.strip()
-        return None
+        return result.strip() if result else None
     except Exception:
         logger.exception("translator.translate_failed")
         return None

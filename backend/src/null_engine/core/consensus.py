@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from null_engine.models.schemas import WSEnvelope
 from null_engine.models.tables import Claim, ClaimVote, WikiPage
-from null_engine.services.llm_router import llm_router
+from null_engine.services.llm_router import LLMGenerationError, llm_router
 from null_engine.ws.handler import broadcast
 
 logger = structlog.get_logger()
@@ -31,10 +31,14 @@ class ConsensusEngine:
         self._proposed: dict[uuid.UUID, list[dict]] = {}  # world_id -> claims
 
     async def extract_claims(self, conversation_text: str) -> list[dict]:
-        result = await llm_router.generate_json(
-            role="reaction_agent",
-            prompt=CLAIM_EXTRACTION_PROMPT.format(text=conversation_text),
-        )
+        try:
+            result = await llm_router.generate_json(
+                role="reaction_agent",
+                prompt=CLAIM_EXTRACTION_PROMPT.format(text=conversation_text),
+            )
+        except LLMGenerationError:
+            logger.warning("consensus.claim_extraction_skipped")
+            return []
         if isinstance(result, list):
             return result
         return result.get("claims", [])
@@ -81,6 +85,10 @@ class ConsensusEngine:
             "votes": [{"agent": str(proposer_id), "faction": str(faction_id)}],
             "status": "proposed",
         })
+
+    def open_claims(self, world_id: uuid.UUID) -> list[dict]:
+        """Claims still awaiting votes in this world."""
+        return [c for c in self._proposed.get(world_id, []) if c["status"] == "proposed"]
 
     async def vote(
         self,

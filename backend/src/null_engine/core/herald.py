@@ -3,7 +3,7 @@ import uuid
 import structlog
 
 from null_engine.models.schemas import WSEnvelope
-from null_engine.services.llm_router import llm_router
+from null_engine.services.llm_router import LLMGenerationError, llm_router
 from null_engine.ws.handler import broadcast
 
 logger = structlog.get_logger()
@@ -35,10 +35,14 @@ class Herald:
             f"- {e.get('description', e.get('type', 'unknown event'))}" for e in events[-5:]
         )
 
-        announcement = await llm_router.generate_text(
-            role="reaction_agent",
-            prompt=HERALD_PROMPT.format(events=events_text),
-        )
+        try:
+            announcement = await llm_router.generate_text(
+                role="reaction_agent",
+                prompt=HERALD_PROMPT.format(events=events_text),
+            )
+        except LLMGenerationError:
+            logger.warning("herald.announcement_skipped", world_id=str(world_id))
+            return
 
         await broadcast(world_id, WSEnvelope(
             type="herald.announcement",

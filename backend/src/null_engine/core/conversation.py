@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from null_engine.agents.memory import MemoryManager
 from null_engine.models.schemas import AgentMessage, ConversationTurn, WSEnvelope
 from null_engine.models.tables import Agent, Conversation, Relationship
-from null_engine.services.llm_router import llm_router
+from null_engine.services.llm_router import LLMGenerationError, llm_router
 from null_engine.ws.handler import broadcast
 
 logger = structlog.get_logger()
@@ -65,7 +65,23 @@ async def run_conversation(
     except Exception:
         pass
 
-    topic = await _generate_topic(participants, world_context)
+    # Seed bombs: consume one injected topic if any is pending, so divine
+    # intervention actually steers the next conversation.
+    injected_topic = None
+    try:
+        from null_engine.models.tables import World
+        world_result = await db.execute(select(World).where(World.id == world_id))
+        world = world_result.scalar_one_or_none()
+        if world and world.config and world.config.get("_injected_topics"):
+            pending = list(world.config["_injected_topics"])
+            injected_topic = pending.pop(0)
+            world.config = {**world.config, "_injected_topics": pending}
+            await db.flush()
+            logger.info("conversation.seed_bomb_consumed", topic=injected_topic)
+    except Exception:
+        logger.exception("conversation.seed_bomb_check_failed")
+
+    topic = injected_topic or await _generate_topic(participants, world_context)
 
     turn = ConversationTurn(
         world_id=world_id,
@@ -84,6 +100,13 @@ async def run_conversation(
         # Build context
         memory_context = await memory.build_context(speaker.id, topic)
 
+        # Whispers: surface divine messages to the agent that received them.
+        whispers = list((speaker.persona or {}).get("whispers", []))[-2:]
+        if whispers:
+            memory_context += "\n\nA voice from beyond whispered to you recently:\n" + "\n".join(
+                f"  - {w}" for w in whispers
+            )
+
         prompt = CONVERSATION_PROMPT.format(
             agent_name=speaker.name,
             agent_role=speaker.persona.get("role", "member"),
@@ -96,7 +119,12 @@ async def run_conversation(
             history="\n".join(history_lines[-10:]),
         )
 
-        response = await llm_router.generate_text(role="main_debater", prompt=prompt)
+        try:
+            response = await llm_router.generate_text(role="main_debater", prompt=prompt)
+        except LLMGenerationError:
+            # Skip this speaker's turn rather than persisting error text.
+            logger.warning("conversation.message_skipped", agent=speaker.name, topic=topic)
+            continue
 
         msg = AgentMessage(
             agent_id=speaker.id,
@@ -120,13 +148,16 @@ async def run_conversation(
             },
         ))
 
-    # Post-conversation: update memories
+    # Post-conversation: update memories (write-through to agent_memories)
     summary = f"Conversation about '{topic}': " + "; ".join(
         f"{m.content[:60]}..." for m in turn.messages[:3]
     )
     for p in participants:
-        await memory.add_short_term(p.id, turn.messages)
-        await memory.add_mid_term(p.id, summary)
+        await memory.add_short_term(p.id, turn.messages, db=db, world_id=world_id)
+        await memory.add_mid_term(p.id, summary, db=db, world_id=world_id)
+        # Whispers influenced this conversation; consume them.
+        if p.persona and p.persona.get("whispers"):
+            p.persona = {**p.persona, "whispers": []}
 
     # Update relationships based on conversation (with sentiment analysis)
     await _update_relationships(db, world_id, participants, turn.messages)

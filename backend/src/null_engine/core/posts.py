@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from null_engine.models.schemas import WSEnvelope
 from null_engine.models.tables import Agent, AgentPost, World
-from null_engine.services.llm_router import llm_router
+from null_engine.services.llm_router import LLMGenerationError, llm_router
 from null_engine.ws.handler import broadcast
 
 logger = structlog.get_logger()
@@ -63,11 +63,13 @@ Keep it concise and engaging, like a real social media post.
 Respond with ONLY the post content, no additional commentary."""
 
     try:
-        content = await llm_router.generate_text("post_writer", prompt, temperature=0.9, max_tokens=500)
-        content = content.strip()
-
-        if not content or content.startswith("(LLM error"):
+        try:
+            content = await llm_router.generate_text("post_writer", prompt, temperature=0.9, max_tokens=500)
+        except LLMGenerationError:
             logger.warning("post.generation_failed", agent=agent_name)
+            return posts
+        content = content.strip()
+        if not content:
             return posts
 
         # Create the post

@@ -51,6 +51,19 @@ async def check_random_events(db: AsyncSession, world: World, tick: int) -> list
 async def inject_event(db: AsyncSession, world: World, event_data: EventCreate) -> dict:
     logger.info("event.injected", type=event_data.type, desc=event_data.description[:80])
 
+    # Feed the intervention into world state, not just the UI:
+    # - herald buffer → it appears in the next epoch narration
+    # - injected topic queue → it can steer an upcoming conversation
+    from null_engine.core.herald import herald
+
+    herald.buffer_event(
+        world.id, {"description": event_data.description, "type": event_data.type}
+    )
+    pending = list((world.config or {}).get("_injected_topics", []))
+    pending.append(event_data.description[:200])
+    world.config = {**(world.config or {}), "_injected_topics": pending[-5:]}
+    await db.flush()
+
     await broadcast(world.id, WSEnvelope(
         type="event.triggered",
         epoch=world.current_epoch,

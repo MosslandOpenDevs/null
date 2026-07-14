@@ -9,6 +9,24 @@ from null_engine.config import settings
 
 logger = structlog.get_logger()
 
+
+class LLMGenerationError(Exception):
+    """LLM call failed after retries.
+
+    Callers must handle this and skip persistence — historically failures
+    came back as "(LLM error — …)" strings that were saved as real
+    conversation/wiki content.
+    """
+
+    def __init__(self, role: str, reason: str):
+        self.role = role
+        self.reason = reason
+        super().__init__(f"LLM generation failed for role={role}: {reason}")
+
+
+LLM_RETRY_ATTEMPTS = 2
+LLM_RETRY_DELAY_SECONDS = 1.5
+
 # Role → model mapping per provider
 ROLE_MODEL_MAP: dict[str, tuple[str, str]] = {
     # role: (provider, model)
@@ -100,18 +118,31 @@ class LLMRouter:
         return content
 
     async def generate_text(self, role: str, prompt: str, temperature: float = 0.8, max_tokens: int = 2048) -> str:
-        # Use Ollama if configured
-        if settings.llm_provider == "ollama":
+        """Generate text or raise LLMGenerationError (never returns error prose)."""
+        import asyncio
+
+        last_reason = "unknown"
+        for attempt in range(1, LLM_RETRY_ATTEMPTS + 1):
             try:
-                model = self._get_ollama_model(role)
-                result = await self._ollama_generate(model, prompt, temperature, max_tokens)
+                result = await self._generate_text_once(role, prompt, temperature, max_tokens)
                 if result:
                     return result
-                logger.warning("ollama.empty_response", model=model, role=role)
-                return "(LLM error — empty response)"
-            except Exception:
-                logger.exception("ollama.error", role=role)
-                return "(LLM error — no response generated)"
+                last_reason = "empty response"
+                logger.warning("llm.empty_response", role=role, attempt=attempt)
+            except Exception as exc:
+                last_reason = f"{type(exc).__name__}: {exc}"
+                logger.warning("llm.attempt_failed", role=role, attempt=attempt, error=str(exc))
+            if attempt < LLM_RETRY_ATTEMPTS:
+                await asyncio.sleep(LLM_RETRY_DELAY_SECONDS * attempt)
+
+        logger.error("llm.generation_failed", role=role, reason=last_reason)
+        raise LLMGenerationError(role, last_reason)
+
+    async def _generate_text_once(self, role: str, prompt: str, temperature: float, max_tokens: int) -> str:
+        # Use Ollama if configured
+        if settings.llm_provider == "ollama":
+            model = self._get_ollama_model(role)
+            return await self._ollama_generate(model, prompt, temperature, max_tokens)
 
         # Cloud providers
         provider, model = self._get_model(role)
@@ -120,31 +151,25 @@ class LLMRouter:
             logger.warning("budget.exceeded", used=self._budget_used)
             provider, model = "openai", "gpt-4o-mini"
 
-        try:
-            if provider == "openai":
-                resp = await self.openai.chat.completions.create(
-                    model=model,
-                    messages=[{"role": "user", "content": prompt}],
-                    temperature=temperature,
-                    max_tokens=max_tokens,
-                )
-                return resp.choices[0].message.content or ""
+        if provider == "openai":
+            resp = await self.openai.chat.completions.create(
+                model=model,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=temperature,
+                max_tokens=max_tokens,
+            )
+            return resp.choices[0].message.content or ""
 
-            elif provider == "anthropic":
-                resp = await self.anthropic.messages.create(
-                    model=model,
-                    messages=[{"role": "user", "content": prompt}],
-                    temperature=temperature,
-                    max_tokens=max_tokens,
-                )
-                return resp.content[0].text if resp.content else ""
+        if provider == "anthropic":
+            resp = await self.anthropic.messages.create(
+                model=model,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=temperature,
+                max_tokens=max_tokens,
+            )
+            return resp.content[0].text if resp.content else ""
 
-            else:
-                raise ValueError(f"Unknown provider: {provider}")
-
-        except Exception:
-            logger.exception("llm.error", provider=provider, model=model, role=role)
-            return "(LLM error — no response generated)"
+        raise ValueError(f"Unknown provider: {provider}")
 
     @staticmethod
     def _clean_json_text(text: str) -> str:
@@ -166,6 +191,7 @@ class LLMRouter:
         return text
 
     async def generate_json(self, role: str, prompt: str, max_tokens: int = 4096) -> dict | list:
+        """Generate JSON or raise LLMGenerationError (on call or parse failure)."""
         text = await self.generate_text(role, prompt, temperature=0.3, max_tokens=max_tokens)
         text = self._clean_json_text(text)
 
@@ -184,7 +210,7 @@ class LLMRouter:
                     except json.JSONDecodeError:
                         continue
             logger.warning("llm.json_parse_failed", text=text[:200])
-            return {}
+            raise LLMGenerationError(role, "response was not valid JSON")
 
 
 llm_router = LLMRouter()

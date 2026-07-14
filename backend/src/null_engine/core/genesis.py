@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from null_engine.config import settings
 from null_engine.models.tables import Agent, Faction, Relationship, World, WorldTag
-from null_engine.services.llm_router import llm_router
+from null_engine.services.llm_router import LLMGenerationError, llm_router
 
 logger = structlog.get_logger()
 
@@ -207,16 +207,20 @@ async def _generate_personas(faction_name: str, faction_desc: str, world_desc: s
         batch_count = min(batch_size, count - batch_start)
 
         for attempt in range(3):
-            result = await llm_router.generate_json(
-                role="genesis_architect",
-                prompt=PERSONA_GEN_PROMPT.format(
-                    count=batch_count,
-                    faction_name=faction_name,
-                    faction_desc=faction_desc,
-                    world_desc=world_desc,
-                ),
-                max_tokens=4096,
-            )
+            try:
+                result = await llm_router.generate_json(
+                    role="genesis_architect",
+                    prompt=PERSONA_GEN_PROMPT.format(
+                        count=batch_count,
+                        faction_name=faction_name,
+                        faction_desc=faction_desc,
+                        world_desc=world_desc,
+                    ),
+                    max_tokens=4096,
+                )
+            except LLMGenerationError:
+                logger.warning("genesis.persona_retry", faction=faction_name, attempt=attempt)
+                continue
             personas = result if isinstance(result, list) else result.get("personas", [])
             if personas:
                 all_personas.extend(personas[:batch_count])
