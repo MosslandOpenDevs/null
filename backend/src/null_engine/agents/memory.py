@@ -2,7 +2,7 @@ import uuid
 from collections import defaultdict
 
 import structlog
-from sqlalchemy import select, delete
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from null_engine.models.schemas import AgentMessage

@@ -10,11 +10,11 @@ import uuid
 from collections import Counter
 
 import structlog
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from null_engine.models.tables import Conversation, Relationship, Claim
 from null_engine.models.schemas import WSEnvelope
+from null_engine.models.tables import Claim, Conversation, Relationship
 from null_engine.ws.handler import broadcast
 
 logger = structlog.get_logger()

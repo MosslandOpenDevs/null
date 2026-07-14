@@ -64,7 +64,7 @@ jobs:
         with:
           python-version: "3.12"
 
-      - run: pip install poetry
+      - run: pip install "poetry==2.4.1"
 
       - run: poetry install --no-interaction
 

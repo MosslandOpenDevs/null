@@ -1,0 +1,14 @@
+# Context for frontend/Dockerfile (built from the repo root)
+.git
+.github
+.claude
+node_modules
+**/node_modules
+**/.next
+backend
+docs
+scripts
+artifacts
+*.log
+monitor.sh
+OPERATIONS_PLAN.md

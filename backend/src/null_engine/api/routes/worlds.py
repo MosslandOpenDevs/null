@@ -2,6 +2,7 @@ import asyncio
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -244,9 +245,6 @@ async def stop_simulation(world_id: uuid.UUID, db: AsyncSession = Depends(get_db
 
 
 # --- Seed Bomb ---
-from pydantic import BaseModel
-
-
 class SeedBombRequest(BaseModel):
     topic: str
 
@@ -267,8 +265,8 @@ async def seed_bomb(world_id: uuid.UUID, body: SeedBombRequest, db: AsyncSession
     world.config = config
     await db.commit()
 
-    from null_engine.ws.handler import broadcast
     from null_engine.models.schemas import WSEnvelope
+    from null_engine.ws.handler import broadcast
 
     await broadcast(world_id, WSEnvelope(
         type="event.triggered",
@@ -332,8 +330,8 @@ Summary:"""
 @router.get("/worlds/{world_id}/analytics/faction-power")
 async def faction_power_analytics(world_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     """Faction power over epochs."""
-    from null_engine.models.tables import Faction, Relationship
-    from sqlalchemy import and_
+
+    from null_engine.models.tables import Faction
 
     result = await db.execute(select(World).where(World.id == world_id))
     world = result.scalar_one_or_none()

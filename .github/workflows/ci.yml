@@ -21,7 +21,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install poetry
+      - run: pip install "poetry==2.4.1"
       - run: poetry install --no-interaction
       - run: poetry run ruff check src tests
       - run: poetry run pytest --tb=short
@@ -34,17 +34,25 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
-        with:
-          version: 9
       - uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: "24"
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
       - run: pnpm tsc --noEmit
       - run: pnpm test
+      - run: pnpm build
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build backend image
+        run: docker build -t null-backend:ci backend
+      - name: Build frontend image
+        run: docker build -t null-frontend:ci -f frontend/Dockerfile .
 
   ux-smoke:
     runs-on: ubuntu-latest
@@ -76,14 +84,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install poetry
+      - run: pip install "poetry==2.4.1"
       - run: cd backend && poetry install --no-interaction
       - uses: pnpm/action-setup@v4
-        with:
-          version: 9
       - uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: "24"
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
@@ -272,7 +278,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install poetry
+      - run: pip install "poetry==2.4.1"
       - run: poetry install --no-interaction
       - run: poetry run python scripts/loadtest.py --dry-run --base-url http://localhost:3301 --requests 300 --concurrency 20 --history-out ../artifacts/loadtest-history.jsonl --target-success-rate 0.98 --target-p95-ms 1000 --no-fail-on-alert
       - run: poetry run python scripts/loadtest.py --dry-run --base-url http://localhost:3301 --requests 600 --concurrency 30 --out ../artifacts/loadtest-report.json --history-out ../artifacts/loadtest-history.jsonl --trend-out ../artifacts/loadtest-trend.md --history-window 30 --target-success-rate 0.98 --target-p95-ms 1000 --no-fail-on-alert

@@ -131,7 +131,7 @@ def _drain_output(proc: subprocess.Popen[str]) -> str:
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="NULL full-stack UX smoke check")
     parser.add_argument("--backend-url", default="http://localhost:3301")
-    parser.add_argument("--frontend-url", default="http://localhost:3300")
+    parser.add_argument("--frontend-url", default="http://localhost:6001")
     parser.add_argument("--locale", default="en")
     parser.add_argument("--timeout-seconds", type=float, default=120.0)
     parser.add_argument("--out", default=None, help="Optional JSON output path")

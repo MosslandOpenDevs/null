@@ -41,12 +41,16 @@ services:
         condition: service_healthy
 
   frontend:
-    build: ./frontend
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      args:
+        # Build-time values baked into the client bundle; must be reachable
+        # from the user's browser (not Docker-internal hostnames).
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3301}
+        NEXT_PUBLIC_WS_URL: ${NEXT_PUBLIC_WS_URL:-ws://localhost:3301}
     ports:
       - "6001:3000"
-    environment:
-      NEXT_PUBLIC_API_URL: http://backend:3301
-      NEXT_PUBLIC_WS_URL: ws://backend:3301
     depends_on:
       - backend
 
