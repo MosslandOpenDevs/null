@@ -144,7 +144,7 @@ async def test_delete_bookmark_smoke(override_db) -> None:
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
-        resp = await client.delete(f"/api/bookmarks/{bookmark.id}")
+        resp = await client.delete(f"/api/bookmarks/{bookmark.id}?session=sess-1")
 
     assert resp.status_code == 200
     assert resp.json() == {"ok": True}

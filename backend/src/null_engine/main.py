@@ -24,6 +24,7 @@ from null_engine.api.routes import (
     wiki,
     worlds,
 )
+from null_engine.config import settings
 from null_engine.db import create_tables, engine
 from null_engine.services.runtime_metrics import (
     note_loop_cancelled,
@@ -136,12 +137,17 @@ async def lifespan(app: FastAPI):
 
     # Start resilient background tasks with auto-restart on unexpected failure.
     background_tasks = [
-        asyncio.create_task(_run_resilient_loop("auto_genesis", auto_genesis_loop)),
         asyncio.create_task(_run_resilient_loop("convergence", convergence_loop)),
         asyncio.create_task(_run_resilient_loop("semantic_indexer", semantic_indexer_loop)),
         asyncio.create_task(_run_resilient_loop("taxonomy_builder", taxonomy_builder_loop)),
         asyncio.create_task(_run_resilient_loop("translator", translation_worker_loop)),
     ]
+    if settings.auto_genesis_enabled:
+        background_tasks.append(
+            asyncio.create_task(_run_resilient_loop("auto_genesis", auto_genesis_loop))
+        )
+    else:
+        logger.info("auto_genesis.disabled", hint="set AUTO_GENESIS_ENABLED=true to enable")
 
     yield
 
@@ -154,10 +160,14 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="NULL Engine", version="0.1.0", lifespan=lifespan)
 
+_cors_origins = [o.strip() for o in settings.cors_origins.split(",") if o.strip()]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    allow_origins=_cors_origins or ["*"],
+    # Credentialed wildcard CORS makes Starlette echo any Origin — never
+    # combine the two. No cookie-based auth exists, so credentials stay off
+    # for the wildcard default.
+    allow_credentials="*" not in (_cors_origins or ["*"]),
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -249,13 +259,32 @@ async def health_live():
 
 @app.get("/health/ready")
 async def health_ready():
-    return {
-        "status": "ok",
+    """Readiness: verifies the database actually answers, unlike /health/live."""
+    from sqlalchemy import text
+
+    from null_engine.db import async_session
+
+    checks: dict[str, str] = {}
+    healthy = True
+    try:
+        async with async_session() as session:
+            await session.execute(text("SELECT 1"))
+        checks["database"] = "ok"
+    except Exception as exc:
+        healthy = False
+        checks["database"] = f"error: {type(exc).__name__}"
+
+    payload = {
+        "status": "ok" if healthy else "degraded",
         "service": "NULL Engine",
         "version": app.version,
         "mode": "ready",
+        "checks": checks,
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }
+    if not healthy:
+        return JSONResponse(status_code=503, content=payload)
+    return payload
 
 
 @app.get("/ping")

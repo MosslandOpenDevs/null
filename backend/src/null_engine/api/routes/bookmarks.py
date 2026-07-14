@@ -48,10 +48,14 @@ async def list_bookmarks(
 @router.delete("/bookmarks/{bookmark_id}", response_model=OkResponse)
 async def delete_bookmark(
     bookmark_id: uuid.UUID,
+    session: str = Query(...),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
-        select(Bookmark).where(Bookmark.id == bookmark_id)
+        select(Bookmark).where(
+            Bookmark.id == bookmark_id,
+            Bookmark.user_session == session,
+        )
     )
     bookmark = result.scalar_one_or_none()
     if not bookmark:

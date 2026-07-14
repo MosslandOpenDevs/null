@@ -12,6 +12,18 @@ class Settings(BaseSettings):
     backend_host: str = "0.0.0.0"
     backend_port: int = 3301
 
+    # Security
+    # Token required (X-API-Key header) for state-mutating endpoints.
+    # If empty and allow_anonymous_writes is false, writes are rejected.
+    api_write_token: str = ""
+    # Explicit opt-in for unauthenticated writes (local development only).
+    allow_anonymous_writes: bool = False
+    # Comma-separated list of allowed CORS origins, or "*".
+    cors_origins: str = "*"
+
+    # Autonomous world creation (LLM-consuming); must be enabled explicitly.
+    auto_genesis_enabled: bool = False
+
     # LLM Keys
     openai_api_key: str = ""
     anthropic_api_key: str = ""

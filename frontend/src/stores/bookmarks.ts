@@ -69,7 +69,8 @@ export const useBookmarkStore = create<BookmarkState>((set, get) => ({
 
   removeBookmark: async (id) => {
     try {
-      await fetch(`${API_URL}/api/bookmarks/${id}`, { method: "DELETE" });
+      const session = getSession();
+      await fetch(`${API_URL}/api/bookmarks/${id}?session=${encodeURIComponent(session)}`, { method: "DELETE" });
       set((s) => ({ bookmarks: s.bookmarks.filter((b) => b.id !== id) }));
     } catch {
       // endpoint may not exist yet

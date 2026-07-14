@@ -100,6 +100,7 @@ jobs:
           NEXT_PUBLIC_API_URL: http://localhost:3301
           NEXT_PUBLIC_WS_URL: ws://localhost:3301
           PGVECTOR_REQUIRED: "false"
+          ALLOW_ANONYMOUS_WRITES: "true"
         run: python3 scripts/ux_smoke.py --start-servers --timeout-seconds 180 --out artifacts/ux-smoke-report.json
       - name: Publish UX smoke summary
         if: always()

@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from null_engine.api.deps import require_write_access
 from null_engine.db import get_db
 from null_engine.models.schemas import AgentOut, EventCreate, WhisperResponseOut
 from null_engine.models.tables import Agent
@@ -31,6 +32,7 @@ async def get_agent(world_id: uuid.UUID, agent_id: uuid.UUID, db: AsyncSession =
 @router.post(
     "/worlds/{world_id}/agents/{agent_id}/whisper",
     response_model=WhisperResponseOut,
+    dependencies=[Depends(require_write_access)],
 )
 async def whisper_to_agent(
     world_id: uuid.UUID,

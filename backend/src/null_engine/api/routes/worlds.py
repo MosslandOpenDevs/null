@@ -6,6 +6,7 @@ from pydantic import BaseModel
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from null_engine.api.deps import require_write_access
 from null_engine.core.runner import SimulationRunner
 from null_engine.db import async_session, get_db
 from null_engine.models.schemas import (
@@ -157,7 +158,6 @@ async def _background_genesis(world_id: uuid.UUID, seed_prompt: str, extra_confi
             from null_engine.core.genesis import populate_world
             await populate_world(db, world_id, seed_prompt, extra_config)
         # Auto-start simulation after genesis completes
-        from null_engine.core.runner import SimulationRunner
         runner = SimulationRunner(world_id)
         _runners[world_id] = runner
         runner.start()
@@ -184,7 +184,7 @@ async def _background_genesis(world_id: uuid.UUID, seed_prompt: str, extra_confi
         _genesis_tasks.pop(world_id, None)
 
 
-@router.post("/worlds", response_model=WorldOut, status_code=201)
+@router.post("/worlds", response_model=WorldOut, status_code=201, dependencies=[Depends(require_write_access)])
 async def create_world_endpoint(body: WorldCreate, db: AsyncSession = Depends(get_db)):
     world = World(seed_prompt=body.seed_prompt, config=body.config or {}, status="generating")
     db.add(world)
@@ -209,7 +209,7 @@ async def get_world(world_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     return world
 
 
-@router.post("/worlds/{world_id}/start", response_model=SimulationControlOut)
+@router.post("/worlds/{world_id}/start", response_model=SimulationControlOut, dependencies=[Depends(require_write_access)])
 async def start_simulation(world_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(World).where(World.id == world_id))
     world = result.scalar_one_or_none()
@@ -228,7 +228,7 @@ async def start_simulation(world_id: uuid.UUID, db: AsyncSession = Depends(get_d
     return {"status": "started", "world_id": str(world_id)}
 
 
-@router.post("/worlds/{world_id}/stop", response_model=SimulationControlOut)
+@router.post("/worlds/{world_id}/stop", response_model=SimulationControlOut, dependencies=[Depends(require_write_access)])
 async def stop_simulation(world_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     runner = _runners.get(world_id)
     if not runner or not runner.running:
@@ -249,7 +249,7 @@ class SeedBombRequest(BaseModel):
     topic: str
 
 
-@router.post("/worlds/{world_id}/seed-bomb")
+@router.post("/worlds/{world_id}/seed-bomb", dependencies=[Depends(require_write_access)])
 async def seed_bomb(world_id: uuid.UUID, body: SeedBombRequest, db: AsyncSession = Depends(get_db)):
     """Inject a topic into the next conversation round."""
     result = await db.execute(select(World).where(World.id == world_id))
