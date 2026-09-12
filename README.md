@@ -1,9 +1,13 @@
 # NULL;
 
+<!-- opendevs-badges:start -->
+[![CI](https://github.com/MosslandOpenDevs/null/actions/workflows/ci.yml/badge.svg)](https://github.com/MosslandOpenDevs/null/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-64748b?style=flat)](LICENSE)
+<!-- opendevs-badges:end -->
+
 > **No Humans. Just Logic.**
 
-![Status](https://img.shields.io/badge/Status-Working_Prototype-black)
-![License](https://img.shields.io/badge/License-MIT-black)
+![Status](https://img.shields.io/badge/Status-Working_Prototype-black?style=flat)
 
 ## ◼ Introduction
 
